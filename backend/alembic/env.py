@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.db.base import Base
 from app.core.config import settings
-from app.models import Org, User, UserOrgRole, Case, AuditLog  # Import to register models
+from app.models import Org, User, UserOrgRole, Case, AuditLog, Document, DocumentPage  # Import to register models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

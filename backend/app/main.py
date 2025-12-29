@@ -1,10 +1,14 @@
+import logging
 from fastapi import FastAPI
 from sqlalchemy import text
 from app.api.router import api_router
 from app.db.session import engine
 from app.db.base import Base
-from app.models import Org, User, UserOrgRole, Case, AuditLog  # Import to register models
+from app.models import Org, User, UserOrgRole, Case, AuditLog, Document, DocumentPage  # Import to register models
+from app.services.storage import ensure_bucket_exists
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Bank Diligence API", version="0.1.0")
 
@@ -19,11 +23,19 @@ async def health():
 
 @app.on_event("startup")
 async def startup():
-    """Verify database connection on startup."""
+    """Verify database connection and initialize storage on startup."""
+    # Test database connection
     try:
-        # Test connection
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
+        logger.info("Database connection verified")
     except Exception as e:
         raise RuntimeError(f"Database connection failed: {e}")
+    
+    # Initialize MinIO bucket
+    try:
+        ensure_bucket_exists()
+        logger.info("Storage bucket initialized")
+    except Exception as e:
+        logger.warning(f"Storage bucket initialization failed: {e}")
 

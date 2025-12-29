@@ -155,3 +155,28 @@ export async function waiveException(exceptionId: string, reason: string): Promi
   });
 }
 
+// Exports
+export async function generateDiscrepancyLetter(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/drafts/discrepancy-letter`, { method: 'POST' });
+}
+
+export async function generateUndertakingIndemnity(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/drafts/undertaking-indemnity`, { method: 'POST' });
+}
+
+export async function generateInternalOpinion(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/drafts/internal-opinion`, { method: 'POST' });
+}
+
+export async function generateBankPack(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/exports/bank-pack`, { method: 'POST' });
+}
+
+export async function listExports(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/exports`);
+}
+
+export async function getExportDownloadUrl(exportId: string): Promise<any> {
+  return fetchApi(`/exports/${exportId}/download`);
+}
+

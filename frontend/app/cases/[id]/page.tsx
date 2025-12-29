@@ -18,9 +18,14 @@ import {
   listCPs,
   resolveException,
   waiveException,
+  generateDiscrepancyLetter,
+  generateUndertakingIndemnity,
+  generateInternalOpinion,
+  generateBankPack,
+  listExports,
 } from '@/lib/api';
 
-type Tab = 'documents' | 'dossier' | 'exceptions';
+type Tab = 'documents' | 'dossier' | 'exceptions' | 'drafts' | 'exports';
 
 export default function CaseDetailPage() {
   const params = useParams();
@@ -32,16 +37,19 @@ export default function CaseDetailPage() {
   const [dossier, setDossier] = useState<any>(null);
   const [exceptions, setExceptions] = useState<any>(null);
   const [cps, setCps] = useState<any>(null);
+  const [exports, setExports] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<Tab>('documents');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
+  const [generating, setGenerating] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [ocrStatus, setOcrStatus] = useState<any>(null);
   const [selectedExc, setSelectedExc] = useState<any>(null);
   const [waiverReason, setWaiverReason] = useState('');
   const [userRole, setUserRole] = useState('Reviewer');
+  const [generatedDrafts, setGeneratedDrafts] = useState<any[]>([]);
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -53,7 +61,6 @@ export default function CaseDetailPage() {
       router.push('/');
       return;
     }
-    // Decode role from token (simple decode, not verify)
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
       setUserRole(payload.role || 'Reviewer');
@@ -99,11 +106,22 @@ export default function CaseDetailPage() {
     }
   };
 
+  const loadExports = async () => {
+    try {
+      const exp = await listExports(caseId);
+      setExports(exp);
+    } catch (e: any) {
+      console.error('Failed to load exports:', e);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'dossier') {
       loadDossier();
     } else if (activeTab === 'exceptions') {
       loadExceptionsAndCPs();
+    } else if (activeTab === 'drafts' || activeTab === 'exports') {
+      loadExports();
     }
   }, [activeTab, caseId]);
 
@@ -222,6 +240,47 @@ export default function CaseDetailPage() {
     }
   };
 
+  const handleGenerateDraft = async (type: string) => {
+    setGenerating(type);
+    setError('');
+    try {
+      let result;
+      switch (type) {
+        case 'discrepancy':
+          result = await generateDiscrepancyLetter(caseId);
+          break;
+        case 'undertaking':
+          result = await generateUndertakingIndemnity(caseId);
+          break;
+        case 'opinion':
+          result = await generateInternalOpinion(caseId);
+          break;
+        default:
+          throw new Error('Unknown draft type');
+      }
+      setGeneratedDrafts(prev => [result, ...prev]);
+      await loadExports();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const handleGenerateBankPack = async () => {
+    setGenerating('bankpack');
+    setError('');
+    try {
+      const result = await generateBankPack(caseId);
+      setGeneratedDrafts(prev => [result, ...prev]);
+      await loadExports();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
   const canWaive = userRole === 'Admin' || userRole === 'Approver';
   const canResolve = userRole === 'Admin' || userRole === 'Approver' || userRole === 'Reviewer';
 
@@ -250,27 +309,39 @@ export default function CaseDetailPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6 border-b border-slate-700">
+      <div className="flex gap-4 mb-6 border-b border-slate-700 overflow-x-auto">
         <button
           onClick={() => setActiveTab('documents')}
-          className={`pb-3 px-1 ${activeTab === 'documents' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'documents' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
         >
           Documents
         </button>
         <button
           onClick={() => setActiveTab('dossier')}
-          className={`pb-3 px-1 ${activeTab === 'dossier' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'dossier' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
         >
           Dossier
         </button>
         <button
           onClick={() => setActiveTab('exceptions')}
-          className={`pb-3 px-1 ${activeTab === 'exceptions' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'exceptions' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
         >
           Exceptions & CPs
           {exceptions && exceptions.open_count > 0 && (
             <span className="ml-2 badge badge-error">{exceptions.open_count}</span>
           )}
+        </button>
+        <button
+          onClick={() => setActiveTab('drafts')}
+          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'drafts' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+        >
+          Drafts
+        </button>
+        <button
+          onClick={() => setActiveTab('exports')}
+          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'exports' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+        >
+          Export
         </button>
       </div>
 
@@ -352,7 +423,7 @@ export default function CaseDetailPage() {
                   {ocrStatus && (
                     <div className="mt-4">
                       <h3 className="font-medium mb-2">OCR Status</h3>
-                      <div className="flex gap-2 mb-3">
+                      <div className="flex gap-2 mb-3 flex-wrap">
                         {Object.entries(ocrStatus.status_counts).map(([status, count]) => (
                           <span key={status} className={`badge ${
                             status === 'Done' ? 'badge-success' :
@@ -432,13 +503,12 @@ export default function CaseDetailPage() {
       {/* Exceptions & CPs Tab */}
       {activeTab === 'exceptions' && (
         <div className="space-y-6">
-          {/* Evaluate Button & Summary */}
           <div className="card">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-lg font-semibold">Rule Evaluation</h2>
                 {exceptions && (
-                  <div className="flex gap-3 mt-2">
+                  <div className="flex gap-3 mt-2 flex-wrap">
                     <span className="badge badge-error">High: {exceptions.high_count}</span>
                     <span className="badge badge-warning">Medium: {exceptions.medium_count}</span>
                     <span className="badge badge-info">Low: {exceptions.low_count}</span>
@@ -459,7 +529,6 @@ export default function CaseDetailPage() {
             </div>
           </div>
 
-          {/* Exceptions List */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="card">
               <h3 className="font-semibold mb-4">Exceptions</h3>
@@ -501,7 +570,6 @@ export default function CaseDetailPage() {
               )}
             </div>
 
-            {/* Exception Detail */}
             <div className="card">
               {selectedExc ? (
                 <div className="space-y-4">
@@ -524,23 +592,13 @@ export default function CaseDetailPage() {
                     <p className="text-slate-400 text-sm">Description</p>
                     <p>{selectedExc.description || '—'}</p>
                   </div>
-                  
-                  <div>
-                    <p className="text-slate-400 text-sm">Condition Precedent</p>
-                    <p>{selectedExc.cp_text || '—'}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-slate-400 text-sm">Resolution Conditions</p>
-                    <p>{selectedExc.resolution_conditions || '—'}</p>
-                  </div>
 
                   {selectedExc.evidence_refs && selectedExc.evidence_refs.length > 0 && (
                     <div>
                       <p className="text-slate-400 text-sm mb-2">Evidence References</p>
                       <ul className="space-y-1">
-                        {selectedExc.evidence_refs.map((ref: any) => (
-                          <li key={ref.id} className="text-sm bg-slate-600 p-2 rounded">
+                        {selectedExc.evidence_refs.map((ref: any, i: number) => (
+                          <li key={i} className="text-sm bg-slate-600 p-2 rounded">
                             Doc: {ref.document_id?.substring(0, 8)}... 
                             {ref.page_number && ` • Page ${ref.page_number}`}
                             {ref.note && ` • ${ref.note}`}
@@ -580,13 +638,6 @@ export default function CaseDetailPage() {
                       )}
                     </div>
                   )}
-
-                  {selectedExc.status === 'Waived' && selectedExc.waiver_reason && (
-                    <div className="bg-yellow-500/20 p-3 rounded">
-                      <p className="text-yellow-400 text-sm">Waiver Reason:</p>
-                      <p>{selectedExc.waiver_reason}</p>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <p className="text-slate-400">Select an exception to view details.</p>
@@ -594,7 +645,6 @@ export default function CaseDetailPage() {
             </div>
           </div>
 
-          {/* CPs List */}
           <div className="card">
             <h3 className="font-semibold mb-4">
               Conditions Precedent
@@ -621,11 +671,159 @@ export default function CaseDetailPage() {
                       </span>
                     </div>
                     <p className="text-sm">{cp.text}</p>
-                    {cp.evidence_required && (
-                      <p className="text-xs text-slate-400 mt-2">Required: {cp.evidence_required}</p>
-                    )}
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Drafts Tab */}
+      {activeTab === 'drafts' && (
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">Generate Draft Documents</h2>
+            <p className="text-slate-400 mb-6">Generate bank-style DOCX drafts based on case data, exceptions, and dossier fields.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-slate-700 rounded">
+                <h3 className="font-medium mb-2">Discrepancy Letter</h3>
+                <p className="text-sm text-slate-400 mb-4">Formal letter to borrower listing discrepancies and required actions.</p>
+                <button 
+                  onClick={() => handleGenerateDraft('discrepancy')}
+                  className="btn btn-primary w-full"
+                  disabled={generating === 'discrepancy'}
+                >
+                  {generating === 'discrepancy' ? 'Generating...' : 'Generate'}
+                </button>
+              </div>
+              
+              <div className="p-4 bg-slate-700 rounded">
+                <h3 className="font-medium mb-2">Undertaking & Indemnity</h3>
+                <p className="text-sm text-slate-400 mb-4">Standard undertaking and indemnity document for borrower signature.</p>
+                <button 
+                  onClick={() => handleGenerateDraft('undertaking')}
+                  className="btn btn-primary w-full"
+                  disabled={generating === 'undertaking'}
+                >
+                  {generating === 'undertaking' ? 'Generating...' : 'Generate'}
+                </button>
+              </div>
+              
+              <div className="p-4 bg-slate-700 rounded">
+                <h3 className="font-medium mb-2">Internal Opinion</h3>
+                <p className="text-sm text-slate-400 mb-4">Skeleton internal legal opinion with findings and recommendation.</p>
+                <button 
+                  onClick={() => handleGenerateDraft('opinion')}
+                  className="btn btn-primary w-full"
+                  disabled={generating === 'opinion'}
+                >
+                  {generating === 'opinion' ? 'Generating...' : 'Generate'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {generatedDrafts.length > 0 && (
+            <div className="card">
+              <h3 className="font-semibold mb-4">Recently Generated</h3>
+              <ul className="space-y-2">
+                {generatedDrafts.map((draft, i) => (
+                  <li key={i} className="p-3 bg-slate-700 rounded flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{draft.filename}</p>
+                      <p className="text-sm text-slate-400">{draft.export_type}</p>
+                    </div>
+                    <a 
+                      href={draft.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="btn btn-primary text-sm"
+                    >
+                      Download
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Export Tab */}
+      {activeTab === 'exports' && (
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">Bank Pack Export</h2>
+            <p className="text-slate-400 mb-6">Generate a comprehensive PDF report with executive summary, all exceptions, conditions precedent, and document index.</p>
+            
+            <button 
+              onClick={handleGenerateBankPack}
+              className="btn btn-primary"
+              disabled={generating === 'bankpack'}
+            >
+              {generating === 'bankpack' ? 'Generating Bank Pack...' : 'Generate Bank Pack PDF'}
+            </button>
+          </div>
+
+          <div className="card">
+            <h3 className="font-semibold mb-4">
+              Export History
+              {exports && <span className="text-slate-400 ml-2">({exports.total} exports)</span>}
+            </h3>
+            {!exports || exports.exports.length === 0 ? (
+              <p className="text-slate-400">No exports generated yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left border-b border-slate-700">
+                      <th className="pb-2 text-slate-400 font-medium">Filename</th>
+                      <th className="pb-2 text-slate-400 font-medium">Type</th>
+                      <th className="pb-2 text-slate-400 font-medium">Created</th>
+                      <th className="pb-2 text-slate-400 font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {exports.exports.map((exp: any) => (
+                      <tr key={exp.id} className="border-b border-slate-700/50">
+                        <td className="py-3">{exp.filename}</td>
+                        <td className="py-3">
+                          <span className={`badge ${
+                            exp.export_type === 'bank_pack_pdf' ? 'badge-success' : 'badge-info'
+                          }`}>
+                            {exp.export_type}
+                          </span>
+                        </td>
+                        <td className="py-3 text-slate-400">
+                          {new Date(exp.created_at).toLocaleString()}
+                        </td>
+                        <td className="py-3">
+                          <a 
+                            href={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/exports/${exp.id}/download`}
+                            className="text-cyan-400 hover:text-cyan-300"
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              try {
+                                const token = await getToken();
+                                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/exports/${exp.id}/download`, {
+                                  headers: { Authorization: `Bearer ${token}` }
+                                });
+                                const data = await res.json();
+                                window.open(data.url, '_blank');
+                              } catch (e: any) {
+                                setError(e.message);
+                              }
+                            }}
+                          >
+                            Download
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

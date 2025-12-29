@@ -21,6 +21,7 @@ dependencies = [
     "pillow",
     "pdf2image",
     "pyyaml",
+    "python-docx",
 ]
 
 [build-system]

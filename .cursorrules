@@ -1,0 +1,11 @@
+# Cursor Rules — Bank Diligence Platform
+- Make minimal, reversible changes.
+- Prefer small commits and short diffs.
+- Do not refactor unrelated code.
+- Always keep tenant isolation (org_id) in queries.
+- Always write migrations for DB changes.
+- Every API endpoint must log audit events.
+- Never store secrets in repo; use .env and docker-compose env.
+- All outputs must be copy-paste-ready; include file paths.
+- When unsure about OCR/extraction quality: mark fields "needs_confirmation" instead of guessing.
+

@@ -1,16 +1,39 @@
 import logging
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from app.api.router import api_router
 from app.db.session import engine
 from app.db.base import Base
-from app.models import Org, User, UserOrgRole, Case, AuditLog, Document, DocumentPage, CaseDossierField, Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun, Export  # Import to register models
+from app.models import Org, User, UserOrgRole, Case, AuditLog, Document, DocumentPage, CaseDossierField, Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun, Export, Verification, VerificationEvidenceRef  # Import to register models
 from app.services.storage import ensure_bucket_exists
+from app.core.config import settings
+from app.core.middleware import SecurityHeadersMiddleware, UploadSizeLimitMiddleware
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Bank Diligence API", version="0.1.0")
+
+# ============================================================
+# MIDDLEWARE
+# ============================================================
+
+# Security headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Upload size limit
+app.add_middleware(UploadSizeLimitMiddleware)
+
+# CORS - configure origins from settings
+cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")

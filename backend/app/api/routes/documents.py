@@ -15,10 +15,17 @@ from app.api.deps import get_current_user, CurrentUser
 from app.services.audit import write_audit_event
 from app.services.storage import put_object_bytes, get_presigned_get_url
 from app.services.pdf_splitter import split_pdf, PDFSplitError
+from app.core.middleware import sanitize_filename
 
 router = APIRouter(tags=["documents"])
 
-ALLOWED_CONTENT_TYPES = {"application/pdf"}
+ALLOWED_CONTENT_TYPES = {
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+}
+IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg"}
 DOWNLOAD_URL_EXPIRES_SECONDS = 3600  # 1 hour
 
 
@@ -30,7 +37,7 @@ async def upload_document(
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Upload a PDF document to a case."""
+    """Upload a PDF document or image to a case."""
     # Validate case exists and belongs to org
     case = db.query(Case).filter(
         Case.id == case_id,
@@ -44,7 +51,7 @@ async def upload_document(
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Only PDF files are allowed. Received: {content_type}"
+            detail=f"Only PDF and image files (PNG, JPG) are allowed. Received: {content_type}"
         )
     
     # Read file content
@@ -53,7 +60,18 @@ async def upload_document(
     
     # Generate document ID and storage key
     document_id = uuid.uuid4()
-    original_key = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/original.pdf"
+    
+    # Determine file extension based on content type
+    is_image = content_type in IMAGE_CONTENT_TYPES
+    if is_image:
+        ext = "png" if content_type == "image/png" else "jpg"
+        original_key = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/original.{ext}"
+    else:
+        original_key = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/original.pdf"
+    
+    # Sanitize filename for safety
+    default_filename = f"image.{ext}" if is_image else "document.pdf"
+    safe_filename = sanitize_filename(file.filename or default_filename)
     
     # Create document record (initial status)
     document = Document(
@@ -61,7 +79,7 @@ async def upload_document(
         org_id=current_user.org_id,
         case_id=case_id,
         uploader_user_id=current_user.user_id,
-        original_filename=file.filename or "document.pdf",
+        original_filename=safe_filename,
         content_type=content_type,
         size_bytes=file_size,
         minio_key_original=original_key,
@@ -74,27 +92,43 @@ async def upload_document(
         # Upload original to MinIO
         put_object_bytes(original_key, file_content, content_type)
         
-        # Split PDF into pages
-        page_count, pages = split_pdf(file_content)
-        
-        # Upload each page and create page records
-        for page_number, page_bytes in pages:
-            page_key = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/pages/{page_number}.pdf"
-            put_object_bytes(page_key, page_bytes, "application/pdf")
+        if is_image:
+            # For images: create single page record, no splitting
+            document.page_count = 1
+            document.status = "Uploaded"  # Images don't get "Split" status
             
+            # Create a single page record for the image
             page_record = DocumentPage(
                 org_id=current_user.org_id,
                 document_id=document_id,
-                page_number=page_number,
-                minio_key_page_pdf=page_key,
+                page_number=1,
+                minio_key_page_pdf=original_key,  # Points to original image
             )
             db.add(page_record)
-        
-        # Update document status
-        document.page_count = page_count
-        document.status = "Split"
-        db.commit()
-        db.refresh(document)
+            db.commit()
+            db.refresh(document)
+        else:
+            # Split PDF into pages
+            page_count, pages = split_pdf(file_content)
+            
+            # Upload each page and create page records
+            for page_number, page_bytes in pages:
+                page_key = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/pages/{page_number}.pdf"
+                put_object_bytes(page_key, page_bytes, "application/pdf")
+                
+                page_record = DocumentPage(
+                    org_id=current_user.org_id,
+                    document_id=document_id,
+                    page_number=page_number,
+                    minio_key_page_pdf=page_key,
+                )
+                db.add(page_record)
+            
+            # Update document status
+            document.page_count = page_count
+            document.status = "Split"
+            db.commit()
+            db.refresh(document)
         
     except PDFSplitError as e:
         document.status = "Failed"
@@ -126,6 +160,7 @@ async def upload_document(
             "size_bytes": file_size,
             "page_count": document.page_count,
             "status": document.status,
+            "is_image": is_image,
         },
     )
     

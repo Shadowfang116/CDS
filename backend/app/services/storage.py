@@ -81,3 +81,61 @@ def delete_object(key: str) -> None:
     client = get_s3_client()
     client.delete_object(Bucket=settings.MINIO_BUCKET, Key=key)
 
+
+def delete_objects_by_prefix(prefix: str) -> int:
+    """Delete all objects with a given prefix. Returns count of deleted objects."""
+    client = get_s3_client()
+    bucket = settings.MINIO_BUCKET
+    deleted_count = 0
+    
+    try:
+        # List all objects with the prefix
+        paginator = client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket, Prefix=prefix)
+        
+        for page in pages:
+            if "Contents" not in page:
+                continue
+            
+            objects_to_delete = [{"Key": obj["Key"]} for obj in page["Contents"]]
+            if objects_to_delete:
+                client.delete_objects(
+                    Bucket=bucket,
+                    Delete={"Objects": objects_to_delete}
+                )
+                deleted_count += len(objects_to_delete)
+        
+        logger.info(f"Deleted {deleted_count} objects with prefix '{prefix}'")
+        return deleted_count
+    except ClientError as e:
+        logger.error(f"Failed to delete objects with prefix '{prefix}': {e}")
+        raise
+
+
+def list_objects_by_prefix(prefix: str) -> list:
+    """List all objects with a given prefix. Returns list of keys."""
+    client = get_s3_client()
+    bucket = settings.MINIO_BUCKET
+    keys = []
+    
+    try:
+        paginator = client.get_paginator("list_objects_v2")
+        pages = paginator.paginate(Bucket=bucket, Prefix=prefix)
+        
+        for page in pages:
+            if "Contents" not in page:
+                continue
+            keys.extend([obj["Key"] for obj in page["Contents"]])
+        
+        return keys
+    except ClientError as e:
+        logger.error(f"Failed to list objects with prefix '{prefix}': {e}")
+        return []
+
+
+def get_object_bytes(key: str) -> bytes:
+    """Download object bytes from MinIO."""
+    client = get_s3_client()
+    response = client.get_object(Bucket=settings.MINIO_BUCKET, Key=key)
+    return response["Body"].read()
+

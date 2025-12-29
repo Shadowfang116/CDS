@@ -26,6 +26,19 @@ class Settings(BaseSettings):
     MINIO_EXTERNAL_ENDPOINT: str = "localhost"
     MINIO_EXTERNAL_PORT: int = 9000
     
+    # Retention
+    RETENTION_DAYS: int = 365  # Days to retain case data
+    
+    # Upload limits
+    MAX_UPLOAD_SIZE_MB: int = 50  # Max file upload size in MB
+    
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:3000"  # Comma-separated origins
+    
+    # External Verification Portal URLs (for assisted verification)
+    ESTAMP_VERIFY_URL: str = "https://estamping.punjab-zameen.gov.pk/verify"  # Placeholder
+    REGISTRY_VERIFY_URL: str = "https://lda.gop.pk/rod-verify"  # Placeholder
+    
     class Config:
         env_file = ".env"
         case_sensitive = True

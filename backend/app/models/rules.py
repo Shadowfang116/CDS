@@ -46,6 +46,10 @@ class ConditionPrecedent(Base):
     text = Column(Text, nullable=False)
     evidence_required = Column(Text, nullable=True)
     status = Column(String, nullable=False, default="Open")  # Open, Satisfied, Waived
+    # Verification satisfaction linkage
+    satisfied_by_verification_type = Column(String, nullable=True)  # e_stamp, registry_rod
+    satisfied_at = Column(DateTime, nullable=True)
+    satisfied_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     

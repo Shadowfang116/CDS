@@ -8,6 +8,7 @@ import {
   listDocuments,
   uploadDocument,
   getDocument,
+  getDocumentDownloadUrl,
   enqueueOcr,
   getOcrStatus,
   extractDossier,
@@ -23,9 +24,15 @@ import {
   generateInternalOpinion,
   generateBankPack,
   listExports,
+  listVerifications,
+  updateVerificationKeys,
+  openVerificationPortal,
+  attachVerificationEvidence,
+  markVerificationVerified,
+  markVerificationFailed,
 } from '@/lib/api';
 
-type Tab = 'documents' | 'dossier' | 'exceptions' | 'drafts' | 'exports';
+type Tab = 'documents' | 'dossier' | 'verification' | 'exceptions' | 'drafts' | 'exports';
 
 export default function CaseDetailPage() {
   const params = useParams();
@@ -38,6 +45,7 @@ export default function CaseDetailPage() {
   const [exceptions, setExceptions] = useState<any>(null);
   const [cps, setCps] = useState<any>(null);
   const [exports, setExports] = useState<any>(null);
+  const [verifications, setVerifications] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<Tab>('documents');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -115,9 +123,20 @@ export default function CaseDetailPage() {
     }
   };
 
+  const loadVerifications = async () => {
+    try {
+      const v = await listVerifications(caseId);
+      setVerifications(v);
+    } catch (e: any) {
+      console.error('Failed to load verifications:', e);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'dossier') {
       loadDossier();
+    } else if (activeTab === 'verification') {
+      loadVerifications();
     } else if (activeTab === 'exceptions') {
       loadExceptionsAndCPs();
     } else if (activeTab === 'drafts' || activeTab === 'exports') {
@@ -129,8 +148,9 @@ export default function CaseDetailPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      setError('Only PDF files are allowed');
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Only PDF and image files (PNG, JPG) are allowed');
       return;
     }
 
@@ -323,6 +343,12 @@ export default function CaseDetailPage() {
           Dossier
         </button>
         <button
+          onClick={() => setActiveTab('verification')}
+          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'verification' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+        >
+          Verification
+        </button>
+        <button
           onClick={() => setActiveTab('exceptions')}
           className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'exceptions' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
         >
@@ -352,10 +378,10 @@ export default function CaseDetailPage() {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Documents</h2>
               <label className="btn btn-primary cursor-pointer">
-                {uploading ? 'Uploading...' : 'Upload PDF'}
+                {uploading ? 'Uploading...' : 'Upload File'}
                 <input
                   type="file"
-                  accept="application/pdf"
+                  accept="application/pdf,image/png,image/jpeg,image/jpg"
                   onChange={handleFileUpload}
                   className="hidden"
                   disabled={uploading}
@@ -497,6 +523,29 @@ export default function CaseDetailPage() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Verification Tab */}
+      {activeTab === 'verification' && (
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">Assisted Verification</h2>
+            <p className="text-slate-400 mb-6">Verify e-Stamp and Registry/ROD documents via official government portals.</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {verifications.map((v) => (
+              <VerificationCard
+                key={v.id}
+                verification={v}
+                caseId={caseId}
+                documents={documents}
+                onUpdate={loadVerifications}
+                setError={setError}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -828,6 +877,362 @@ export default function CaseDetailPage() {
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// VerificationCard Component
+// ============================================================
+
+function VerificationCard({
+  verification,
+  caseId,
+  documents,
+  onUpdate,
+  setError,
+}: {
+  verification: any;
+  caseId: string;
+  documents: any[];
+  onUpdate: () => void;
+  setError: (msg: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [keys, setKeys] = useState<Record<string, string>>(verification.keys_json || {});
+  const [notes, setNotes] = useState(verification.notes || '');
+  const [newKeyName, setNewKeyName] = useState('');
+  const [newKeyValue, setNewKeyValue] = useState('');
+  const [selectedDocId, setSelectedDocId] = useState('');
+  const [failedNotes, setFailedNotes] = useState('');
+  const [showFailedInput, setShowFailedInput] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const typeLabel = verification.verification_type === 'e_stamp' ? 'e-Stamp' : 'Registry / ROD';
+  const statusColor = verification.status === 'Verified' ? 'badge-success' : 
+                       verification.status === 'Failed' ? 'badge-error' : 'badge-warning';
+
+  const handleSaveKeys = async () => {
+    setLoading(true);
+    try {
+      await updateVerificationKeys(caseId, verification.verification_type, keys, notes);
+      setEditing(false);
+      onUpdate();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddKey = () => {
+    if (newKeyName.trim()) {
+      setKeys({ ...keys, [newKeyName.trim()]: newKeyValue });
+      setNewKeyName('');
+      setNewKeyValue('');
+    }
+  };
+
+  const handleRemoveKey = (key: string) => {
+    const updated = { ...keys };
+    delete updated[key];
+    setKeys(updated);
+  };
+
+  const handleOpenPortal = async () => {
+    try {
+      const result = await openVerificationPortal(caseId, verification.verification_type);
+      window.open(result.url, '_blank');
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handleAttachEvidence = async () => {
+    if (!selectedDocId) {
+      setError('Please select a document to attach');
+      return;
+    }
+    setLoading(true);
+    try {
+      await attachVerificationEvidence(caseId, verification.verification_type, selectedDocId);
+      setSelectedDocId('');
+      onUpdate();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkVerified = async () => {
+    setLoading(true);
+    try {
+      await markVerificationVerified(caseId, verification.verification_type);
+      onUpdate();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkFailed = async () => {
+    if (!failedNotes.trim()) {
+      setError('Please provide notes explaining why verification failed');
+      return;
+    }
+    setLoading(true);
+    try {
+      await markVerificationFailed(caseId, verification.verification_type, failedNotes);
+      setShowFailedInput(false);
+      setFailedNotes('');
+      onUpdate();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownloadEvidence = async (docId: string) => {
+    try {
+      const result = await getDocumentDownloadUrl(docId);
+      window.open(result.url, '_blank');
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const hasEvidence = verification.evidence_refs && verification.evidence_refs.length > 0;
+
+  return (
+    <div className="card">
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-lg font-semibold">{typeLabel}</h3>
+        <span className={`badge ${statusColor}`}>{verification.status}</span>
+      </div>
+
+      {/* Keys Section */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-slate-400">Verification Keys</span>
+          {!editing && verification.status === 'Pending' && (
+            <button 
+              onClick={() => setEditing(true)} 
+              className="text-sm text-cyan-400 hover:text-cyan-300"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        
+        {editing ? (
+          <div className="space-y-2">
+            {Object.entries(keys).map(([key, value]) => (
+              <div key={key} className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={key}
+                  disabled
+                  className="input flex-1 text-sm bg-slate-600"
+                />
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(e) => setKeys({ ...keys, [key]: e.target.value })}
+                  className="input flex-1 text-sm"
+                />
+                <button
+                  onClick={() => handleRemoveKey(key)}
+                  className="text-red-400 hover:text-red-300 px-2"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Key name..."
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                className="input flex-1 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Value..."
+                value={newKeyValue}
+                onChange={(e) => setNewKeyValue(e.target.value)}
+                className="input flex-1 text-sm"
+              />
+              <button onClick={handleAddKey} className="btn btn-secondary text-sm">
+                Add
+              </button>
+            </div>
+            <textarea
+              placeholder="Notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="input w-full text-sm"
+              rows={2}
+            />
+            <div className="flex gap-2">
+              <button 
+                onClick={handleSaveKeys} 
+                className="btn btn-primary text-sm"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Save'}
+              </button>
+              <button 
+                onClick={() => { setEditing(false); setKeys(verification.keys_json || {}); }}
+                className="btn btn-secondary text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-slate-700 rounded p-3">
+            {Object.keys(keys).length === 0 ? (
+              <p className="text-slate-400 text-sm">No verification keys set. Click Edit to add.</p>
+            ) : (
+              <div className="space-y-1">
+                {Object.entries(keys).map(([key, value]) => (
+                  <div key={key} className="flex justify-between text-sm">
+                    <span className="text-slate-400">{key}:</span>
+                    <span className="font-mono">{value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {verification.notes && (
+              <p className="text-sm text-slate-400 mt-2 pt-2 border-t border-slate-600">
+                {verification.notes}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Portal Button */}
+      <button
+        onClick={handleOpenPortal}
+        className="btn btn-secondary w-full mb-4"
+      >
+        Open Verification Portal ↗
+      </button>
+
+      {/* Evidence Section */}
+      <div className="mb-4">
+        <span className="text-sm text-slate-400 block mb-2">Evidence</span>
+        
+        {hasEvidence ? (
+          <ul className="space-y-2 mb-3">
+            {verification.evidence_refs.map((ref: any) => {
+              const doc = documents.find((d) => d.id === ref.document_id);
+              return (
+                <li key={ref.id} className="flex justify-between items-center p-2 bg-slate-700 rounded text-sm">
+                  <span>{doc?.original_filename || ref.document_id.substring(0, 8)}</span>
+                  <button 
+                    onClick={() => handleDownloadEvidence(ref.document_id)}
+                    className="text-cyan-400 hover:text-cyan-300 text-sm"
+                  >
+                    View
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-sm text-slate-400 mb-3">No evidence attached yet.</p>
+        )}
+
+        {verification.status === 'Pending' && (
+          <div className="flex gap-2">
+            <select
+              value={selectedDocId}
+              onChange={(e) => setSelectedDocId(e.target.value)}
+              className="input flex-1 text-sm"
+            >
+              <option value="">Select document...</option>
+              {documents.map((doc) => (
+                <option key={doc.id} value={doc.id}>
+                  {doc.original_filename}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleAttachEvidence}
+              className="btn btn-secondary text-sm"
+              disabled={loading || !selectedDocId}
+            >
+              Attach
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Action Buttons */}
+      {verification.status === 'Pending' && (
+        <div className="space-y-2 pt-4 border-t border-slate-600">
+          <button
+            onClick={handleMarkVerified}
+            className="btn btn-primary w-full"
+            disabled={loading || !hasEvidence}
+            title={!hasEvidence ? 'Attach evidence first' : ''}
+          >
+            {loading ? 'Processing...' : 'Mark as Verified'}
+          </button>
+          
+          {showFailedInput ? (
+            <div className="space-y-2">
+              <textarea
+                placeholder="Reason for failure..."
+                value={failedNotes}
+                onChange={(e) => setFailedNotes(e.target.value)}
+                className="input w-full text-sm"
+                rows={2}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleMarkFailed}
+                  className="btn btn-secondary flex-1"
+                  disabled={loading}
+                >
+                  Confirm Failed
+                </button>
+                <button
+                  onClick={() => { setShowFailedInput(false); setFailedNotes(''); }}
+                  className="btn btn-secondary flex-1"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowFailedInput(true)}
+              className="btn btn-secondary w-full"
+            >
+              Mark as Failed
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Verified/Failed info */}
+      {verification.status === 'Verified' && verification.verified_at && (
+        <p className="text-sm text-green-400 mt-4">
+          ✓ Verified on {new Date(verification.verified_at).toLocaleString()}
+        </p>
+      )}
+      {verification.status === 'Failed' && verification.notes && (
+        <p className="text-sm text-red-400 mt-4">
+          ✗ Failed: {verification.notes}
+        </p>
       )}
     </div>
   );

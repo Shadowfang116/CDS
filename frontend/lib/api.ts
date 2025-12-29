@@ -180,3 +180,37 @@ export async function getExportDownloadUrl(exportId: string): Promise<any> {
   return fetchApi(`/exports/${exportId}/download`);
 }
 
+// Verifications
+export async function listVerifications(caseId: string): Promise<any[]> {
+  return fetchApi(`/cases/${caseId}/verifications`);
+}
+
+export async function updateVerificationKeys(caseId: string, verificationType: string, keysJson?: any, notes?: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/verifications/${verificationType}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ keys_json: keysJson, notes }),
+  });
+}
+
+export async function openVerificationPortal(caseId: string, verificationType: string): Promise<{ url: string; guidance_steps: string[] }> {
+  return fetchApi(`/cases/${caseId}/verifications/${verificationType}/open-portal`, { method: 'POST' });
+}
+
+export async function attachVerificationEvidence(caseId: string, verificationType: string, documentId: string, pageNumber?: number, note?: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/verifications/${verificationType}/attach-evidence`, {
+    method: 'POST',
+    body: JSON.stringify({ document_id: documentId, page_number: pageNumber || 1, note }),
+  });
+}
+
+export async function markVerificationVerified(caseId: string, verificationType: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/verifications/${verificationType}/mark-verified`, { method: 'POST' });
+}
+
+export async function markVerificationFailed(caseId: string, verificationType: string, notes: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/verifications/${verificationType}/mark-failed`, {
+    method: 'POST',
+    body: JSON.stringify({ notes }),
+  });
+}
+

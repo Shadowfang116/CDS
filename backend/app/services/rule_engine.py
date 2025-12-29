@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.models.document import Document, DocumentPage, CaseDossierField
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun
+from app.models.verification import Verification
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ class CaseContext:
     doc_filenames: List[str]  # list of original filenames
     documents: List[Document]  # full document objects
     pages: List[Tuple[uuid.UUID, int, str]]  # (doc_id, page_num, ocr_text)
+    verifications: Dict[str, str] = field(default_factory=dict)  # verification_type -> status
 
 
 def load_rulepack() -> Dict[str, Any]:
@@ -107,6 +109,13 @@ def build_case_context(db: Session, org_id: uuid.UUID, case_id: uuid.UUID) -> Ca
             if page.ocr_text:
                 pages.append((doc.id, page.page_number, page.ocr_text))
     
+    # Get verifications
+    verifications_data = db.query(Verification).filter(
+        Verification.case_id == case_id,
+        Verification.org_id == org_id,
+    ).all()
+    verifications = {v.verification_type: v.status for v in verifications_data}
+    
     return CaseContext(
         org_id=org_id,
         case_id=case_id,
@@ -115,6 +124,7 @@ def build_case_context(db: Session, org_id: uuid.UUID, case_id: uuid.UUID) -> Ca
         doc_filenames=doc_filenames,
         documents=documents,
         pages=pages,
+        verifications=verifications,
     )
 
 
@@ -313,11 +323,91 @@ def evaluate_timeline_gap(rule: Dict, ctx: CaseContext) -> RuleResult:
     )
 
 
+def evaluate_verification_check(rule: Dict, ctx: CaseContext) -> RuleResult:
+    """
+    Check if verification is required and not yet completed.
+    
+    This evaluator checks for e-stamp or registry verification requirements.
+    If the verification is already Verified, the rule does not trigger.
+    """
+    verification_type = rule.get("inputs", {}).get("verification_type", "")
+    keywords = rule.get("inputs", {}).get("keywords", [])
+    dossier_keys = rule.get("inputs", {}).get("dossier_keys", [])
+    
+    # Check if verification is already done
+    verification_status = ctx.verifications.get(verification_type, "Pending")
+    if verification_status == "Verified":
+        # Already verified, don't trigger
+        outputs = rule.get("outputs", {})
+        return RuleResult(
+            rule_id=rule["id"],
+            module=rule["module"],
+            severity=rule["severity"],
+            triggered=False,
+            title=outputs.get("title", ""),
+            description=outputs.get("exception", ""),
+            cp_text=outputs.get("cp", ""),
+            evidence_required=outputs.get("evidence_required", ""),
+            resolution_conditions=outputs.get("resolution_conditions", ""),
+        )
+    
+    # Check if any dossier keys are present (indicating need for verification)
+    has_keys = False
+    for key in dossier_keys:
+        for dossier_key in ctx.dossier.keys():
+            if key in dossier_key:
+                if ctx.dossier[dossier_key]:
+                    has_keys = True
+                    break
+        if has_keys:
+            break
+    
+    # Check if keywords are found in OCR (indicating relevant documents)
+    has_keywords = False
+    evidence_refs: List[EvidenceRef] = []
+    
+    for doc_id, page_num, ocr_text in ctx.pages:
+        text_lower = ocr_text.lower()
+        for kw in keywords:
+            if kw.lower() in text_lower:
+                has_keywords = True
+                evidence_refs.append(EvidenceRef(
+                    document_id=doc_id,
+                    page_number=page_num,
+                    note=f"Contains keyword: {kw}",
+                ))
+                break
+        if has_keywords:
+            break
+    
+    # Trigger if we have keys or keywords but not verified
+    triggered = has_keys or has_keywords
+    
+    outputs = rule.get("outputs", {})
+    description = outputs.get("exception", "")
+    if triggered and verification_status == "Failed":
+        description += " (Previous verification attempt failed)"
+    
+    return RuleResult(
+        rule_id=rule["id"],
+        module=rule["module"],
+        severity=rule["severity"],
+        triggered=triggered,
+        title=outputs.get("title", ""),
+        description=description,
+        cp_text=outputs.get("cp", ""),
+        evidence_required=outputs.get("evidence_required", ""),
+        resolution_conditions=outputs.get("resolution_conditions", ""),
+        evidence_refs=evidence_refs,
+    )
+
+
 EVALUATORS = {
     "missing_evidence": evaluate_missing_evidence,
     "mismatch": evaluate_mismatch,
     "keyword_risk": evaluate_keyword_risk,
     "timeline_gap": evaluate_timeline_gap,
+    "verification_check": evaluate_verification_check,
 }
 
 

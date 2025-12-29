@@ -473,3 +473,45 @@ rules:
       cp: "Obtain succession documentation"
       evidence_required: "Succession certificate or legal heir certificate and death certificate"
       resolution_conditions: "Document succession chain and verify all heirs have consented"
+
+  # ============================================================
+  # MODULE: External Verification (2 rules)
+  # ============================================================
+
+  - id: "EST-VERIFY-01"
+    module: "External Verification"
+    severity: "Medium"
+    evaluator: "verification_check"
+    description: "e-Stamp paper must be verified via official portal"
+    inputs:
+      verification_type: "e_stamp"
+      dossier_keys: ["estamp.number", "estamp.certificate_id"]
+      keywords: ["e-stamp", "estamp", "stamp paper", "stamp duty", "challan"]
+    logic:
+      require_verification: true
+      auto_satisfy_when_verified: true
+    outputs:
+      title: "e-Stamp Verification Required"
+      exception: "e-Stamp paper detected but not verified via official portal"
+      cp: "Verify e-Stamp authenticity via government portal"
+      evidence_required: "Screenshot of e-Stamp verification from official portal"
+      resolution_conditions: "Complete e-Stamp verification and attach portal confirmation"
+
+  - id: "REG-VERIFY-01"
+    module: "External Verification"
+    severity: "Medium"
+    evaluator: "verification_check"
+    description: "Registry/ROD must be verified via official portal"
+    inputs:
+      verification_type: "registry_rod"
+      dossier_keys: ["registry.number", "registry.year", "rod.number"]
+      keywords: ["registry", "registered deed", "registration", "sub-registrar", "rod", "record of rights"]
+    logic:
+      require_verification: true
+      auto_satisfy_when_verified: true
+    outputs:
+      title: "Registry/ROD Verification Required"
+      exception: "Registry or ROD detected but not verified via official portal"
+      cp: "Verify Registry/ROD authenticity via government portal"
+      evidence_required: "Screenshot of Registry verification from official portal"
+      resolution_conditions: "Complete Registry verification and attach portal confirmation"

@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir fastapi uvicorn[standard] "pydantic[email]" pydantic-settings sqlalchemy psycopg[binary] alembic redis celery pyjwt python-multipart boto3 pypdf reportlab pytesseract pillow pdf2image
+RUN pip install --no-cache-dir fastapi uvicorn[standard] "pydantic[email]" pydantic-settings sqlalchemy psycopg[binary] alembic redis celery pyjwt python-multipart boto3 pypdf reportlab pytesseract pillow pdf2image pyyaml
 
 COPY app ./app
 COPY alembic.ini ./

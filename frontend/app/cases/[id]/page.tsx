@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   getToken,
@@ -13,10 +13,14 @@ import {
   extractDossier,
   getDossier,
   updateDossierField,
-  updateDocType,
+  evaluateCase,
+  listExceptions,
+  listCPs,
+  resolveException,
+  waiveException,
 } from '@/lib/api';
 
-type Tab = 'documents' | 'dossier';
+type Tab = 'documents' | 'dossier' | 'exceptions';
 
 export default function CaseDetailPage() {
   const params = useParams();
@@ -26,12 +30,18 @@ export default function CaseDetailPage() {
   const [caseData, setCaseData] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [dossier, setDossier] = useState<any>(null);
+  const [exceptions, setExceptions] = useState<any>(null);
+  const [cps, setCps] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<Tab>('documents');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [ocrStatus, setOcrStatus] = useState<any>(null);
+  const [selectedExc, setSelectedExc] = useState<any>(null);
+  const [waiverReason, setWaiverReason] = useState('');
+  const [userRole, setUserRole] = useState('Reviewer');
 
   useEffect(() => {
     checkAuthAndLoad();
@@ -43,6 +53,11 @@ export default function CaseDetailPage() {
       router.push('/');
       return;
     }
+    // Decode role from token (simple decode, not verify)
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      setUserRole(payload.role || 'Reviewer');
+    } catch {}
     await loadCase();
   };
 
@@ -71,9 +86,24 @@ export default function CaseDetailPage() {
     }
   };
 
+  const loadExceptionsAndCPs = async () => {
+    try {
+      const [exc, cp] = await Promise.all([
+        listExceptions(caseId),
+        listCPs(caseId),
+      ]);
+      setExceptions(exc);
+      setCps(cp);
+    } catch (e: any) {
+      console.error('Failed to load exceptions:', e);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'dossier') {
       loadDossier();
+    } else if (activeTab === 'exceptions') {
+      loadExceptionsAndCPs();
     }
   }, [activeTab, caseId]);
 
@@ -104,7 +134,6 @@ export default function CaseDetailPage() {
     try {
       await enqueueOcr(docId);
       setError('');
-      // Start polling for status
       pollOcrStatus(docId);
     } catch (e: any) {
       setError(e.message);
@@ -115,7 +144,6 @@ export default function CaseDetailPage() {
     try {
       const status = await getOcrStatus(docId);
       setOcrStatus(status);
-      // Continue polling if not all done/failed
       const pending = (status.status_counts.NotStarted || 0) + 
                       (status.status_counts.Queued || 0) + 
                       (status.status_counts.Processing || 0);
@@ -156,6 +184,47 @@ export default function CaseDetailPage() {
     }
   };
 
+  const handleEvaluate = async () => {
+    setEvaluating(true);
+    setError('');
+    try {
+      await evaluateCase(caseId);
+      await loadExceptionsAndCPs();
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setEvaluating(false);
+    }
+  };
+
+  const handleResolve = async (excId: string) => {
+    try {
+      await resolveException(excId);
+      await loadExceptionsAndCPs();
+      setSelectedExc(null);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handleWaive = async (excId: string) => {
+    if (!waiverReason.trim()) {
+      setError('Waiver reason is required');
+      return;
+    }
+    try {
+      await waiveException(excId, waiverReason);
+      await loadExceptionsAndCPs();
+      setSelectedExc(null);
+      setWaiverReason('');
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const canWaive = userRole === 'Admin' || userRole === 'Approver';
+  const canResolve = userRole === 'Admin' || userRole === 'Approver' || userRole === 'Reviewer';
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -176,6 +245,7 @@ export default function CaseDetailPage() {
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-400 p-3 rounded mb-4">
           {error}
+          <button onClick={() => setError('')} className="float-right">×</button>
         </div>
       )}
 
@@ -193,12 +263,20 @@ export default function CaseDetailPage() {
         >
           Dossier
         </button>
+        <button
+          onClick={() => setActiveTab('exceptions')}
+          className={`pb-3 px-1 ${activeTab === 'exceptions' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+        >
+          Exceptions & CPs
+          {exceptions && exceptions.open_count > 0 && (
+            <span className="ml-2 badge badge-error">{exceptions.open_count}</span>
+          )}
+        </button>
       </div>
 
       {/* Documents Tab */}
       {activeTab === 'documents' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Document List */}
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Documents</h2>
@@ -246,12 +324,10 @@ export default function CaseDetailPage() {
             )}
           </div>
 
-          {/* Document Detail / OCR */}
           <div className="card">
             {selectedDoc ? (
               <>
                 <h2 className="text-lg font-semibold mb-4">{selectedDoc.original_filename}</h2>
-                
                 <div className="space-y-4">
                   <div>
                     <span className="text-slate-400 text-sm">Status: </span>
@@ -262,22 +338,17 @@ export default function CaseDetailPage() {
                       {selectedDoc.status}
                     </span>
                   </div>
-
                   <div>
                     <span className="text-slate-400 text-sm">Pages: </span>
                     <span>{selectedDoc.page_count || 0}</span>
                   </div>
 
                   {selectedDoc.status === 'Split' && (
-                    <button
-                      onClick={() => handleRunOcr(selectedDoc.id)}
-                      className="btn btn-primary"
-                    >
+                    <button onClick={() => handleRunOcr(selectedDoc.id)} className="btn btn-primary">
                       Run OCR
                     </button>
                   )}
 
-                  {/* OCR Status */}
                   {ocrStatus && (
                     <div className="mt-4">
                       <h3 className="font-medium mb-2">OCR Status</h3>
@@ -292,29 +363,12 @@ export default function CaseDetailPage() {
                           </span>
                         ))}
                       </div>
-                      
-                      <div className="max-h-60 overflow-y-auto space-y-1">
-                        {ocrStatus.pages.map((page: any) => (
-                          <div key={page.page_number} className="flex items-center gap-2 text-sm">
-                            <span className="w-16">Page {page.page_number}</span>
-                            <span className={`badge ${
-                              page.status === 'Done' ? 'badge-success' :
-                              page.status === 'Failed' ? 'badge-error' :
-                              page.status === 'Processing' ? 'badge-info' : 'badge-neutral'
-                            }`}>
-                              {page.status}
-                            </span>
-                            {page.has_text && <span className="text-green-400">✓ Text</span>}
-                            {page.error && <span className="text-red-400 text-xs">{page.error}</span>}
-                          </div>
-                        ))}
-                      </div>
                     </div>
                   )}
                 </div>
               </>
             ) : (
-              <p className="text-slate-400">Select a document to view details and run OCR.</p>
+              <p className="text-slate-400">Select a document to view details.</p>
             )}
           </div>
         </div>
@@ -338,12 +392,9 @@ export default function CaseDetailPage() {
           </div>
 
           {!dossier || dossier.fields.length === 0 ? (
-            <p className="text-slate-400">
-              No dossier fields yet. Upload documents, run OCR, then extract.
-            </p>
+            <p className="text-slate-400">No dossier fields yet.</p>
           ) : (
             <div className="space-y-6">
-              {/* Group fields by category */}
               {['party', 'property', 'risk'].map((category) => {
                 const categoryFields = dossier.fields.filter((f: any) => 
                   f.field_key.startsWith(category)
@@ -352,33 +403,21 @@ export default function CaseDetailPage() {
 
                 return (
                   <div key={category}>
-                    <h3 className="text-sm font-semibold text-cyan-400 uppercase mb-3">
-                      {category}
-                    </h3>
+                    <h3 className="text-sm font-semibold text-cyan-400 uppercase mb-3">{category}</h3>
                     <div className="space-y-2">
                       {categoryFields.map((field: any) => (
                         <div key={field.id} className="flex items-center gap-3 p-3 bg-slate-700 rounded">
                           <div className="flex-1">
                             <p className="text-sm text-slate-400">{field.field_key}</p>
                             <p className="font-medium">{field.field_value || '—'}</p>
-                            {field.confidence && (
-                              <p className="text-xs text-slate-500">
-                                Confidence: {(field.confidence * 100).toFixed(0)}%
-                              </p>
-                            )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            {field.needs_confirmation ? (
-                              <button
-                                onClick={() => handleConfirmField(field.field_key)}
-                                className="btn btn-primary text-sm py-1"
-                              >
-                                Confirm
-                              </button>
-                            ) : (
-                              <span className="badge badge-success">Confirmed</span>
-                            )}
-                          </div>
+                          {field.needs_confirmation ? (
+                            <button onClick={() => handleConfirmField(field.field_key)} className="btn btn-primary text-sm py-1">
+                              Confirm
+                            </button>
+                          ) : (
+                            <span className="badge badge-success">Confirmed</span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -389,7 +428,209 @@ export default function CaseDetailPage() {
           )}
         </div>
       )}
+
+      {/* Exceptions & CPs Tab */}
+      {activeTab === 'exceptions' && (
+        <div className="space-y-6">
+          {/* Evaluate Button & Summary */}
+          <div className="card">
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-semibold">Rule Evaluation</h2>
+                {exceptions && (
+                  <div className="flex gap-3 mt-2">
+                    <span className="badge badge-error">High: {exceptions.high_count}</span>
+                    <span className="badge badge-warning">Medium: {exceptions.medium_count}</span>
+                    <span className="badge badge-info">Low: {exceptions.low_count}</span>
+                    <span className="text-slate-400">|</span>
+                    <span className="text-slate-400">Open: {exceptions.open_count}</span>
+                    <span className="text-green-400">Resolved: {exceptions.resolved_count}</span>
+                    <span className="text-yellow-400">Waived: {exceptions.waived_count}</span>
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={handleEvaluate} 
+                className="btn btn-primary"
+                disabled={evaluating}
+              >
+                {evaluating ? 'Evaluating...' : 'Evaluate Rules'}
+              </button>
+            </div>
+          </div>
+
+          {/* Exceptions List */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card">
+              <h3 className="font-semibold mb-4">Exceptions</h3>
+              {!exceptions || exceptions.exceptions.length === 0 ? (
+                <p className="text-slate-400">No exceptions. Run evaluation first.</p>
+              ) : (
+                <ul className="space-y-2 max-h-96 overflow-y-auto">
+                  {exceptions.exceptions.map((exc: any) => (
+                    <li
+                      key={exc.id}
+                      onClick={() => setSelectedExc(exc)}
+                      className={`p-3 rounded cursor-pointer transition-colors ${
+                        selectedExc?.id === exc.id ? 'bg-cyan-500/20 border border-cyan-500' : 'bg-slate-700 hover:bg-slate-600'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium">{exc.title}</p>
+                          <p className="text-sm text-slate-400">{exc.module} • {exc.rule_id}</p>
+                        </div>
+                        <div className="flex gap-1">
+                          <span className={`badge ${
+                            exc.severity === 'High' ? 'badge-error' :
+                            exc.severity === 'Medium' ? 'badge-warning' : 'badge-info'
+                          }`}>
+                            {exc.severity}
+                          </span>
+                          <span className={`badge ${
+                            exc.status === 'Open' ? 'badge-neutral' :
+                            exc.status === 'Resolved' ? 'badge-success' : 'badge-warning'
+                          }`}>
+                            {exc.status}
+                          </span>
+                        </div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Exception Detail */}
+            <div className="card">
+              {selectedExc ? (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-semibold">{selectedExc.title}</h3>
+                    <span className={`badge ${
+                      selectedExc.severity === 'High' ? 'badge-error' :
+                      selectedExc.severity === 'Medium' ? 'badge-warning' : 'badge-info'
+                    }`}>
+                      {selectedExc.severity}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <p className="text-slate-400 text-sm">Module</p>
+                    <p>{selectedExc.module}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-slate-400 text-sm">Description</p>
+                    <p>{selectedExc.description || '—'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-slate-400 text-sm">Condition Precedent</p>
+                    <p>{selectedExc.cp_text || '—'}</p>
+                  </div>
+                  
+                  <div>
+                    <p className="text-slate-400 text-sm">Resolution Conditions</p>
+                    <p>{selectedExc.resolution_conditions || '—'}</p>
+                  </div>
+
+                  {selectedExc.evidence_refs && selectedExc.evidence_refs.length > 0 && (
+                    <div>
+                      <p className="text-slate-400 text-sm mb-2">Evidence References</p>
+                      <ul className="space-y-1">
+                        {selectedExc.evidence_refs.map((ref: any) => (
+                          <li key={ref.id} className="text-sm bg-slate-600 p-2 rounded">
+                            Doc: {ref.document_id?.substring(0, 8)}... 
+                            {ref.page_number && ` • Page ${ref.page_number}`}
+                            {ref.note && ` • ${ref.note}`}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedExc.status === 'Open' && (
+                    <div className="space-y-3 pt-4 border-t border-slate-600">
+                      {canResolve && (
+                        <button 
+                          onClick={() => handleResolve(selectedExc.id)}
+                          className="btn btn-primary w-full"
+                        >
+                          Mark as Resolved
+                        </button>
+                      )}
+                      
+                      {canWaive && (
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="Waiver reason..."
+                            value={waiverReason}
+                            onChange={(e) => setWaiverReason(e.target.value)}
+                            className="input w-full"
+                          />
+                          <button 
+                            onClick={() => handleWaive(selectedExc.id)}
+                            className="btn btn-secondary w-full"
+                          >
+                            Waive Exception
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedExc.status === 'Waived' && selectedExc.waiver_reason && (
+                    <div className="bg-yellow-500/20 p-3 rounded">
+                      <p className="text-yellow-400 text-sm">Waiver Reason:</p>
+                      <p>{selectedExc.waiver_reason}</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-slate-400">Select an exception to view details.</p>
+              )}
+            </div>
+          </div>
+
+          {/* CPs List */}
+          <div className="card">
+            <h3 className="font-semibold mb-4">
+              Conditions Precedent
+              {cps && <span className="text-slate-400 ml-2">({cps.open_count} open)</span>}
+            </h3>
+            {!cps || cps.cps.length === 0 ? (
+              <p className="text-slate-400">No conditions precedent.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {cps.cps.map((cp: any) => (
+                  <div key={cp.id} className="p-3 bg-slate-700 rounded">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`badge ${
+                        cp.severity === 'High' ? 'badge-error' :
+                        cp.severity === 'Medium' ? 'badge-warning' : 'badge-info'
+                      }`}>
+                        {cp.severity}
+                      </span>
+                      <span className={`badge ${
+                        cp.status === 'Open' ? 'badge-neutral' :
+                        cp.status === 'Satisfied' ? 'badge-success' : 'badge-warning'
+                      }`}>
+                        {cp.status}
+                      </span>
+                    </div>
+                    <p className="text-sm">{cp.text}</p>
+                    {cp.evidence_required && (
+                      <p className="text-xs text-slate-400 mt-2">Required: {cp.evidence_required}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

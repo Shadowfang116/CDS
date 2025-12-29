@@ -20,6 +20,7 @@ dependencies = [
     "pytesseract",
     "pillow",
     "pdf2image",
+    "pyyaml",
 ]
 
 [build-system]

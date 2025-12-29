@@ -1,3 +1,151 @@
-# Evidence Library
-# Document types and acceptable substitutes will be defined here
+# Evidence Library for Rulepack v1
+# Maps rule_id to acceptable evidence types and substitutes
 
+version: "1.0"
+description: "Evidence options for each rule - document types that satisfy requirements"
+
+evidence_options:
+  # Identity/KYC
+  KYC-01:
+    primary: ["CNIC Copy"]
+    substitutes: ["NICOP", "POC Card", "Passport with CNIC reference"]
+    notes: "Front and back both required"
+  
+  KYC-02:
+    primary: ["Photograph"]
+    substitutes: ["CNIC with clear photo", "Passport photo page"]
+    notes: "Recent passport-size photograph preferred"
+  
+  KYC-03:
+    primary: ["CNIC Copy"]
+    substitutes: ["Attestation letter from employer or bank"]
+    notes: "Must explain discrepancy if multiple CNICs found"
+  
+  KYC-04:
+    primary: ["Name Clarification Affidavit"]
+    substitutes: ["Gazette notification", "Court order for name change"]
+    notes: "Sworn affidavit preferred"
+  
+  KYC-05:
+    primary: ["Salary Slip", "Bank Statement"]
+    substitutes: ["Tax Return", "Employment Letter", "Rental Income Proof"]
+    notes: "Last 3-6 months preferred"
+  
+  KYC-06:
+    primary: ["Current valid document"]
+    substitutes: ["Renewal proof", "New issuance"]
+    notes: "Replace expired documents"
+  
+  KYC-07:
+    primary: ["Utility Bill"]
+    substitutes: ["Rent Agreement", "Property Tax Receipt", "Bank Statement with address"]
+    notes: "Not older than 3 months"
+  
+  KYC-08:
+    primary: ["Sanctions Screening Report"]
+    substitutes: ["Bank's internal screening", "Third-party screening certificate"]
+    notes: "EDD required for PEP"
+  
+  KYC-09:
+    primary: ["Investigation Report"]
+    substitutes: ["Police clearance", "FIA verification"]
+    notes: "Full investigation required"
+  
+  KYC-10:
+    primary: ["Co-applicant CNIC"]
+    substitutes: ["Guarantor NIC", "Co-borrower identification"]
+    notes: "Required only if co-applicant exists"
+
+  # Possession/Notice
+  POS-01:
+    primary: ["Possession Letter"]
+    substitutes: ["Handover Certificate", "Physical possession affidavit", "Allotment with possession note"]
+    notes: "Original preferred"
+  
+  POS-02:
+    primary: ["Legal Opinion"]
+    substitutes: ["Court record search", "Society clearance"]
+    notes: "From panel lawyer"
+  
+  POS-03:
+    primary: ["Site Verification Report"]
+    substitutes: ["Property inspection report", "Photographs with GPS"]
+    notes: "Recent inspection required"
+  
+  POS-04:
+    primary: ["Occupancy Affidavit"]
+    substitutes: ["Lease agreement", "Tenant NOC"]
+    notes: "If property is rented"
+
+  # Society/Approval
+  SOC-01:
+    primary: ["Society NOC"]
+    substitutes: ["Transfer NOC", "No dues certificate with transfer permission"]
+    notes: "Must be on society letterhead"
+  
+  SOC-02:
+    primary: ["Society Registration Certificate"]
+    substitutes: ["LDA/CDA approval letter", "Government gazette notification"]
+    notes: "Verify with authority"
+  
+  SOC-03:
+    primary: ["CLU Certificate"]
+    substitutes: ["Land conversion order", "Revenue record showing residential use"]
+    notes: "Required for agricultural land conversion"
+  
+  SOC-04:
+    primary: ["Encumbrance Certificate"]
+    substitutes: ["Search report from sub-registrar", "Bank lien confirmation letter"]
+    notes: "Last 13 years search preferred"
+  
+  SOC-05:
+    primary: ["Allotment Letter"]
+    substitutes: ["Membership certificate", "Original booking receipt with allotment"]
+    notes: "Original preferred"
+  
+  SOC-06:
+    primary: ["Violation Clearance"]
+    substitutes: ["NOC from building control", "Regularization certificate"]
+    notes: "If violations exist"
+  
+  SOC-07:
+    primary: ["Approved Building Plan"]
+    substitutes: ["Layout approval", "Construction permission"]
+    notes: "From relevant authority"
+  
+  SOC-08:
+    primary: ["Dues Clearance Certificate"]
+    substitutes: ["Payment receipts", "Society statement showing nil balance"]
+    notes: "Recent clearance required"
+
+  # POA/Authority
+  POA-01:
+    primary: ["Registered POA"]
+    substitutes: ["Notarized POA with verification", "Embassy attested POA for overseas"]
+    notes: "Verify registration status"
+  
+  POA-02:
+    primary: ["Legal Opinion on GPA"]
+    substitutes: ["Specific POA for this transaction"]
+    notes: "GPA-based sales have legal risks"
+  
+  POA-03:
+    primary: ["POA Validity Certificate"]
+    substitutes: ["Fresh verification from registrar", "Principal's affirmation"]
+    notes: "Confirm principal is alive and competent"
+  
+  POA-04:
+    primary: ["Board Resolution"]
+    substitutes: ["Shareholder resolution", "Partnership deed authorization"]
+    notes: "For corporate/company transactions"
+
+  # Chain/Timeline
+  CHN-01:
+    primary: ["Complete Chain Documents"]
+    substitutes: ["Legal opinion on title", "Title insurance"]
+    notes: "From original allotment to current owner"
+  
+  CHN-02:
+    primary: ["Succession Certificate"]
+    substitutes: ["Legal heir certificate", "Probate grant"]
+    notes: "With death certificate and heir consent"

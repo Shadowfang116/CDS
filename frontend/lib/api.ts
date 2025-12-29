@@ -124,3 +124,34 @@ export async function updateDossierField(caseId: string, fieldKey: string, field
   });
 }
 
+// Rules
+export async function evaluateCase(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/evaluate`, { method: 'POST' });
+}
+
+export async function listExceptions(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/exceptions`);
+}
+
+export async function listCPs(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/cps`);
+}
+
+export async function getException(exceptionId: string): Promise<any> {
+  return fetchApi(`/exceptions/${exceptionId}`);
+}
+
+export async function resolveException(exceptionId: string): Promise<any> {
+  return fetchApi(`/exceptions/${exceptionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'resolve' }),
+  });
+}
+
+export async function waiveException(exceptionId: string, reason: string): Promise<any> {
+  return fetchApi(`/exceptions/${exceptionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action: 'waive', reason }),
+  });
+}
+

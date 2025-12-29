@@ -1,3 +1,475 @@
-# Rulepack v1
-# Rules will be defined here following the method in 04_rulepack_method.md
+# Bank Diligence Platform - Rulepack v1
+# 28 rules across 5 modules for MVP evaluation
 
+version: "1.0"
+description: "Property loan due diligence rule pack - MVP"
+
+rules:
+  # ============================================================
+  # MODULE: Identity/KYC Consistency (10 rules)
+  # ============================================================
+  
+  - id: "KYC-01"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Borrower CNIC copy must be present in case documents"
+    inputs:
+      doc_types: ["CNIC Copy", "CNIC", "National ID"]
+    logic:
+      required_doc_types: ["CNIC Copy", "CNIC", "National ID"]
+    outputs:
+      title: "Missing Borrower CNIC Document"
+      exception: "No CNIC copy document found in case files"
+      cp: "Obtain and upload certified copy of borrower's CNIC"
+      evidence_required: "CNIC Copy (front and back)"
+      resolution_conditions: "Upload CNIC copy document and verify against application"
+
+  - id: "KYC-02"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Borrower photograph must be present"
+    inputs:
+      doc_types: ["Photograph", "Photo", "Passport Photo"]
+    logic:
+      required_doc_types: ["Photograph", "Photo", "Passport Photo"]
+    outputs:
+      title: "Missing Borrower Photograph"
+      exception: "No photograph document found in case files"
+      cp: "Obtain recent passport-size photograph of borrower"
+      evidence_required: "Recent passport-size photograph"
+      resolution_conditions: "Upload photograph matching CNIC"
+
+  - id: "KYC-03"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "mismatch"
+    description: "CNIC numbers must be consistent across documents"
+    inputs:
+      dossier_keys: ["party.cnic"]
+    logic:
+      compare_all: true
+      field_pattern: "party.cnic"
+    outputs:
+      title: "CNIC Number Mismatch"
+      exception: "Multiple different CNIC numbers found in documents"
+      cp: "Verify and reconcile CNIC discrepancy"
+      evidence_required: "Attestation letter clarifying CNIC"
+      resolution_conditions: "Confirm correct CNIC and document why others differ"
+
+  - id: "KYC-04"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Check for name variation indicators"
+    inputs:
+      keywords: ["alias", "also known as", "a.k.a", "formerly known", "name change"]
+    logic:
+      keywords_any: ["alias", "also known as", "a.k.a", "formerly known", "name change"]
+    outputs:
+      title: "Name Variation Detected"
+      exception: "Documents indicate borrower may use alternate names"
+      cp: "Obtain name clarification affidavit"
+      evidence_required: "Sworn affidavit explaining name variations"
+      resolution_conditions: "Verify all name variations are documented"
+
+  - id: "KYC-05"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Proof of income must be present"
+    inputs:
+      doc_types: ["Salary Slip", "Income Certificate", "Bank Statement", "Tax Return", "Employment Letter"]
+    logic:
+      required_doc_types: ["Salary Slip", "Income Certificate", "Bank Statement", "Tax Return", "Employment Letter"]
+    outputs:
+      title: "Missing Income Verification"
+      exception: "No income verification document found in case files"
+      cp: "Obtain income verification documents"
+      evidence_required: "Salary slip (last 3 months) OR bank statement (last 6 months)"
+      resolution_conditions: "Upload income verification and verify adequacy"
+
+  - id: "KYC-06"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Check for expired document references"
+    inputs:
+      keywords: ["expired", "invalid", "outdated", "no longer valid"]
+    logic:
+      keywords_any: ["expired", "invalid", "outdated", "no longer valid"]
+    outputs:
+      title: "Expired Document Reference"
+      exception: "Documents may reference expired credentials"
+      cp: "Verify and replace expired documents"
+      evidence_required: "Current valid versions of any expired documents"
+      resolution_conditions: "Confirm all documents are current and valid"
+
+  - id: "KYC-07"
+    module: "Identity/KYC"
+    severity: "Low"
+    evaluator: "missing_evidence"
+    description: "Utility bill for address verification"
+    inputs:
+      doc_types: ["Utility Bill", "Electricity Bill", "Gas Bill", "Water Bill"]
+    logic:
+      required_doc_types: ["Utility Bill", "Electricity Bill", "Gas Bill", "Water Bill"]
+    outputs:
+      title: "Missing Address Proof"
+      exception: "No utility bill for address verification"
+      cp: "Obtain utility bill not older than 3 months"
+      evidence_required: "Recent utility bill in borrower's name"
+      resolution_conditions: "Upload utility bill matching declared address"
+
+  - id: "KYC-08"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Sanctions or PEP indicators"
+    inputs:
+      keywords: ["sanction", "blacklist", "pep", "politically exposed", "watchlist", "restricted"]
+    logic:
+      keywords_any: ["sanction", "blacklist", "pep", "politically exposed", "watchlist", "restricted"]
+    outputs:
+      title: "Sanctions/PEP Risk Indicator"
+      exception: "Documents contain sanctions or PEP-related keywords"
+      cp: "Conduct enhanced due diligence"
+      evidence_required: "Sanctions screening report and PEP verification"
+      resolution_conditions: "Complete EDD and document findings"
+
+  - id: "KYC-09"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Fraud risk indicators in documents"
+    inputs:
+      keywords: ["fraud", "forgery", "fake", "counterfeit", "tampered", "altered"]
+    logic:
+      keywords_any: ["fraud", "forgery", "fake", "counterfeit", "tampered", "altered"]
+    outputs:
+      title: "Fraud Risk Indicator"
+      exception: "Documents contain fraud-related keywords"
+      cp: "Investigate and document fraud risk findings"
+      evidence_required: "Investigation report and verification"
+      resolution_conditions: "Complete investigation and clear fraud concerns"
+
+  - id: "KYC-10"
+    module: "Identity/KYC"
+    severity: "Low"
+    evaluator: "missing_evidence"
+    description: "Co-applicant CNIC if applicable"
+    inputs:
+      doc_types: ["Co-applicant CNIC", "Guarantor CNIC", "Co-borrower ID"]
+    logic:
+      required_doc_types: ["Co-applicant CNIC", "Guarantor CNIC", "Co-borrower ID"]
+    outputs:
+      title: "Missing Co-applicant Identification"
+      exception: "No co-applicant/guarantor identification found"
+      cp: "Obtain co-applicant/guarantor CNIC if applicable"
+      evidence_required: "Co-applicant CNIC copy"
+      resolution_conditions: "Confirm whether co-applicant exists and upload ID if so"
+
+  # ============================================================
+  # MODULE: Possession & Notice (4 rules)
+  # ============================================================
+
+  - id: "POS-01"
+    module: "Possession/Notice"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Possession certificate or handover letter"
+    inputs:
+      doc_types: ["Possession Letter", "Handover Certificate", "Possession Certificate", "Allotment Letter"]
+    logic:
+      required_doc_types: ["Possession Letter", "Handover Certificate", "Possession Certificate", "Allotment Letter"]
+    outputs:
+      title: "Missing Possession Documentation"
+      exception: "No possession certificate or handover documentation found"
+      cp: "Obtain possession letter from society/developer"
+      evidence_required: "Original possession letter or certified copy"
+      resolution_conditions: "Upload possession documentation with society verification"
+
+  - id: "POS-02"
+    module: "Possession/Notice"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Dispute or objection indicators"
+    inputs:
+      keywords: ["dispute", "objection", "contested", "claim", "litigation", "court order", "stay order"]
+    logic:
+      keywords_any: ["dispute", "objection", "contested", "claim", "litigation", "court order", "stay order"]
+    outputs:
+      title: "Possession Dispute Indicator"
+      exception: "Documents indicate potential possession dispute"
+      cp: "Obtain legal opinion on possession status"
+      evidence_required: "Legal opinion letter and court record search"
+      resolution_conditions: "Clear dispute or document acceptable risk"
+
+  - id: "POS-03"
+    module: "Possession/Notice"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Property site verification report"
+    inputs:
+      doc_types: ["Site Report", "Site Verification", "Property Inspection", "Physical Verification"]
+    logic:
+      required_doc_types: ["Site Report", "Site Verification", "Property Inspection", "Physical Verification"]
+    outputs:
+      title: "Missing Site Verification"
+      exception: "No site/property verification report found"
+      cp: "Conduct physical site verification"
+      evidence_required: "Site verification report with photographs"
+      resolution_conditions: "Upload verification report confirming physical possession"
+
+  - id: "POS-04"
+    module: "Possession/Notice"
+    severity: "Low"
+    evaluator: "keyword_risk"
+    description: "Tenant or third-party occupation"
+    inputs:
+      keywords: ["tenant", "rented", "leased", "occupied by", "third party", "sublease"]
+    logic:
+      keywords_any: ["tenant", "rented", "leased", "occupied by", "third party", "sublease"]
+    outputs:
+      title: "Third-Party Occupation Indicator"
+      exception: "Documents indicate property may be occupied by third party"
+      cp: "Verify current occupation status"
+      evidence_required: "Affidavit confirming possession or lease agreement"
+      resolution_conditions: "Document occupancy status and obtain NOC if needed"
+
+  # ============================================================
+  # MODULE: Society Approval Risk (8 rules)
+  # ============================================================
+
+  - id: "SOC-01"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Society NOC or approval letter"
+    inputs:
+      doc_types: ["Society NOC", "NOC", "No Objection Certificate", "Society Approval", "Transfer NOC"]
+    logic:
+      required_doc_types: ["Society NOC", "NOC", "No Objection Certificate", "Society Approval", "Transfer NOC"]
+    outputs:
+      title: "Missing Society NOC"
+      exception: "No society NOC or approval letter found"
+      cp: "Obtain NOC from housing society"
+      evidence_required: "Original society NOC with seal and signature"
+      resolution_conditions: "Upload NOC and verify society registration"
+
+  - id: "SOC-02"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Unapproved or illegal society indicators"
+    inputs:
+      keywords: ["unapproved", "illegal", "not registered", "unauthorized", "unregistered society", "disputed land"]
+    logic:
+      keywords_any: ["unapproved", "illegal", "not registered", "unauthorized", "unregistered society", "disputed land"]
+    outputs:
+      title: "Unapproved Society Risk"
+      exception: "Documents indicate society may not be approved/registered"
+      cp: "Verify society registration with relevant authority"
+      evidence_required: "Society registration certificate from LDA/CDA/RDA"
+      resolution_conditions: "Confirm society is registered and approved"
+
+  - id: "SOC-03"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Land conversion or CLU certificate"
+    inputs:
+      doc_types: ["CLU", "Land Conversion", "Change of Land Use", "Conversion Certificate"]
+    logic:
+      required_doc_types: ["CLU", "Land Conversion", "Change of Land Use", "Conversion Certificate"]
+    outputs:
+      title: "Missing Land Conversion Certificate"
+      exception: "No CLU or land conversion documentation"
+      cp: "Obtain land conversion certificate if applicable"
+      evidence_required: "CLU certificate from revenue authority"
+      resolution_conditions: "Verify land use is appropriate for residential mortgage"
+
+  - id: "SOC-04"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Encumbrance or lien indicators"
+    inputs:
+      keywords: ["encumbrance", "lien", "mortgage", "charge", "hypothecation", "security interest"]
+    logic:
+      keywords_any: ["encumbrance", "lien", "mortgage", "charge", "hypothecation", "security interest"]
+    outputs:
+      title: "Prior Encumbrance Indicator"
+      exception: "Documents indicate property may have prior encumbrances"
+      cp: "Obtain encumbrance certificate"
+      evidence_required: "Search report from sub-registrar office"
+      resolution_conditions: "Clear encumbrances or obtain subordination"
+
+  - id: "SOC-05"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Allotment letter from society"
+    inputs:
+      doc_types: ["Allotment Letter", "Plot Allotment", "Membership Letter", "Allotment Certificate"]
+    logic:
+      required_doc_types: ["Allotment Letter", "Plot Allotment", "Membership Letter", "Allotment Certificate"]
+    outputs:
+      title: "Missing Allotment Letter"
+      exception: "No original allotment letter found"
+      cp: "Obtain original allotment letter from society"
+      evidence_required: "Original allotment letter or certified copy"
+      resolution_conditions: "Upload allotment letter and verify with society records"
+
+  - id: "SOC-06"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Development authority notice or violation"
+    inputs:
+      keywords: ["violation", "notice", "demolition", "unauthorized construction", "building violation", "illegal construction"]
+    logic:
+      keywords_any: ["violation", "notice", "demolition", "unauthorized construction", "building violation", "illegal construction"]
+    outputs:
+      title: "Building Violation Indicator"
+      exception: "Documents indicate potential building violations"
+      cp: "Obtain status of any pending violations"
+      evidence_required: "Clearance certificate or violation status report"
+      resolution_conditions: "Clear violations or document acceptable risk"
+
+  - id: "SOC-07"
+    module: "Society/Approval"
+    severity: "Low"
+    evaluator: "missing_evidence"
+    description: "Approved building plan"
+    inputs:
+      doc_types: ["Building Plan", "Approved Plan", "Construction Plan", "Layout Plan"]
+    logic:
+      required_doc_types: ["Building Plan", "Approved Plan", "Construction Plan", "Layout Plan"]
+    outputs:
+      title: "Missing Approved Building Plan"
+      exception: "No approved building plan found in documents"
+      cp: "Obtain approved building plan from authority"
+      evidence_required: "Approved building plan with authority stamp"
+      resolution_conditions: "Upload plan and verify approval status"
+
+  - id: "SOC-08"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Society dues or outstanding payments"
+    inputs:
+      keywords: ["outstanding", "dues", "arrears", "unpaid", "defaulter", "pending payment"]
+    logic:
+      keywords_any: ["outstanding", "dues", "arrears", "unpaid", "defaulter", "pending payment"]
+    outputs:
+      title: "Outstanding Society Dues"
+      exception: "Documents indicate unpaid society dues or arrears"
+      cp: "Obtain payment clearance from society"
+      evidence_required: "Dues clearance certificate from society"
+      resolution_conditions: "Clear outstanding dues and upload receipt"
+
+  # ============================================================
+  # MODULE: POA Risk (4 rules)
+  # ============================================================
+
+  - id: "POA-01"
+    module: "POA/Authority"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Power of Attorney involvement"
+    inputs:
+      keywords: ["power of attorney", "poa", "attorney", "authorized representative", "general power"]
+    logic:
+      keywords_any: ["power of attorney", "poa", "attorney", "authorized representative", "general power"]
+    outputs:
+      title: "POA Transaction Detected"
+      exception: "Transaction involves Power of Attorney"
+      cp: "Verify POA validity and authority"
+      evidence_required: "Registered POA with verification from registrar"
+      resolution_conditions: "Verify POA is valid, registered, and specifically authorizes this transaction"
+
+  - id: "POA-02"
+    module: "POA/Authority"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "GPA (General Power of Attorney) risk"
+    inputs:
+      keywords: ["general power of attorney", "gpa", "irrevocable poa", "special power"]
+    logic:
+      keywords_any: ["general power of attorney", "gpa", "irrevocable poa", "special power"]
+    outputs:
+      title: "GPA-Based Transaction Risk"
+      exception: "Transaction may be based on General Power of Attorney"
+      cp: "Obtain legal opinion on GPA validity"
+      evidence_required: "Legal opinion on POA scope and validity"
+      resolution_conditions: "Confirm legal enforceability and specific authority"
+
+  - id: "POA-03"
+    module: "POA/Authority"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "POA revocation or expiry risk"
+    inputs:
+      keywords: ["revoked", "cancelled", "expired poa", "revocation", "death of principal"]
+    logic:
+      keywords_any: ["revoked", "cancelled", "expired poa", "revocation", "death of principal"]
+    outputs:
+      title: "POA Validity Risk"
+      exception: "Documents indicate POA may be revoked or expired"
+      cp: "Verify current POA status"
+      evidence_required: "Fresh verification of POA validity from registrar"
+      resolution_conditions: "Confirm POA is currently valid and not revoked"
+
+  - id: "POA-04"
+    module: "POA/Authority"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Board resolution for company transactions"
+    inputs:
+      doc_types: ["Board Resolution", "Company Resolution", "Corporate Authorization"]
+    logic:
+      required_doc_types: ["Board Resolution", "Company Resolution", "Corporate Authorization"]
+    outputs:
+      title: "Missing Corporate Authorization"
+      exception: "No board resolution for company/corporate transaction"
+      cp: "Obtain board resolution authorizing transaction"
+      evidence_required: "Certified board resolution with company seal"
+      resolution_conditions: "Upload resolution and verify signing authority"
+
+  # ============================================================
+  # MODULE: Chain/Timeline Gaps (2 rules)
+  # ============================================================
+
+  - id: "CHN-01"
+    module: "Chain/Timeline"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Chain of title break indicators"
+    inputs:
+      keywords: ["break in chain", "missing link", "gap in title", "unregistered transfer", "undocumented sale"]
+    logic:
+      keywords_any: ["break in chain", "missing link", "gap in title", "unregistered transfer", "undocumented sale"]
+    outputs:
+      title: "Title Chain Break Indicator"
+      exception: "Documents indicate potential break in chain of title"
+      cp: "Obtain complete chain of title documentation"
+      evidence_required: "All transfer documents from original allotment"
+      resolution_conditions: "Document complete chain or obtain legal opinion"
+
+  - id: "CHN-02"
+    module: "Chain/Timeline"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Inheritance or succession indicators"
+    inputs:
+      keywords: ["inheritance", "succession", "deceased", "legal heir", "death certificate", "succession certificate"]
+    logic:
+      keywords_any: ["inheritance", "succession", "deceased", "legal heir", "death certificate", "succession certificate"]
+    outputs:
+      title: "Inheritance/Succession Transaction"
+      exception: "Property may have passed through inheritance"
+      cp: "Obtain succession documentation"
+      evidence_required: "Succession certificate or legal heir certificate and death certificate"
+      resolution_conditions: "Document succession chain and verify all heirs have consented"

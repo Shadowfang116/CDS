@@ -3,6 +3,11 @@ from app.models.user import User, UserOrgRole
 from app.models.case import Case
 from app.models.audit_log import AuditLog
 from app.models.document import Document, DocumentPage, CaseDossierField
+from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun
 
-__all__ = ["Org", "User", "UserOrgRole", "Case", "AuditLog", "Document", "DocumentPage", "CaseDossierField"]
+__all__ = [
+    "Org", "User", "UserOrgRole", "Case", "AuditLog", 
+    "Document", "DocumentPage", "CaseDossierField",
+    "Exception_", "ConditionPrecedent", "ExceptionEvidenceRef", "RuleRun",
+]
 

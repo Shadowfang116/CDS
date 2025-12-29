@@ -17,6 +17,9 @@ dependencies = [
     "boto3",
     "pypdf",
     "reportlab",
+    "pytesseract",
+    "pillow",
+    "pdf2image",
 ]
 
 [build-system]

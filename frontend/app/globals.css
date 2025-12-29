@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent: #22d3ee;
+  --accent-hover: #06b6d4;
+  --danger: #f87171;
+  --success: #4ade80;
+  --warning: #fbbf24;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.card {
+  @apply bg-slate-800 rounded-lg border border-slate-700 p-4;
+}
+
+.btn {
+  @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+}
+
+.btn-primary {
+  @apply bg-cyan-500 text-slate-900 hover:bg-cyan-400;
+}
+
+.btn-secondary {
+  @apply bg-slate-700 text-slate-200 hover:bg-slate-600;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white hover:bg-red-400;
+}
+
+.input {
+  @apply bg-slate-700 border border-slate-600 rounded-md px-3 py-2 text-slate-100 
+         placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent;
+}
+
+.badge {
+  @apply px-2 py-1 rounded text-xs font-medium;
+}
+
+.badge-success {
+  @apply bg-green-500/20 text-green-400;
+}
+
+.badge-warning {
+  @apply bg-yellow-500/20 text-yellow-400;
+}
+
+.badge-error {
+  @apply bg-red-500/20 text-red-400;
+}
+
+.badge-info {
+  @apply bg-cyan-500/20 text-cyan-400;
+}
+
+.badge-neutral {
+  @apply bg-slate-600 text-slate-300;
+}
+

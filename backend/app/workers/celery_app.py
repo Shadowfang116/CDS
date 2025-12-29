@@ -11,6 +11,7 @@ celery_app = Celery(
     "bank_diligence_platform",
     broker=broker_url,
     backend=broker_url,
+    include=["app.workers.tasks_ocr"],
 )
 
 

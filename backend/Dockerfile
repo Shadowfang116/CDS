@@ -1,11 +1,16 @@
 FROM python:3.12-slim
 
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    curl \
+    tesseract-ocr \
+    poppler-utils \
+    fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY pyproject.toml ./
-RUN pip install --no-cache-dir fastapi uvicorn[standard] "pydantic[email]" pydantic-settings sqlalchemy psycopg[binary] alembic redis celery pyjwt python-multipart boto3 pypdf reportlab
+RUN pip install --no-cache-dir fastapi uvicorn[standard] "pydantic[email]" pydantic-settings sqlalchemy psycopg[binary] alembic redis celery pyjwt python-multipart boto3 pypdf reportlab pytesseract pillow pdf2image
 
 COPY app ./app
 COPY alembic.ini ./

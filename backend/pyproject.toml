@@ -5,13 +5,15 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
-    "pydantic",
+    "pydantic[email]",
     "pydantic-settings",
     "sqlalchemy",
     "psycopg[binary]",
     "alembic",
     "redis",
     "celery",
+    "pyjwt",
+    "python-multipart",
 ]
 
 [build-system]

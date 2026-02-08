@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.case import Case
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef
+from app.models.cp_evidence import CPEvidenceRef
 from app.api.deps import get_current_user, CurrentUser
 from app.services.audit import write_audit_event
 from app.services.rule_engine import run_rules

@@ -1,15 +1,34 @@
 from fastapi import APIRouter
-from app.api.routes import auth, cases, documents, ocr, dossier, rules, exports, admin, verification
+from app.api.routes import auth, cases, documents, documents_phase10, ocr, ocr_text_corrections, dossier, dossier_autofill, dossier_fields, rules, rules_evidence, exports, admin, verification, dashboard, dashboard_views, case_insights, digests, notifications, approvals, integrations_webhooks, integrations_email, health, ocr_extractions, config, regime, case_controls, exceptions
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router)
 api_router.include_router(cases.router)
 api_router.include_router(documents.router)
+api_router.include_router(documents_phase10.router)
 api_router.include_router(ocr.router)
+api_router.include_router(ocr_text_corrections.router)
 api_router.include_router(dossier.router)
+api_router.include_router(dossier_autofill.router)
+api_router.include_router(dossier_fields.router)
 api_router.include_router(rules.router)
+api_router.include_router(rules_evidence.router)
 api_router.include_router(exports.router)
 api_router.include_router(admin.router)
 api_router.include_router(verification.router)
+api_router.include_router(dashboard.router)
+api_router.include_router(dashboard_views.router)
+api_router.include_router(case_insights.router)
+api_router.include_router(digests.router)
+api_router.include_router(notifications.router)
+api_router.include_router(approvals.router)
+api_router.include_router(integrations_webhooks.router)
+api_router.include_router(integrations_email.router)
+api_router.include_router(health.router)
+api_router.include_router(ocr_extractions.router)
+api_router.include_router(config.router)
+api_router.include_router(regime.router)
+api_router.include_router(case_controls.router)
+api_router.include_router(exceptions.router)
 

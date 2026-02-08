@@ -149,3 +149,24 @@ evidence_options:
     primary: ["Succession Certificate"]
     substitutes: ["Legal heir certificate", "Probate grant"]
     notes: "With death certificate and heir consent"
+
+  # DHA Transfer/Acquisition
+  DHA-01:
+    primary: ["DHA NDC"]
+    substitutes: ["No Dues Certificate from DHA", "DHA clearance certificate"]
+    notes: "Original preferred, verify with DHA office"
+
+  DHA-02:
+    primary: ["Site Plan"]
+    substitutes: ["Layout plan from DHA", "Approved site plan"]
+    notes: "Must be from DHA or approved authority"
+
+  DHA-03:
+    primary: ["Approved Map", "Approved Drawing"]
+    substitutes: ["Building plan approval", "Construction approval map"]
+    notes: "Required only for constructed properties"
+
+  DHA-04:
+    primary: ["Completion Certificate"]
+    substitutes: ["Building completion certificate", "Occupancy certificate"]
+    notes: "Required only for constructed properties"

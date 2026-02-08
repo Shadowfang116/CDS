@@ -1,0 +1,7 @@
+      field_key      |             document_id              | document_name | page_number | confidence | proposed_value 
+---------------------+--------------------------------------+---------------+-------------+------------+----------------
+ party.buyer.names   | 8fa48b2d-c169-450e-8b16-8855b6a83def | sale_deed.pdf |           1 |       0.85 | ┘à╪¡┘à╪» ╪╣┘ä█î
+ party.seller.names  | 8fa48b2d-c169-450e-8b16-8855b6a83def | sale_deed.pdf |           1 |       0.85 | Page 2 content
+ party.witness.names | 8fa48b2d-c169-450e-8b16-8855b6a83def | sale_deed.pdf |           1 |       0.65 | ╪º╪¡┘à╪» ╪▒╪╢╪º
+(3 rows)
+

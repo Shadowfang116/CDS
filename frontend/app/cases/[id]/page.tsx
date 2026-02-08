@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   getToken,
   getCase,
@@ -14,6 +14,7 @@ import {
   extractDossier,
   getDossier,
   updateDossierField,
+  autofillDossier,
   evaluateCase,
   listExceptions,
   listCPs,
@@ -30,17 +31,28 @@ import {
   attachVerificationEvidence,
   markVerificationVerified,
   markVerificationFailed,
+  getCaseInsights,
+  CaseInsightsResponse,
+  ApiError,
+  getCaseControls,
+  CaseControlsResponse,
 } from '@/lib/api';
+import { OCRExtractionsPanel } from '@/components/ocr/OCRExtractionsPanel';
+import { CaseControlsCard } from '@/components/case/CaseControlsCard';
+import { DossierFieldsEditor } from '@/components/case/DossierFieldsEditor';
+import { SetPageChrome } from '@/components/layout/set-page-chrome';
 
-type Tab = 'documents' | 'dossier' | 'verification' | 'exceptions' | 'drafts' | 'exports';
+type Tab = 'documents' | 'dossier' | 'ocr-extractions' | 'verification' | 'exceptions' | 'drafts' | 'exports' | 'insights';
 
 export default function CaseDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const caseId = params.id as string;
 
   const [caseData, setCaseData] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [controls, setControls] = useState<CaseControlsResponse | null>(null);
   const [dossier, setDossier] = useState<any>(null);
   const [exceptions, setExceptions] = useState<any>(null);
   const [cps, setCps] = useState<any>(null);
@@ -52,18 +64,77 @@ export default function CaseDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [autofillOverwrite, setAutofillOverwrite] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
+  const [autofillResult, setAutofillResult] = useState<any>(null);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
+  const [focusedDocId, setFocusedDocId] = useState<string | null>(null);
+  const [focusedPage, setFocusedPage] = useState<number | null>(null);
   const [ocrStatus, setOcrStatus] = useState<any>(null);
   const [selectedExc, setSelectedExc] = useState<any>(null);
   const [waiverReason, setWaiverReason] = useState('');
   const [userRole, setUserRole] = useState('Reviewer');
   const [generatedDrafts, setGeneratedDrafts] = useState<any[]>([]);
+  const [insights, setInsights] = useState<CaseInsightsResponse | null>(null);
+  const [insightsDays, setInsightsDays] = useState(30);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const loadedTabsRef = useRef<Set<string>>(new Set());
+  const checkAuthAndLoadRef = useRef<null | (() => void | Promise<void>)>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const focusedPageButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    checkAuthAndLoad();
-  }, [caseId]);
+  // Memoize caseId to prevent unnecessary re-renders
+  const memoizedCaseId = useMemo(() => caseId, [caseId]);
 
-  const checkAuthAndLoad = async () => {
+  const loadCase = useCallback(async () => {
+    // Check if request was aborted
+    if (abortControllerRef.current?.signal.aborted) {
+      return;
+    }
+    
+    setLoading(true);
+    setError(''); // Clear previous errors
+    try {
+      // Load case, documents, and controls in parallel (single source of truth)
+      const [c, docs, ctrls] = await Promise.all([
+        getCase(memoizedCaseId),
+        listDocuments(memoizedCaseId),
+        getCaseControls(memoizedCaseId),
+      ]);
+      
+      // Check if request was aborted before setting state
+      if (abortControllerRef.current?.signal.aborted) {
+        return;
+      }
+      
+      setCaseData(c);
+      setDocuments(docs);
+      setControls(ctrls);
+      setInitialLoadComplete(true); // Mark initial load as complete
+    } catch (e: any) {
+      // Ignore abort errors
+      if (e.name === 'AbortError') {
+        return;
+      }
+      
+      // Handle ApiError with structured details
+      if (e instanceof ApiError) {
+        setError(e.detail || `Failed to load case: ${e.message}`);
+      } else {
+        setError(e.message || 'Failed to load case');
+      }
+      setInitialLoadComplete(true); // Mark as complete even on error
+    } finally {
+      if (!abortControllerRef.current?.signal.aborted) {
+        setLoading(false);
+      }
+    }
+  }, [memoizedCaseId]); // Only recreate if caseId changes
+
+  // Define checkAuthAndLoad after loadCase (depends on loadCase)
+  const checkAuthAndLoad = useCallback(async () => {
     const token = await getToken();
     if (!token) {
       router.push('/');
@@ -74,75 +145,175 @@ export default function CaseDetailPage() {
       setUserRole(payload.role || 'Reviewer');
     } catch {}
     await loadCase();
-  };
+  }, [router, loadCase]);
 
-  const loadCase = async () => {
-    setLoading(true);
-    try {
-      const [c, docs] = await Promise.all([
-        getCase(caseId),
-        listDocuments(caseId),
-      ]);
-      setCaseData(c);
-      setDocuments(docs);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
+  // Keep ref in sync with latest checkAuthAndLoad callback
+  useEffect(() => {
+    checkAuthAndLoadRef.current = checkAuthAndLoad;
+  }, [checkAuthAndLoad]);
+
+  // Separate effect for initial load (only runs when caseId changes)
+  useEffect(() => {
+    // Abort previous request if still in flight
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
-  };
+    
+    // Create new AbortController for this case load
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
+    setInitialLoadComplete(false);
+    loadedTabsRef.current.clear(); // Reset loaded tabs when caseId changes
+    
+    void checkAuthAndLoadRef.current?.();
+    
+    // Cleanup: abort in-flight request on unmount or caseId change
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [memoizedCaseId]);
 
-  const loadDossier = async () => {
+  // Separate effect for URL query params (only runs when searchParams change, after documents are loaded)
+  useEffect(() => {
+    if (!initialLoadComplete || documents.length === 0) return;
+    
+    // P14: Handle URL query params for document/page navigation
+    // Support both old params (docId, page) and new params (focusDocId, focusPage, focusCandidateId)
+    const tabParam = searchParams.get('tab');
+    const docIdParam = searchParams.get('docId') || searchParams.get('focusDocId');
+    const pageParam = searchParams.get('page') || searchParams.get('focusPage');
+    const candidateIdParam = searchParams.get('focusCandidateId');
+    
+    // If focusDocId exists, ensure we're on documents tab
+    if (searchParams.get('focusDocId')) {
+      setActiveTab('documents');
+    } else if (tabParam) {
+      setActiveTab(tabParam as Tab);
+    }
+    
+    if (docIdParam) {
+      const doc = documents.find(d => d.id === docIdParam);
+      if (doc) {
+        setSelectedDoc(doc);
+        setFocusedDocId(docIdParam);
+        if (pageParam) {
+          const pageNum = parseInt(pageParam);
+          if (!isNaN(pageNum) && pageNum > 0) {
+            setFocusedPage(pageNum);
+          } else {
+            setFocusedPage(null);
+          }
+        } else {
+          setFocusedPage(null);
+        }
+      }
+    } else {
+      setFocusedDocId(null);
+      setFocusedPage(null);
+    }
+  }, [searchParams, documents, initialLoadComplete]); // Safe: only runs after initial load
+
+  // Scroll focused page button into view when focus changes
+  useEffect(() => {
+    if (!focusedPage || !focusedDocId || !selectedDoc || focusedDocId !== selectedDoc.id) return;
+    if (typeof window === 'undefined') return; // SSR guard
+    
+    // Wait a bit for DOM to render
+    const timeoutId = setTimeout(() => {
+      const button = document.querySelector(`button[data-page-number="${focusedPage}"]`) as HTMLButtonElement;
+      if (button) {
+        button.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        focusedPageButtonRef.current = button;
+      }
+    }, 100);
+    
+    return () => clearTimeout(timeoutId);
+  }, [focusedPage, focusedDocId, selectedDoc, activeTab]);
+
+  const loadDossier = useCallback(async () => {
     try {
-      const d = await getDossier(caseId);
+      const d = await getDossier(memoizedCaseId);
       setDossier(d);
     } catch (e: any) {
       console.error('Failed to load dossier:', e);
     }
-  };
+  }, [memoizedCaseId]);
 
-  const loadExceptionsAndCPs = async () => {
+  const loadExceptionsAndCPs = useCallback(async () => {
     try {
       const [exc, cp] = await Promise.all([
-        listExceptions(caseId),
-        listCPs(caseId),
+        listExceptions(memoizedCaseId),
+        listCPs(memoizedCaseId),
       ]);
       setExceptions(exc);
       setCps(cp);
     } catch (e: any) {
       console.error('Failed to load exceptions:', e);
     }
-  };
+  }, [memoizedCaseId]);
 
-  const loadExports = async () => {
+  const loadExports = useCallback(async () => {
     try {
-      const exp = await listExports(caseId);
+      const exp = await listExports(memoizedCaseId);
       setExports(exp);
     } catch (e: any) {
       console.error('Failed to load exports:', e);
     }
-  };
+  }, [memoizedCaseId]);
 
-  const loadVerifications = async () => {
+  const loadVerifications = useCallback(async () => {
     try {
-      const v = await listVerifications(caseId);
+      const v = await listVerifications(memoizedCaseId);
       setVerifications(v);
     } catch (e: any) {
       console.error('Failed to load verifications:', e);
     }
-  };
+  }, [memoizedCaseId]);
 
+  const loadInsights = useCallback(async (days: number) => {
+    setInsightsLoading(true);
+    try {
+      const data = await getCaseInsights(memoizedCaseId, days);
+      setInsights(data);
+    } catch (e: any) {
+      console.error('Failed to load insights:', e);
+    } finally {
+      setInsightsLoading(false);
+    }
+  }, [memoizedCaseId]);
+
+  // Tab-based loading: only load data when tab becomes active (and caseId is stable)
+  // Use loadedTabsRef to prevent repeated loads for the same tab
   useEffect(() => {
+    if (!initialLoadComplete) return; // Wait for initial case load
+    
+    const tabKey = `${memoizedCaseId}:${activeTab}`;
+    
+    // Skip if this tab was already loaded for this case
+    if (loadedTabsRef.current.has(tabKey)) {
+      return;
+    }
+    
     if (activeTab === 'dossier') {
       loadDossier();
+      loadedTabsRef.current.add(tabKey);
     } else if (activeTab === 'verification') {
       loadVerifications();
+      loadedTabsRef.current.add(tabKey);
     } else if (activeTab === 'exceptions') {
       loadExceptionsAndCPs();
+      loadedTabsRef.current.add(tabKey);
     } else if (activeTab === 'drafts' || activeTab === 'exports') {
       loadExports();
+      loadedTabsRef.current.add(tabKey);
+    } else if (activeTab === 'insights') {
+      loadInsights(insightsDays);
+      loadedTabsRef.current.add(tabKey);
     }
-  }, [activeTab, caseId]);
+  }, [activeTab, memoizedCaseId, insightsDays, initialLoadComplete, loadDossier, loadVerifications, loadExceptionsAndCPs, loadExports, loadInsights]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,6 +322,8 @@ export default function CaseDetailPage() {
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     if (!allowedTypes.includes(file.type)) {
       setError('Only PDF and image files (PNG, JPG) are allowed');
+      // Clear the input value so user can try again
+      e.target.value = '';
       return;
     }
 
@@ -164,6 +337,7 @@ export default function CaseDetailPage() {
       setError(e.message);
     } finally {
       setUploading(false);
+      // Clear the input value after upload (allows re-uploading the same file)
       e.target.value = '';
     }
   };
@@ -204,12 +378,73 @@ export default function CaseDetailPage() {
     }
   };
 
-  const handleExtract = async () => {
+  const focusEvidence = useCallback((docId: string, pageNum?: number, candidateId?: string) => {
+    // Switch to Documents tab
+    setActiveTab('documents');
+    
+    // Set focus state
+    setFocusedDocId(docId);
+    if (pageNum != null) {
+      setFocusedPage(pageNum);
+    } else {
+      setFocusedPage(null);
+    }
+    
+    // Select the document if it exists in the documents list
+    const found = documents.find(d => d.id === docId);
+    if (found) {
+      setSelectedDoc(found);
+    }
+    
+    // Update URL query params without full reload
+    // Use new param names (focusDocId, focusPage, focusCandidateId) for deep linking
+    const params = new URLSearchParams();
+    params.set('tab', 'documents');
+    params.set('focusDocId', docId);
+    if (pageNum != null && pageNum > 0) {
+      params.set('focusPage', String(pageNum));
+    }
+    if (candidateId) {
+      params.set('focusCandidateId', candidateId);
+    }
+    router.push(`/cases/${caseId}?${params.toString()}`);
+  }, [documents, router, caseId]);
+
+  const handleExtract = useCallback(async () => {
     try {
-      await extractDossier(caseId);
+      // Extract dossier (triggers extraction process)
+      await extractDossier(memoizedCaseId);
+      // Autofill to create OCR extraction candidates
+      await autofillDossier(memoizedCaseId, false);
       await loadDossier();
+      // Switch to OCR Extractions tab to show candidates
+      setActiveTab('ocr-extractions');
     } catch (e: any) {
-      setError(e.message);
+      // Handle ApiError with structured details
+      if (e instanceof ApiError) {
+        setError(e.detail || `Failed to extract dossier: ${e.message}`);
+      } else {
+        setError(e.message || 'Failed to extract dossier');
+      }
+    }
+  }, [memoizedCaseId, loadDossier]);
+
+  const handleAutofill = async () => {
+    setAutofilling(true);
+    setAutofillResult(null);
+    try {
+      const result = await autofillDossier(caseId, autofillOverwrite);
+      setAutofillResult(result);
+      await loadDossier(); // Reload dossier to show updated fields
+    } catch (e: any) {
+      setAutofillResult({
+        extracted: [],
+        updated_fields: [],
+        skipped_fields: [],
+        errors: [e.message || 'Autofill failed'],
+      });
+    } finally {
+      setAutofilling(false);
     }
   };
 
@@ -312,14 +547,34 @@ export default function CaseDetailPage() {
     );
   }
 
+  // Prepare autofill action for header (only show in dossier tab)
+  const autofillAction = activeTab === 'dossier' ? (
+    <button
+      onClick={handleAutofill}
+      disabled={autofilling}
+      className="btn btn-primary"
+    >
+      {autofilling ? 'Running Autofill...' : 'Run Autofill'}
+    </button>
+  ) : null
+
   return (
-    <div className="min-h-screen p-6">
-      <header className="flex justify-between items-center mb-6">
-        <div>
-          <a href="/" className="text-cyan-400 hover:text-cyan-300 text-sm">← Back to Cases</a>
-          <h1 className="text-2xl font-bold mt-2">{caseData?.title || 'Case'}</h1>
-        </div>
-      </header>
+    <>
+      <SetPageChrome
+        title={caseData?.title || 'Case'}
+        breadcrumbs={[
+          { label: 'Cases', href: '/' },
+          { label: caseData?.title || 'Case' }
+        ]}
+        actions={autofillAction}
+      />
+      <div className="min-h-screen p-6">
+        <header className="flex justify-between items-center mb-6">
+          <div>
+            <a href="/" className="text-cyan-400 hover:text-cyan-300 text-sm">← Back to Cases</a>
+            <h1 className="text-2xl font-bold mt-2">{caseData?.title || 'Case'}</h1>
+          </div>
+        </header>
 
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-400 p-3 rounded mb-4">
@@ -327,6 +582,23 @@ export default function CaseDetailPage() {
           <button onClick={() => setError('')} className="float-right">×</button>
         </div>
       )}
+
+      {/* Controls & Evidence Checklist */}
+      <div className="mb-6">
+        <CaseControlsCard
+          caseId={caseId}
+          controls={controls}
+          onViewDocument={(docId) => {
+            // Switch to documents tab and select the document
+            setActiveTab('documents');
+            // Find and select the document
+            const doc = documents.find(d => d.id === docId);
+            if (doc) {
+              handleViewDoc(docId);
+            }
+          }}
+        />
+      </div>
 
       {/* Tabs */}
       <div className="flex gap-4 mb-6 border-b border-slate-700 overflow-x-auto">
@@ -336,18 +608,24 @@ export default function CaseDetailPage() {
         >
           Documents
         </button>
-        <button
-          onClick={() => setActiveTab('dossier')}
-          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'dossier' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
-        >
-          Dossier
-        </button>
-        <button
-          onClick={() => setActiveTab('verification')}
-          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'verification' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
-        >
-          Verification
-        </button>
+          <button
+            onClick={() => setActiveTab('dossier')}
+            className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'dossier' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+          >
+            Dossier
+          </button>
+          <button
+            onClick={() => setActiveTab('ocr-extractions')}
+            className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'ocr-extractions' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+          >
+            OCR Extractions
+          </button>
+          <button
+            onClick={() => setActiveTab('verification')}
+            className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'verification' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+          >
+            Verification
+          </button>
         <button
           onClick={() => setActiveTab('exceptions')}
           className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'exceptions' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
@@ -369,6 +647,12 @@ export default function CaseDetailPage() {
         >
           Export
         </button>
+        <button
+          onClick={() => setActiveTab('insights')}
+          className={`pb-3 px-1 whitespace-nowrap ${activeTab === 'insights' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400'}`}
+        >
+          Insights
+        </button>
       </div>
 
       {/* Documents Tab */}
@@ -377,16 +661,29 @@ export default function CaseDetailPage() {
           <div className="card">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-semibold">Documents</h2>
-              <label className="btn btn-primary cursor-pointer">
-                {uploading ? 'Uploading...' : 'Upload File'}
+              <div className="relative">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={uploading}
+                  data-testid="documents-upload-button"
+                  onClick={() => {
+                    // Deterministic: always triggers the file picker
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  {uploading ? "Uploading..." : "Upload File"}
+                </button>
                 <input
+                  ref={fileInputRef}
                   type="file"
                   accept="application/pdf,image/png,image/jpeg,image/jpg"
                   onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={uploading}
+                  data-testid="documents-upload-input"
+                  style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
+                  tabIndex={-1}
                 />
-              </label>
+              </div>
             </div>
 
             {documents.length === 0 ? (
@@ -401,19 +698,33 @@ export default function CaseDetailPage() {
                     }`}
                     onClick={() => handleViewDoc(doc.id)}
                   >
-                    <div className="flex justify-between items-start">
-                      <div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
                         <p className="font-medium truncate">{doc.original_filename}</p>
                         <p className="text-sm text-slate-400">
                           {doc.page_count || '?'} pages • {doc.status}
                         </p>
                       </div>
-                      <span className={`badge ${
-                        doc.status === 'Split' ? 'badge-success' : 
-                        doc.status === 'Failed' ? 'badge-error' : 'badge-warning'
-                      }`}>
-                        {doc.status}
-                      </span>
+                      <div className="flex gap-2 items-center">
+                        {doc.status === 'Split' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRunOcr(doc.id);
+                            }}
+                            className="btn btn-sm btn-primary"
+                            title="Run OCR for this document"
+                          >
+                            Run OCR
+                          </button>
+                        )}
+                        <span className={`badge ${
+                          doc.status === 'Split' ? 'badge-success' : 
+                          doc.status === 'Failed' ? 'badge-error' : 'badge-warning'
+                        }`}>
+                          {doc.status}
+                        </span>
+                      </div>
                     </div>
                   </li>
                 ))}
@@ -425,6 +736,13 @@ export default function CaseDetailPage() {
             {selectedDoc ? (
               <>
                 <h2 className="text-lg font-semibold mb-4">{selectedDoc.original_filename}</h2>
+                {focusedPage != null && focusedDocId === selectedDoc.id && (
+                  <div className="mb-4 p-3 bg-cyan-500/20 border border-cyan-500 rounded-lg">
+                    <p className="text-cyan-400 font-medium text-sm">
+                      Evidence focus: Page {focusedPage}
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-4">
                   <div>
                     <span className="text-slate-400 text-sm">Status: </span>
@@ -439,6 +757,38 @@ export default function CaseDetailPage() {
                     <span className="text-slate-400 text-sm">Pages: </span>
                     <span>{selectedDoc.page_count || 0}</span>
                   </div>
+                  {selectedDoc.page_count && selectedDoc.page_count > 0 && (
+                    <div className="space-y-2">
+                      <span className="text-slate-400 text-sm block">Page List:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: selectedDoc.page_count }, (_, i) => i + 1).map((pageNum) => {
+                          const isFocused = focusedPage === pageNum && focusedDocId === selectedDoc.id;
+                          return (
+                            <button
+                              key={pageNum}
+                              ref={isFocused ? focusedPageButtonRef : null}
+                              data-page-number={pageNum}
+                              onClick={() => {
+                                setFocusedPage(pageNum);
+                                const params = new URLSearchParams(searchParams.toString());
+                                // Use focusPage for consistency with deep linking
+                                params.set('focusPage', String(pageNum));
+                                params.set('focusDocId', selectedDoc.id);
+                                router.replace(`?${params.toString()}`, { scroll: false });
+                              }}
+                              className={`px-3 py-1 rounded text-sm transition-colors ${
+                                isFocused
+                                  ? 'bg-cyan-500 text-white border-2 border-cyan-400 ring-2 ring-cyan-400'
+                                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {selectedDoc.status === 'Split' && (
                     <button onClick={() => handleRunOcr(selectedDoc.id)} className="btn btn-primary">
@@ -471,58 +821,97 @@ export default function CaseDetailPage() {
         </div>
       )}
 
-      {/* Dossier Tab */}
+      {/* Dossier Tab - P14: Use DossierFieldsEditor */}
       {activeTab === 'dossier' && (
-        <div className="card">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-lg font-semibold">Case Dossier</h2>
-              {dossier && (
-                <p className="text-sm text-slate-400">
-                  {dossier.confirmed_count} confirmed / {dossier.pending_count} pending
-                </p>
-              )}
+        <div className="space-y-6">
+          {/* Autofill Card */}
+          <div className="card bg-slate-800/50 border border-slate-700">
+            <h3 className="text-lg font-semibold mb-3">Autofill from OCR</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Extract key dossier fields (plot, block, phase, scheme, district, etc.) from OCR text across all documents.
+            </p>
+            <div className="flex items-center gap-4 mb-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={autofillOverwrite}
+                  onChange={(e) => setAutofillOverwrite(e.target.checked)}
+                  className="checkbox"
+                />
+                <span className="text-sm text-slate-300">Overwrite existing values</span>
+              </label>
             </div>
-            <button onClick={handleExtract} className="btn btn-primary">
-              Extract from OCR
+            <button
+              onClick={async () => {
+                try {
+                  await handleAutofill();
+                  alert('Autofill completed. Review OCR Extractions tab for candidates.');
+                  setActiveTab('ocr-extractions');
+                } catch (e: any) {
+                  alert('Autofill failed: ' + (e.message || 'Unknown error'));
+                }
+              }}
+              disabled={autofilling}
+              className="btn btn-primary"
+            >
+              {autofilling ? 'Running Autofill...' : 'Run Autofill'}
             </button>
-          </div>
-
-          {!dossier || dossier.fields.length === 0 ? (
-            <p className="text-slate-400">No dossier fields yet.</p>
-          ) : (
-            <div className="space-y-6">
-              {['party', 'property', 'risk'].map((category) => {
-                const categoryFields = dossier.fields.filter((f: any) => 
-                  f.field_key.startsWith(category)
-                );
-                if (categoryFields.length === 0) return null;
-
-                return (
-                  <div key={category}>
-                    <h3 className="text-sm font-semibold text-cyan-400 uppercase mb-3">{category}</h3>
-                    <div className="space-y-2">
-                      {categoryFields.map((field: any) => (
-                        <div key={field.id} className="flex items-center gap-3 p-3 bg-slate-700 rounded">
-                          <div className="flex-1">
-                            <p className="text-sm text-slate-400">{field.field_key}</p>
-                            <p className="font-medium">{field.field_value || '—'}</p>
-                          </div>
-                          {field.needs_confirmation ? (
-                            <button onClick={() => handleConfirmField(field.field_key)} className="btn btn-primary text-sm py-1">
-                              Confirm
-                            </button>
-                          ) : (
-                            <span className="badge badge-success">Confirmed</span>
-                          )}
+            {autofillResult && (
+              <div className="mt-4 p-4 bg-slate-700 rounded">
+                <h4 className="font-medium mb-2">Autofill Results</h4>
+                <div className="text-sm space-y-1">
+                  <p className="text-green-400">✅ Updated: {autofillResult.updated_fields.length} fields</p>
+                  {autofillResult.skipped_fields.length > 0 && (
+                    <p className="text-yellow-400">⚠️ Skipped: {autofillResult.skipped_fields.length} fields (already set)</p>
+                  )}
+                  {autofillResult.errors.length > 0 && (
+                    <p className="text-red-400">❌ Errors: {autofillResult.errors.join(', ')}</p>
+                  )}
+                </div>
+                {autofillResult.extracted.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs text-slate-400 mb-2">Extracted Fields:</p>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {autofillResult.extracted.map((ef: any, idx: number) => (
+                        <div key={idx} className="text-xs bg-slate-600 p-2 rounded">
+                          <span className="font-medium">{ef.field_path}:</span> {ef.value} 
+                          <span className="text-slate-400 ml-2">({Math.round(ef.confidence * 100)}% confidence)</span>
                         </div>
                       ))}
                     </div>
                   </div>
-                );
-              })}
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* P14: DossierFieldsEditor */}
+          <div className="card">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold">Case Dossier</h2>
+              <p className="text-sm text-slate-400">
+                Edit dossier fields with notes and evidence links. Critical fields require evidence or Admin force.
+              </p>
             </div>
-          )}
+            <DossierFieldsEditor caseId={caseId} documents={documents} />
+          </div>
+        </div>
+      )}
+
+      {/* OCR Extractions Tab */}
+      {activeTab === 'ocr-extractions' && (
+        <div className="space-y-6">
+          <div className="card">
+            <h2 className="text-lg font-semibold mb-4">OCR Extractions</h2>
+            <p className="text-slate-400 mb-4">
+              Review and edit OCR-extracted fields before confirming them to the dossier.
+            </p>
+            <OCRExtractionsPanel
+              caseId={caseId}
+              documents={documents}
+              onViewDocument={focusEvidence}
+            />
+          </div>
         </div>
       )}
 
@@ -850,13 +1239,13 @@ export default function CaseDetailPage() {
                         </td>
                         <td className="py-3">
                           <a 
-                            href={`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/exports/${exp.id}/download`}
+                            href={`/api/v1/exports/${exp.id}/download`}
                             className="text-cyan-400 hover:text-cyan-300"
                             onClick={async (e) => {
                               e.preventDefault();
                               try {
                                 const token = await getToken();
-                                const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/v1/exports/${exp.id}/download`, {
+                                const res = await fetch(`/api/v1/exports/${exp.id}/download`, {
                                   headers: { Authorization: `Bearer ${token}` }
                                 });
                                 const data = await res.json();
@@ -874,6 +1263,133 @@ export default function CaseDetailPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Insights Tab */}
+      {activeTab === 'insights' && (
+        <div className="space-y-6">
+          <div className="card">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-lg font-semibold">Case Insights</h2>
+                <p className="text-slate-400 text-sm">Analytics and activity over time</p>
+              </div>
+              <div className="flex gap-1 bg-slate-700 rounded-lg p-1">
+                {[7, 30, 90].map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setInsightsDays(d)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                      insightsDays === d
+                        ? 'bg-cyan-500 text-slate-900'
+                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-600'
+                    }`}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {insightsLoading ? (
+              <div className="text-center py-12 text-slate-400">Loading insights...</div>
+            ) : insights ? (
+              <div className="space-y-6">
+                {/* KPI Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-700 rounded-lg p-4">
+                    <p className="text-sm text-slate-400">Open High</p>
+                    <p className="text-2xl font-bold text-rose-400">{insights.summary.open_exceptions_high}</p>
+                  </div>
+                  <div className="bg-slate-700 rounded-lg p-4">
+                    <p className="text-sm text-slate-400">Open Medium</p>
+                    <p className="text-2xl font-bold text-amber-400">{insights.summary.open_exceptions_medium}</p>
+                  </div>
+                  <div className="bg-slate-700 rounded-lg p-4">
+                    <p className="text-sm text-slate-400">CP Completion</p>
+                    <p className="text-2xl font-bold text-cyan-400">{insights.summary.cp_completion_pct}%</p>
+                  </div>
+                  <div className="bg-slate-700 rounded-lg p-4">
+                    <p className="text-sm text-slate-400">Verification</p>
+                    <p className="text-2xl font-bold text-purple-400">{insights.summary.verification_completion_pct}%</p>
+                  </div>
+                </div>
+
+                {/* Activity Summary */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-slate-700/50 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">Open Low</p>
+                    <p className="text-lg font-semibold text-emerald-400">{insights.summary.open_exceptions_low}</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">Exports</p>
+                    <p className="text-lg font-semibold">{insights.summary.exports_generated}</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">Last Rule Run</p>
+                    <p className="text-sm">{insights.summary.last_rule_run_at ? new Date(insights.summary.last_rule_run_at).toLocaleDateString() : '—'}</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg p-3">
+                    <p className="text-xs text-slate-400">Last OCR</p>
+                    <p className="text-sm">{insights.summary.last_ocr_at ? new Date(insights.summary.last_ocr_at).toLocaleDateString() : '—'}</p>
+                  </div>
+                </div>
+
+                {/* Activity Timeline */}
+                <div>
+                  <h3 className="font-semibold mb-4">Activity Timeline ({insightsDays} days)</h3>
+                  <div className="bg-slate-700 rounded-lg p-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="text-slate-400 text-left">
+                          <th className="pb-2">Date</th>
+                          <th className="pb-2">Exc. Opened</th>
+                          <th className="pb-2">Exc. Resolved</th>
+                          <th className="pb-2">CPs Satisfied</th>
+                          <th className="pb-2">Verified</th>
+                          <th className="pb-2">Exports</th>
+                          <th className="pb-2">Rule Runs</th>
+                          <th className="pb-2">OCR Pages</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {insights.timeseries.filter(t => 
+                          t.exceptions_opened > 0 || t.exceptions_resolved > 0 || 
+                          t.cps_satisfied > 0 || t.verifications_verified > 0 ||
+                          t.exports_generated > 0 || t.rule_evaluations > 0 || t.ocr_pages_done > 0
+                        ).slice(-10).map((t) => (
+                          <tr key={t.date} className="border-t border-slate-600">
+                            <td className="py-2">{new Date(t.date).toLocaleDateString()}</td>
+                            <td className="py-2">{t.exceptions_opened || '—'}</td>
+                            <td className="py-2">{t.exceptions_resolved || '—'}</td>
+                            <td className="py-2">{t.cps_satisfied || '—'}</td>
+                            <td className="py-2">{t.verifications_verified || '—'}</td>
+                            <td className="py-2">{t.exports_generated || '—'}</td>
+                            <td className="py-2">{t.rule_evaluations || '—'}</td>
+                            <td className="py-2">{t.ocr_pages_done || '—'}</td>
+                          </tr>
+                        ))}
+                        {insights.timeseries.filter(t => 
+                          t.exceptions_opened > 0 || t.exceptions_resolved > 0 || 
+                          t.cps_satisfied > 0 || t.verifications_verified > 0 ||
+                          t.exports_generated > 0 || t.rule_evaluations > 0 || t.ocr_pages_done > 0
+                        ).length === 0 && (
+                          <tr>
+                            <td colSpan={8} className="py-8 text-center text-slate-400">
+                              No activity in this time range
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-slate-400 text-center py-8">Failed to load insights</p>
             )}
           </div>
         </div>
@@ -1030,7 +1546,56 @@ function VerificationCard({
         
         {editing ? (
           <div className="space-y-2">
-            {Object.entries(keys).map(([key, value]) => (
+            {/* ROD-specific fields */}
+            {verification.verification_type === 'registry_rod' && (
+              <>
+                <div className="flex gap-2 items-center">
+                  <label className="text-sm text-slate-400 w-32">Registry Office:</label>
+                  <input
+                    type="text"
+                    value={keys.registry_office || ''}
+                    onChange={(e) => setKeys({ ...keys, registry_office: e.target.value })}
+                    className="input flex-1 text-sm"
+                    placeholder="e.g., LDA Lahore"
+                  />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <label className="text-sm text-slate-400 w-32">Registry Number:</label>
+                  <input
+                    type="text"
+                    value={keys.registry_number || ''}
+                    onChange={(e) => setKeys({ ...keys, registry_number: e.target.value })}
+                    className="input flex-1 text-sm"
+                    placeholder="e.g., 1234/2023"
+                  />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <label className="text-sm text-slate-400 w-32">Instrument:</label>
+                  <input
+                    type="text"
+                    value={keys.instrument || ''}
+                    onChange={(e) => setKeys({ ...keys, instrument: e.target.value })}
+                    className="input flex-1 text-sm"
+                    placeholder="e.g., Sale Deed, Transfer Deed"
+                  />
+                </div>
+                <div className="flex gap-2 items-center">
+                  <label className="text-sm text-slate-400 w-32">Search Terms:</label>
+                  <input
+                    type="text"
+                    value={keys.search_terms || ''}
+                    onChange={(e) => setKeys({ ...keys, search_terms: e.target.value })}
+                    className="input flex-1 text-sm"
+                    placeholder="What you searched for"
+                  />
+                </div>
+                <div className="border-t border-slate-600 my-2"></div>
+              </>
+            )}
+            {Object.entries(keys).filter(([key]) => 
+              verification.verification_type !== 'registry_rod' || 
+              !['registry_office', 'registry_number', 'instrument', 'search_terms'].includes(key)
+            ).map(([key, value]) => (
               <div key={key} className="flex gap-2 items-center">
                 <input
                   type="text"
@@ -1234,6 +1799,7 @@ function VerificationCard({
           ✗ Failed: {verification.notes}
         </p>
       )}
-    </div>
+      </div>
+    </>
   );
 }

@@ -1,0 +1,20 @@
+ERROR:  column dp.ocr_engine does not exist
+LINE 5:     dp.ocr_engine,
+            ^
+ERROR:  column dp.ocr_engine does not exist
+LINE 3:     COUNT(*) FILTER (WHERE dp.ocr_engine LIKE '%repaired%') ...
+                                   ^
+ERROR:  column dp.ocr_engine does not exist
+LINE 5:     dp.ocr_engine,
+            ^
+                  id                  | original_filename | has_sale_deed_en | has_sale_deed_urdu | page_count 
+--------------------------------------+-------------------+------------------+--------------------+------------
+ a81b1693-63b4-4f94-b22e-21624d432c58 | fard.pdf          | f                | f                  |          2
+ 8fa48b2d-c169-450e-8b16-8855b6a83def | sale_deed.pdf     | t                | t                  |          3
+(2 rows)
+
+     field_key      |             document_id              | document_name | page_number | confidence | proposed_value_preview | extraction_method |         created_at         
+--------------------+--------------------------------------+---------------+-------------+------------+------------------------+-------------------+----------------------------
+ party.seller.names | 8fa48b2d-c169-450e-8b16-8855b6a83def | sale_deed.pdf |           1 |       0.85 | Page 2 content         |                   | 2026-01-16 11:14:38.195014
+(1 row)
+

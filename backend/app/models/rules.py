@@ -68,6 +68,8 @@ class ExceptionEvidenceRef(Base):
     document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
     page_number = Column(Integer, nullable=True)
     note = Column(Text, nullable=True)
+    evidence_type = Column(String, nullable=True)  # "ocr_snippet" or None for regular evidence
+    snippet_json = Column(JSONB, nullable=True)  # {document_id, page_number, snippet} for OCR snippets
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     
     __table_args__ = (

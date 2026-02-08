@@ -20,8 +20,12 @@ dependencies = [
     "pytesseract",
     "pillow",
     "pdf2image",
+    "numpy",
+    "opencv-python-headless",
     "pyyaml",
     "python-docx",
+    "cryptography",
+    "httpx",
 ]
 
 [build-system]

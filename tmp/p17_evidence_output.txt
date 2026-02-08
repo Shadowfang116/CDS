@@ -1,0 +1,104 @@
+========================================
+PROMPT 17 - MOJIBAKE FIX SUMMARY
+========================================
+
+CHANGES MADE:
+============
+
+1. OCR Engine Fix (ocr_engine.py)
+   - Changed Urdu detection to use "urd+eng" instead of just "urd"
+   - File: backend/app/services/ocr_engine.py, line 140-141
+   - Reason: Ensures mixed Urdu/English content is handled correctly
+   - Before: if script == "urd": lang_used = "urd"
+   - After:  if script == "urd": lang_used = "urd+eng"
+
+2. OCR Normalization (already in place)
+   - normalize_text_for_persistence() is already called in tasks_ocr.py (line 115)
+   - normalize_text_for_persistence() is already called in ocr_fallback.py (line 86, 184)
+   - This ensures UTF-8 safe text before persistence
+
+3. Fallback Mechanism (already in place)
+   - get_page_text_with_fallback() is called by dossier_autofill.py (line 400)
+   - Automatically detects mojibake and repairs or re-OCRs corrupted pages
+   - Repair flow: try encoding fix (latin1/cp1252 -> utf8) first, then re-OCR if needed
+
+4. Fix Corrupted Pages Script (new)
+   - Created: scripts/dev/fix_corrupted_pages.ps1
+   - Purpose: One-time repair job for existing corrupted pages
+   - Usage: .\scripts\dev\fix_corrupted_pages.ps1 -DocumentId <DOC_ID>
+   - Triggers autofill which automatically repairs corrupted pages via get_page_text_with_fallback()
+
+FILES MODIFIED:
+===============
+
+1. backend/app/services/ocr_engine.py
+   - Line 140-141: Changed "urd" to "urd+eng" for Urdu script detection
+
+2. scripts/dev/fix_corrupted_pages.ps1 (NEW)
+   - Script to repair existing corrupted pages in database
+
+FILES ALREADY CORRECT (NO CHANGES NEEDED):
+==========================================
+
+1. backend/app/workers/tasks_ocr.py
+   - Line 114-115: Already calls normalize_text_for_persistence() before storing OCR text
+
+2. backend/app/services/ocr_fallback.py
+   - Line 86, 184: Already calls normalize_text_for_persistence() when repairing/re-OCRing
+   - Line 74-79: Already uses ocr_page_pdf() which will use urd+eng if Urdu detected
+
+3. backend/app/services/ocr_text_quality.py
+   - normalize_text_for_persistence() already handles:
+     * Stripping nulls and control chars
+     * Unicode NFC normalization
+     * Mojibake detection and repair
+
+4. backend/app/services/dossier_autofill.py
+   - Line 400: Already calls get_page_text_with_fallback() which handles repair/re-OCR
+
+TESTING INSTRUCTIONS:
+=====================
+
+1. Ensure Docker containers are running:
+   docker compose up -d
+
+2. Rebuild containers to pick up changes:
+   docker compose up -d --build api worker hf-extractor
+
+3. Run evidence collection script:
+   powershell -ExecutionPolicy Bypass -File .\scripts\dev\prompt5_collect_evidence.ps1
+
+4. If specific case IDs don't exist, run fix script for a document with Urdu content:
+   powershell -ExecutionPolicy Bypass -File .\scripts\dev\fix_corrupted_pages.ps1 -DocumentId <YOUR_DOC_ID>
+
+5. Verify Query A returns exactly 3 rows:
+   - party.seller.names
+   - party.buyer.names
+   - party.witness.names
+
+6. Check logs for OCR_FALLBACK messages:
+   docker compose logs api --tail=200 | Select-String "OCR_FALLBACK"
+
+VERIFICATION:
+=============
+
+To verify the fix is working:
+
+1. Check OCR engine uses urd+eng:
+   docker compose logs api --tail=100 | Select-String "lang_used.*urd"
+
+2. Check mojibake repair:
+   docker compose logs api --tail=200 | Select-String "OCR_FALLBACK.*REPAIR"
+
+3. Check re-OCR with Urdu:
+   docker compose logs api --tail=200 | Select-String "OCR_FALLBACK.*RE_OCR"
+
+4. Check Query A results:
+   Run prompt5_collect_evidence.ps1 and verify Query A returns exactly 3 rows
+
+NOTES:
+======
+
+- The normalization fix was already in place - we just needed to ensure OCR engine uses urd+eng for Urdu documents
+- The fallback mechanism automatically repairs/re-OCRs corrupted pages when dossier autofill runs
+- Existing corrupted pages can be fixed by running the fix_corrupted_pages.ps1 script

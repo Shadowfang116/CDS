@@ -1,0 +1,26 @@
+
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: START autofill case_id=f14f2276-96c0-4f06-aea8-5a9c9eb9a9c8 overwrite=True document_ids=None
+api-1  | ERROR:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: hf_extractor error: UnboundLocalError("cannot access local variable 'settings' where it is not associated with a value")
+api-1  | Traceback (most recent call last):
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=buyer doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=witness doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def filename="sale_deed.pdf" is_sale_deed=True raw_seller="Page 2 content" raw_buyer="" raw_witness=""
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=seller doc_id=a81b1693-63b4-4f94-b22e-21624d432c58 reason=no_anchors_no_cnic anchors=0 cnic_blocks=0 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=buyer doc_id=a81b1693-63b4-4f94-b22e-21624d432c58 reason=no_anchors_no_cnic anchors=0 cnic_blocks=0 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=witness doc_id=a81b1693-63b4-4f94-b22e-21624d432c58 reason=no_anchors_no_cnic anchors=0 cnic_blocks=0 method=none
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: doc_id=a81b1693-63b4-4f94-b22e-21624d432c58 filename="fard.pdf" is_sale_deed=False raw_seller="" raw_buyer="" raw_witness=""
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: doc_id=a81b1693-63b4-4f94-b22e-21624d432c58 filename="fard.pdf" SKIP party roles reason=not_sale_deed
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: EXIT party roles loop total_party_extractions=1 all_extractions_keys=['party.seller.names']
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: Before processing loop, all_extractions has 1 fields: ['party.seller.names']
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: ENTER write loop total_candidates=1 total_fields=1 party_fields=['party.seller.names']
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: field=party.seller.names doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def raw_value="Page 2 content" confidence=0.85 page=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=buyer doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=witness doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: hf_extractor summary entities_received_total=0 entities_written_total=0 entities_deduped_total=0 breakdown_by_label={}
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: write_loop field_key=party.seller.names doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def raw_value_preview="Page 2 content" cleaned_value_preview="Page 2 content" is_plausible_party_name=True skip_reason=none
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: field=party.seller.names doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def action=CREATE overwrite=True value="Page 2 content" page=1 confidence=0.85
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: field=party.seller.names WRITTEN candidate_id=fa53d97f-1c80-448e-8239-a3ff9439fa79 table=ocr_extraction_candidates
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: EXIT write loop attempted=1 skipped=0 written=1
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: COMMIT starting
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: COMMIT done table=ocr_extraction_candidates total_records=1 party_role_records=1
+

@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+
+# Real documents (P12 - never commit PII)
+docs/pilot_samples_real/
+
+# UAT artifacts
+scripts/dev/uat_last_run.txt
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Training artifacts (Prompt 10)
+/models/
+/scripts/training/data/
+/scripts/training/datasets/*.jsonl
+/scripts/training/labelstudio_exports/
+

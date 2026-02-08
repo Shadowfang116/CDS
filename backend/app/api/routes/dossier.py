@@ -54,6 +54,12 @@ class DossierFieldUpdateRequest(BaseModel):
     confirm: Optional[bool] = None  # If true, mark as confirmed
 
 
+class DossierFieldSourceRequest(BaseModel):
+    field_key: str
+    source_document_id: str
+    source_page_number: int
+
+
 @router.post("/cases/{case_id}/extract", response_model=ExtractResponse)
 async def extract_dossier_fields(
     request: Request,
@@ -304,6 +310,77 @@ async def update_dossier_field(
             "field_key": body.field_key,
             "field_value": body.field_value,
             "confirmed": body.confirm,
+        },
+    )
+    
+    return DossierFieldResponse(
+        id=str(field.id),
+        field_key=field.field_key,
+        field_value=field.field_value,
+        source_document_id=str(field.source_document_id) if field.source_document_id else None,
+        source_page_number=field.source_page_number,
+        confidence=float(field.confidence) if field.confidence else None,
+        needs_confirmation=field.needs_confirmation,
+        confirmed_by_user_id=str(field.confirmed_by_user_id) if field.confirmed_by_user_id else None,
+        confirmed_at=field.confirmed_at,
+    )
+
+
+@router.patch("/cases/{case_id}/dossier/source", response_model=DossierFieldResponse)
+async def set_dossier_field_source(
+    request: Request,
+    case_id: uuid.UUID,
+    body: DossierFieldSourceRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Set source evidence (document+page) for a dossier field."""
+    # Validate case
+    case = db.query(Case).filter(
+        Case.id == case_id,
+        Case.org_id == current_user.org_id,
+    ).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    # Validate document belongs to case
+    doc = db.query(Document).filter(
+        Document.id == uuid.UUID(body.source_document_id),
+        Document.org_id == current_user.org_id,
+        Document.case_id == case_id,
+    ).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+    
+    # Find field
+    field = db.query(CaseDossierField).filter(
+        CaseDossierField.case_id == case_id,
+        CaseDossierField.org_id == current_user.org_id,
+        CaseDossierField.field_key == body.field_key,
+    ).first()
+    
+    if not field:
+        raise HTTPException(status_code=404, detail="Dossier field not found")
+    
+    # Update source
+    field.source_document_id = uuid.UUID(body.source_document_id)
+    field.source_page_number = body.source_page_number
+    field.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(field)
+    
+    # Audit log
+    write_audit_event(
+        db=db,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.user_id,
+        action="dossier.field_source_set",
+        entity_type="case_dossier_field",
+        entity_id=field.id,
+        event_metadata={
+            "field_key": body.field_key,
+            "source_document_id": body.source_document_id,
+            "source_page_number": body.source_page_number,
         },
     )
     

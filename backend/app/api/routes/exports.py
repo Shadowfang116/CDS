@@ -9,9 +9,11 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.case import Case
 from app.models.org import Org
+from app.models.user import User
 from app.models.document import Document, CaseDossierField
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef
 from app.models.export import Export
+from app.models.verification import Verification, VerificationEvidenceRef
 from app.api.deps import get_current_user, CurrentUser
 from app.services.audit import write_audit_event
 from app.services.storage import put_object_bytes, get_presigned_get_url
@@ -86,11 +88,20 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
     ).all()
     
     dossier = {}
+    dossier_fields_list = []  # Full field objects with source info
     for row in dossier_rows:
         if row.field_value:
             if row.field_key not in dossier:
                 dossier[row.field_key] = []
             dossier[row.field_key].append(row.field_value)
+        
+        # Build dossier fields list with source info
+        dossier_fields_list.append({
+            "field_key": row.field_key,
+            "field_value": row.field_value,
+            "source_document_id": str(row.source_document_id) if row.source_document_id else None,
+            "source_page_number": row.source_page_number,
+        })
     
     # Get exceptions
     exceptions = db.query(Exception_).filter(
@@ -166,6 +177,52 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
             "note": ref.note,
         })
     
+    # Get verifications
+    verifications = db.query(Verification).filter(
+        Verification.case_id == case_id,
+        Verification.org_id == org_id,
+    ).all()
+    
+    # Build document lookup for verification evidence
+    doc_lookup = {str(d.id): d for d in documents}
+    
+    verifications_list = []
+    for v in verifications:
+        # Get verified_by user email
+        verified_by_email = None
+        if v.verified_by_user_id:
+            user = db.query(User).filter(User.id == v.verified_by_user_id).first()
+            if user:
+                verified_by_email = user.email
+        
+        # Get verification evidence refs
+        v_evidence_refs = db.query(VerificationEvidenceRef).filter(
+            VerificationEvidenceRef.verification_id == v.id,
+            VerificationEvidenceRef.org_id == org_id,
+        ).all()
+        
+        v_evidence_list = []
+        for ve in v_evidence_refs:
+            doc_id_str = str(ve.document_id) if ve.document_id else None
+            doc = doc_lookup.get(doc_id_str)
+            v_evidence_list.append({
+                "document_id": doc_id_str,
+                "filename": doc.original_filename if doc else "Unknown",
+                "page_number": ve.page_number,
+                "note": ve.note,
+            })
+        
+        verifications_list.append({
+            "id": str(v.id),
+            "verification_type": v.verification_type,
+            "status": v.status,
+            "keys_json": v.keys_json or {},
+            "notes": v.notes,
+            "verified_by_email": verified_by_email,
+            "verified_at": v.verified_at.isoformat() if v.verified_at else None,
+            "evidence_refs": v_evidence_list,
+        })
+    
     return {
         "case": {"id": str(case.id), "title": case.title, "status": case.status},
         "org": {"id": str(org.id), "name": org.name} if org else {"id": str(org_id), "name": "Organization"},
@@ -174,6 +231,8 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
         "cps": cps_list,
         "documents": documents_list,
         "evidence_refs": evidence_refs_map,
+        "verifications": verifications_list,
+        "dossier_fields": dossier_fields_list,
     }
 
 
@@ -270,6 +329,21 @@ async def generate_discrepancy_letter_draft(
         },
     )
     
+    # Emit integration event
+    from app.services.event_bus import emit_event
+    emit_event(
+        db=db,
+        org_id=current_user.org_id,
+        event_type="export.generated",
+        payload={
+            "export_id": str(export.id),
+            "export_type": "discrepancy_letter",
+            "filename": filename,
+            "case_id": str(case_id),
+            "case_title": data["case"]["title"],
+        },
+    )
+    
     return ExportResponse(
         export_id=str(export.id),
         filename=filename,
@@ -328,6 +402,21 @@ async def generate_undertaking_indemnity_draft(
             "export_id": str(export.id),
             "export_type": "undertaking_indemnity",
             "filename": filename,
+        },
+    )
+    
+    # Emit integration event
+    from app.services.event_bus import emit_event
+    emit_event(
+        db=db,
+        org_id=current_user.org_id,
+        event_type="export.generated",
+        payload={
+            "export_id": str(export.id),
+            "export_type": "undertaking_indemnity",
+            "filename": filename,
+            "case_id": str(case_id),
+            "case_title": data["case"]["title"],
         },
     )
     
@@ -392,6 +481,21 @@ async def generate_internal_opinion_draft(
         },
     )
     
+    # Emit integration event
+    from app.services.event_bus import emit_event
+    emit_event(
+        db=db,
+        org_id=current_user.org_id,
+        event_type="export.generated",
+        payload={
+            "export_id": str(export.id),
+            "export_type": "internal_opinion",
+            "filename": filename,
+            "case_id": str(case_id),
+            "case_title": data["case"]["title"],
+        },
+    )
+    
     return ExportResponse(
         export_id=str(export.id),
         filename=filename,
@@ -413,7 +517,8 @@ async def generate_bank_pack(
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Generate a Bank Pack PDF."""
+    """Generate a Bank Pack PDF. Requires authenticated user with access to the case."""
+    # Verify case belongs to user's org (enforced by _load_case_data)
     data = _load_case_data(db, case_id, current_user.org_id)
     
     # Generate PDF
@@ -425,6 +530,8 @@ async def generate_bank_pack(
         cps=data["cps"],
         documents=data["documents"],
         evidence_refs=data["evidence_refs"],
+        verifications=data.get("verifications", []),
+        dossier_fields=data.get("dossier_fields", []),
     )
     
     # Store export
@@ -456,6 +563,21 @@ async def generate_bank_pack(
             "export_id": str(export.id),
             "export_type": "bank_pack_pdf",
             "filename": filename,
+        },
+    )
+    
+    # Emit integration event
+    from app.services.event_bus import emit_event
+    emit_event(
+        db=db,
+        org_id=current_user.org_id,
+        event_type="export.generated",
+        payload={
+            "export_id": str(export.id),
+            "export_type": "bank_pack_pdf",
+            "filename": filename,
+            "case_id": str(case_id),
+            "case_title": data["case"]["title"],
         },
     )
     

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Index, BigInteger, Integer, Numeric, ForeignKey, Text, Boolean
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.db.base import Base
 
 
@@ -23,6 +23,8 @@ class Document(Base):
     doc_type = Column(String, nullable=True)
     doc_type_source = Column(String, nullable=True)  # "auto" or "manual"
     doc_type_updated_at = Column(DateTime, nullable=True)
+    # P13: Metadata JSON for conversion info, source format, etc.
+    meta_json = Column(JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     

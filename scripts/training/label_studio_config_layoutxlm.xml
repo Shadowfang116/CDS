@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<View>
+  <!-- Label Studio configuration for LayoutXLM token-classification training -->
+  <!-- Instructions: Label the exact words only; avoid sentences; prefer minimal spans -->
+  
+  <Image name="image" value="$image" zoom="true" zoomBy="1.5"/>
+  
+  <RectangleLabels name="label" toName="image">
+    <!-- Entity labels for token-classification (BIO tagging will be applied automatically) -->
+    <Label value="PERSON_NAME" background="#FF5733" hotkey="p"/>
+    <Label value="CNIC" background="#33FF57" hotkey="c"/>
+    <Label value="PLOT_NO" background="#3357FF" hotkey="l"/>
+    <Label value="SCHEME_NAME" background="#FF33F5" hotkey="s"/>
+    <Label value="REGISTRY_NO" background="#F5FF33" hotkey="r"/>
+    <Label value="DATE" background="#33FFF5" hotkey="d"/>
+    <Label value="AMOUNT" background="#FF9533" hotkey="a"/>
+  </RectangleLabels>
+  
+  <!-- Optional: Add text display for OCR tokens if available -->
+  <Text name="ocr_text" value="$ocr_text" editable="false" visible="false"/>
+</View>
+

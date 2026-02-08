@@ -1,0 +1,26 @@
+
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def labelled_fields_seller=0 buyer=0 witness=0
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def section_markers_total=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def section_marker role=seller line_idx=0 line_text="Sale Deed - ╪¿█î╪╣ ┘å╪º┘à█ü\n\n┘ü╪▒┘ê╪«╪¬ ┌⌐┘å┘å╪»█ü (Seller): ┌⌐╪º╪┤┘ü ╪▓╪º╪¿╪»\nCNIC: 12345-1234567-1\n\n╪«╪▒█î╪»╪º╪▒ (Buyer): ┘à╪¡"
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def urdu_markers_count=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def role=seller method=section_cnic page=unknown anchors=0 cnic_blocks=1 extracted="Page 2 content" reason=section_cnic
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=buyer doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=witness doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def section_markers_count=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def person_block idx=0 line_range=[0,3] page=1 name="Page 2 content" cnic="12345-1234567-1"
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def filename="sale_deed.pdf" pages_used=3 total_pages=3 is_sale_deed=True matched_keywords=['sale deed', 'seller', 'buyer', '╪¿█î╪╣ ┘å╪º┘à█ü', '┘ü╪▒┘ê╪«╪¬ ┌⌐┘å┘å╪»█ü', '╪«╪▒█î╪»╪º╪▒', '┌»┘ê╪º█ü', '╪¿█î╪╣', '┘ü╪▒┘ê╪«╪¬'] cnic_count=1 cnic_tokens=[12345-1234567-1] person_blocks_created=1 section_markers_count=1 final_seller="Page 2 content" method_seller=section_cnic final_buyer="none" method_buyer=none final_witness="none" method_witness=none
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def filename="sale_deed.pdf" is_sale_deed=True raw_seller="Page 2 content" raw_buyer="" raw_witness=""
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: field=party.seller.names doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def raw_value="Page 2 content" confidence=0.85 page=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def labelled_fields_seller=0 buyer=0 witness=0
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def section_markers_total=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def section_marker role=seller line_idx=0 line_text="Sale Deed - ╪¿█î╪╣ ┘å╪º┘à█ü\n\n┘ü╪▒┘ê╪«╪¬ ┌⌐┘å┘å╪»█ü (Seller): ┌⌐╪º╪┤┘ü ╪▓╪º╪¿╪»\nCNIC: 12345-1234567-1\n\n╪«╪▒█î╪»╪º╪▒ (Buyer): ┘à╪¡"
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def urdu_markers_count=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def role=seller method=section_cnic page=unknown anchors=0 cnic_blocks=1 extracted="Page 2 content" reason=section_cnic
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=buyer doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: SKIP role=witness doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def reason=no_anchors anchors=0 cnic_blocks=1 method=none
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def section_markers_count=1
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def person_block idx=0 line_range=[0,3] page=1 name="Page 2 content" cnic="12345-1234567-1"
+api-1  | INFO:app.services.extractors.party_roles:PARTY_ROLES_DEBUG: doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def filename="sale_deed.pdf" pages_used=3 total_pages=3 is_sale_deed=True matched_keywords=['sale deed', 'seller', 'buyer', '╪¿█î╪╣ ┘å╪º┘à█ü', '┘ü╪▒┘ê╪«╪¬ ┌⌐┘å┘å╪»█ü', '╪«╪▒█î╪»╪º╪▒', '┌»┘ê╪º█ü', '╪¿█î╪╣', '┘ü╪▒┘ê╪«╪¬'] cnic_count=1 cnic_tokens=[12345-1234567-1] person_blocks_created=1 section_markers_count=1 final_seller="Page 2 content" method_seller=section_cnic final_buyer="none" method_buyer=none final_witness="none" method_witness=none
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: write_loop field_key=party.seller.names doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def raw_value_preview="Page 2 content" cleaned_value_preview="Page 2 content" is_plausible_party_name=True skip_reason=none
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: field=party.seller.names doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def action=CREATE overwrite=True value="Page 2 content" page=1 confidence=0.85
+

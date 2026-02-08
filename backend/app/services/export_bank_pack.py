@@ -68,6 +68,8 @@ def generate_bank_pack_pdf(
     cps: List[Dict[str, Any]],
     documents: List[Dict[str, Any]],
     evidence_refs: Dict[str, List[Dict[str, Any]]],  # exception_id -> list of refs
+    verifications: List[Dict[str, Any]] = None,  # Verification records
+    dossier_fields: List[Dict[str, Any]] = None,  # Full dossier field objects with source info
 ) -> Tuple[bytes, str]:
     """
     Generate a Bank Pack PDF.
@@ -196,6 +198,168 @@ def generate_bank_pack_pdf(
     ]))
     story.append(count_table)
     
+    # ================================================================
+    # VERIFICATION SUMMARY (after Executive Summary)
+    # ================================================================
+    
+    if verifications is None:
+        verifications = []
+    
+    story.append(Spacer(1, 0.3*inch))
+    story.append(Paragraph("VERIFICATION SUMMARY", heading_style))
+    
+    verification_types = {
+        "e_stamp": "e-Stamp Verification",
+        "registry_rod": "Registry / ROD Verification",
+    }
+    
+    # Build verification lookup
+    v_lookup = {v.get("verification_type"): v for v in verifications}
+    
+    for v_type, v_label in verification_types.items():
+        v_data = v_lookup.get(v_type)
+        
+        story.append(Paragraph(f"<b>{v_label}</b>", subheading_style))
+        
+        if v_data:
+            status = v_data.get("status", "Pending")
+            status_color = {"Verified": "#28a745", "Failed": "#dc3545", "Pending": "#ffc107"}.get(status, "#6c757d")
+            
+            # Status row
+            status_style = ParagraphStyle(
+                f'VerStatus{v_type}',
+                parent=normal_style,
+                textColor=colors.HexColor(status_color),
+            )
+            story.append(Paragraph(f"Status: <b>{status}</b>", status_style))
+            
+            # Keys (if any)
+            keys_json = v_data.get("keys_json", {})
+            if keys_json:
+                story.append(Paragraph("Verification Keys:", normal_style))
+                for key, value in keys_json.items():
+                    story.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;• {key}: {value}", normal_style))
+            
+            # Verified by / at
+            if v_data.get("verified_by_email"):
+                story.append(Paragraph(
+                    f"Verified by: {v_data['verified_by_email']}", 
+                    normal_style
+                ))
+            if v_data.get("verified_at"):
+                story.append(Paragraph(
+                    f"Verified at: {v_data['verified_at'][:19].replace('T', ' ')}", 
+                    normal_style
+                ))
+            
+            # Evidence refs
+            v_evidence = v_data.get("evidence_refs", [])
+            if v_evidence:
+                story.append(Paragraph("Evidence:", normal_style))
+                for ev in v_evidence:
+                    filename = ev.get("filename", "Unknown")
+                    page_num = ev.get("page_number", 1)
+                    story.append(Paragraph(
+                        f"&nbsp;&nbsp;&nbsp;&nbsp;• {filename} p.{page_num}",
+                        normal_style
+                    ))
+            elif status == "Pending":
+                story.append(Paragraph(
+                    "<i>Required Action: Complete verification via official portal and attach evidence</i>",
+                    ParagraphStyle('Required', parent=normal_style, textColor=colors.HexColor('#856404'))
+                ))
+            
+            # Notes
+            if v_data.get("notes"):
+                story.append(Paragraph(f"Notes: {v_data['notes']}", normal_style))
+        else:
+            # No verification record exists
+            story.append(Paragraph("Status: <b>Pending</b>", 
+                ParagraphStyle('Pending', parent=normal_style, textColor=colors.HexColor('#ffc107'))
+            ))
+            story.append(Paragraph(
+                "<i>Required Action: Complete verification via official portal and attach evidence</i>",
+                ParagraphStyle('Required', parent=normal_style, textColor=colors.HexColor('#856404'))
+            ))
+        
+        story.append(Spacer(1, 0.15*inch))
+    
+    story.append(PageBreak())
+    
+    # ================================================================
+    # DOSSIER SUMMARY (AUTOFILLED)
+    # ================================================================
+    
+    story.append(Paragraph("DOSSIER SUMMARY (AUTOFILLED)", heading_style))
+    
+    # Key dossier fields to display
+    key_fields = {
+        'property.plot_number': 'Plot Number',
+        'property.block': 'Block',
+        'property.phase': 'Phase',
+        'property.scheme_name': 'Scheme Name',
+        'property.district': 'District',
+        'property.tehsil': 'Tehsil',
+        'property.mouza': 'Mouza',
+        'property.khasra_numbers': 'Khasra Numbers',
+        'registry.registry_number': 'Registry Number',
+        'registry.registry_date': 'Registry Date',
+        'stamp.estamp_id_or_number': 'e-Stamp ID/Number',
+    }
+    
+    # Build dossier field lookup with source info
+    dossier_field_lookup = {}
+    if dossier_fields:
+        for df in dossier_fields:
+            field_key = df.get('field_key')
+            if field_key not in dossier_field_lookup:
+                dossier_field_lookup[field_key] = []
+            dossier_field_lookup[field_key].append(df)
+    
+    # Get dossier fields (dossier is Dict[str, List[str]])
+    dossier_rows = []
+    for field_path, field_label in key_fields.items():
+        values = dossier.get(field_path, [])
+        if values:
+            value_str = ', '.join(values[:3])  # Limit to first 3 values
+            if len(values) > 3:
+                value_str += f' (+{len(values) - 3} more)'
+            
+            # Get source evidence info
+            evidence_str = '—'
+            field_objs = dossier_field_lookup.get(field_path, [])
+            if field_objs:
+                first_field = field_objs[0]
+                source_doc_id = first_field.get('source_document_id')
+                source_page = first_field.get('source_page_number')
+                if source_doc_id and source_doc_id in doc_lookup:
+                    filename = doc_lookup[source_doc_id].get('original_filename', 'Unknown')
+                    if source_page:
+                        evidence_str = f'{filename} p.{source_page}'
+                    else:
+                        evidence_str = filename
+            
+            dossier_rows.append([field_label, value_str, evidence_str])
+    
+    if dossier_rows:
+        dossier_data = [["Field", "Value", "Evidence"]] + dossier_rows
+        
+        dossier_table = Table(dossier_data, colWidths=[2*inch, 2.5*inch, 2*inch])
+        dossier_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a5276')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(dossier_table)
+    else:
+        story.append(Paragraph("No dossier fields autofilled yet.", normal_style))
+    
+    story.append(Spacer(1, 0.3*inch))
     story.append(PageBreak())
     
     # ================================================================
@@ -373,6 +537,50 @@ def generate_bank_pack_pdf(
         story.append(ref_table)
     else:
         story.append(Paragraph("No evidence references recorded.", normal_style))
+    
+    story.append(Spacer(1, 0.3*inch))
+    
+    # Verification Evidence sub-section
+    story.append(Paragraph("<b>Verification Evidence</b>", subheading_style))
+    
+    verification_types_labels = {
+        "e_stamp": "e-Stamp",
+        "registry_rod": "Registry/ROD",
+    }
+    
+    v_evidence_rows = []
+    for v in (verifications or []):
+        v_type = v.get("verification_type", "")
+        v_label = verification_types_labels.get(v_type, v_type)
+        v_status = v.get("status", "Pending")
+        
+        for ev in v.get("evidence_refs", []):
+            v_evidence_rows.append([
+                v_label,
+                v_status,
+                ev.get("filename", "Unknown"),
+                str(ev.get("page_number", 1)),
+            ])
+    
+    if v_evidence_rows:
+        v_ev_data = [["Verification Type", "Status", "Filename", "Page"]] + v_evidence_rows
+        
+        v_ev_table = Table(v_ev_data, colWidths=[1.2*inch, 0.8*inch, 2.8*inch, 0.5*inch])
+        v_ev_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1a5276')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 9),
+            ('ALIGN', (1, 0), (1, -1), 'CENTER'),
+            ('ALIGN', (3, 0), (3, -1), 'CENTER'),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        story.append(v_ev_table)
+    else:
+        story.append(Paragraph("No verification evidence documents attached.", normal_style))
     
     # Footer
     story.append(Spacer(1, 0.5*inch))

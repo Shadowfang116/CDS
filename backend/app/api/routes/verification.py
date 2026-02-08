@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -70,6 +70,10 @@ class AttachEvidenceRequest(BaseModel):
 
 class MarkFailedRequest(BaseModel):
     notes: str
+
+
+class MarkVerifiedRequest(BaseModel):
+    force: Optional[bool] = False
 
 
 class PortalResponse(BaseModel):
@@ -440,10 +444,11 @@ async def mark_verified(
     request: Request,
     case_id: uuid.UUID,
     verification_type: str,
+    body: MarkVerifiedRequest = Body(default=MarkVerifiedRequest()),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Mark verification as verified (requires evidence)."""
+    """Mark verification as verified (requires evidence, unless force=true and Admin)."""
     if verification_type not in VERIFICATION_TYPES:
         raise HTTPException(status_code=400, detail=f"Invalid verification type: {verification_type}")
     
@@ -464,17 +469,21 @@ async def mark_verified(
         Verification.verification_type == verification_type,
     ).first()
     
-    # Check evidence exists
+    # Check evidence exists (unless force=true and Admin)
     evidence_count = db.query(VerificationEvidenceRef).filter(
         VerificationEvidenceRef.org_id == current_user.org_id,
         VerificationEvidenceRef.verification_id == verification.id,
     ).count()
     
     if evidence_count == 0:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot mark as verified without evidence. Please attach evidence first."
-        )
+        if body.force and current_user.role == "Admin":
+            # Admin can bypass evidence requirement with force=true
+            pass
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Evidence required. Please attach evidence first, or set force=true (Admin only)."
+            )
     
     # Update verification
     verification.status = "Verified"
@@ -495,6 +504,17 @@ async def mark_verified(
     ).all()
     
     # Audit log
+    audit_metadata = {
+        "request_id": str(uuid.uuid4()),
+        "ip": request.client.host if request.client else None,
+        "user_agent": request.headers.get("user-agent"),
+        "case_id": str(case_id),
+        "verification_type": verification_type,
+        "cps_satisfied": cps_satisfied,
+    }
+    if body.force and evidence_count == 0:
+        audit_metadata["force_no_evidence"] = True
+    
     write_audit_event(
         db=db,
         org_id=current_user.org_id,
@@ -502,14 +522,7 @@ async def mark_verified(
         action="verification.mark_verified",
         entity_type="verification",
         entity_id=verification.id,
-        event_metadata={
-            "request_id": str(uuid.uuid4()),
-            "ip": request.client.host if request.client else None,
-            "user_agent": request.headers.get("user-agent"),
-            "case_id": str(case_id),
-            "verification_type": verification_type,
-            "cps_satisfied": cps_satisfied,
-        },
+        event_metadata=audit_metadata,
     )
     
     # Also log CP satisfaction if any were satisfied

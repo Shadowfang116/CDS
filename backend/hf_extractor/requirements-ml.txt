@@ -1,0 +1,8 @@
+# Optional ML dependencies for LayoutXLM inference
+# Install with: pip install -r requirements-ml.txt
+# Note: Use CPU wheels for compatibility
+
+transformers>=4.40.0,<5.0.0
+torch>=2.2.0,<3.0.0
+sentencepiece>=0.1.99
+

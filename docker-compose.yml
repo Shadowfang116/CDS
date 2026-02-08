@@ -42,10 +42,36 @@ services:
       timeout: 20s
       retries: 3
 
+  hf-extractor:
+    build:
+      context: ./backend/hf_extractor
+      dockerfile: Dockerfile
+      args:
+        INSTALL_ML_DEPS: ${INSTALL_ML_DEPS:-0}
+        INSTALL_VLM_DEPS: ${INSTALL_VLM_DEPS:-0}
+    restart: unless-stopped
+    environment:
+      MODEL_NAME: ${MODEL_NAME:-microsoft/layoutxlm-base}
+      EXTRACTOR_VERSION: ${EXTRACTOR_VERSION:-layoutxlm-v1}
+      DEVICE: ${DEVICE:-cpu}
+      HF_LAYOUTXLM_MODEL_PATH: ${HF_LAYOUTXLM_MODEL_PATH:-/models/layoutxlm}
+      HF_DEVICE: ${HF_DEVICE:-cpu}
+      # P12: Qaari OCR options (disabled by default)
+      HF_ENABLE_QAARI: ${HF_ENABLE_QAARI:-false}
+      HF_QAARI_MODEL_PATH: ${HF_QAARI_MODEL_PATH:-}
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   api:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -58,11 +84,31 @@ services:
       MINIO_PORT: ${MINIO_PORT:-9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change_me}
+      MINIO_EXTERNAL_ENDPOINT: ${MINIO_EXTERNAL_ENDPOINT:-localhost}
+      MINIO_EXTERNAL_PORT: ${MINIO_EXTERNAL_PORT:-9000}
       APP_ENV: ${APP_ENV:-development}
       APP_SECRET_KEY: ${APP_SECRET_KEY:-change_me_to_random_secret_key}
       RULEPACK_PATH: /app/docs/05_rulepack_v1.yaml
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Bank Diligence Platform}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@bankdiligence.local}
+      WEBHOOK_DELIVERY_ENABLED: ${WEBHOOK_DELIVERY_ENABLED:-true}
+      WEBHOOK_TIMEOUT_SECONDS: ${WEBHOOK_TIMEOUT_SECONDS:-10}
+      # CORS_ORIGINS: Comma-separated origins for CORS (for direct API access, Swagger, etc.)
+      # Frontend uses same-origin proxy, but CORS is still needed for direct API calls
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      # Party role extraction debug logging
+      PARTY_ROLES_DEBUG: ${PARTY_ROLES_DEBUG:-true}
+      # HF Extractor service
+      HF_EXTRACTOR_URL: ${HF_EXTRACTOR_URL:-http://hf-extractor:8090}
     volumes:
       - ./docs:/app/docs:ro
+      - ./scripts:/app/scripts:ro
     ports:
       - "8000:8000"
     depends_on:
@@ -77,7 +123,54 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    restart: unless-stopped
     command: celery -A app.workers.celery_app:celery_app worker --loglevel=INFO
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-bank_diligence}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-bank_diligence}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change_me}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Bank Diligence Platform}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@bankdiligence.local}
+      WEBHOOK_DELIVERY_ENABLED: ${WEBHOOK_DELIVERY_ENABLED:-true}
+      WEBHOOK_TIMEOUT_SECONDS: ${WEBHOOK_TIMEOUT_SECONDS:-10}
+      # Party role extraction debug logging
+      PARTY_ROLES_DEBUG: ${PARTY_ROLES_DEBUG:-true}
+      # Dossier autofill write-path observability
+      DOSSIER_AUTOFILL_DEBUG: ${DOSSIER_AUTOFILL_DEBUG:-true}
+      # HF Extractor service
+      HF_EXTRACTOR_URL: ${HF_EXTRACTOR_URL:-http://hf-extractor:8090}
+    volumes:
+      - ./docs:/app/docs:ro
+      - ./scripts:/app/scripts:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app:celery_app beat --loglevel=INFO
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -103,12 +196,30 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+      # API_INTERNAL_BASE_URL: Used by Next.js server-side rewrites to proxy /api/v1/* to API container
+      # This enables same-origin requests from browser (no CORS needed)
+      API_INTERNAL_BASE_URL: ${API_INTERNAL_BASE_URL:-http://api:8000}
+      # NEXT_PUBLIC_API_BASE_URL: Not needed anymore (browser uses relative /api/v1)
+      # Kept for backward compatibility but not used
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
     ports:
       - "3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_started
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   db_data:

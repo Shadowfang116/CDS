@@ -1,0 +1,143 @@
+# Authority Playbooks v1
+# Defines rule bundles and evidence requirements by regime
+
+playbooks:
+  - id: "LDA_V1"
+    label: "LDA / Placement Letter Controls"
+    regimes: ["LDA"]
+    hard_stops: ["LDA_001", "REG_001", "TPA_CHAIN_GAP_001"]
+    rulesets: ["LDA_RULES_V1", "REG_RULES_V1", "TPA_RULES_V1", "STAMP_RULES_V1"]
+    required_evidence:
+      - code: "LDA_APPROVAL"
+        label: "Approved layout plan / LDA NOC / approval evidence"
+        acceptable_doc_types: ["lda_layout_plan", "lda_noc", "placement_letter"]
+      - code: "COMMERCIALIZATION"
+        label: "Commercialization letter + paid challans (if commercial)"
+        acceptable_doc_types: ["commercialization_letter", "challan_receipt"]
+      - code: "REGISTRY"
+        label: "Registered title instrument"
+        acceptable_doc_types: ["registry_deed", "certified_copy"]
+      - code: "STAMP"
+        label: "E-stamp certificate or paid challan"
+        acceptable_doc_types: ["estamp_certificate", "stamp_challan", "stamp_receipt"]
+  
+  - id: "DHA_V1"
+    label: "DHA Transfer Pack"
+    regimes: ["DHA"]
+    hard_stops: ["DHA_01", "DHA_02", "REG_001", "TPA_CHAIN_GAP_001"]
+    rulesets: ["DHA_RULES_V1", "REG_RULES_V1", "STAMP_RULES_V1", "TPA_RULES_V1"]
+    required_evidence:
+      - code: "DHA_NDC"
+        label: "DHA NDC (No Dues Certificate)"
+        acceptable_doc_types: ["dha_ndc"]
+      - code: "DHA_SITE_PLAN"
+        label: "Site Plan"
+        acceptable_doc_types: ["site_plan"]
+      - code: "DHA_APPROVED_MAP"
+        label: "Approved Drawing/Map (if constructed)"
+        acceptable_doc_types: ["approved_map"]
+      - code: "DHA_COMPLETION"
+        label: "Completion Certificate (if constructed)"
+        acceptable_doc_types: ["completion_certificate"]
+      - code: "REGISTRY"
+        label: "Registered title instrument"
+        acceptable_doc_types: ["registry_deed", "certified_copy"]
+      - code: "STAMP"
+        label: "E-stamp certificate or paid challan"
+        acceptable_doc_types: ["estamp_certificate", "stamp_challan"]
+  
+  - id: "REVENUE_V1"
+    label: "Land Revenue / Record-of-Rights"
+    regimes: ["REVENUE"]
+    hard_stops: ["LRA_001", "LRA_002", "REG_001", "TPA_CHAIN_GAP_001"]
+    rulesets: ["LRA_RULES_V1", "REG_RULES_V1", "TPA_RULES_V1", "STAMP_RULES_V1"]
+    required_evidence:
+      - code: "FARD"
+        label: "Fard Malkiat / Jamabandi"
+        acceptable_doc_types: ["fard", "jamabandi"]
+      - code: "MUTATION"
+        label: "Mutation entry / Intiqal (if required by policy)"
+        acceptable_doc_types: ["mutation_entry"]
+      - code: "REGISTRY"
+        label: "Registered title instrument"
+        acceptable_doc_types: ["registry_deed", "certified_copy"]
+      - code: "STAMP"
+        label: "E-stamp certificate or paid challan"
+        acceptable_doc_types: ["estamp_certificate", "stamp_challan"]
+  
+  - id: "SOCIETY_V1"
+    label: "Cooperative Society Controls"
+    regimes: ["SOCIETY"]
+    hard_stops: ["SOC_001", "SOC_002", "REG_001", "TPA_CHAIN_GAP_001"]
+    rulesets: ["SOC_RULES_V1", "REG_RULES_V1", "TPA_RULES_V1", "STAMP_RULES_V1"]
+    required_evidence:
+      - code: "SOCIETY_TRANSFER"
+        label: "Society transfer/ownership letter chain"
+        acceptable_doc_types: ["society_transfer", "society_allotment"]
+      - code: "SOCIETY_MORTGAGE_PERMISSION"
+        label: "Society mortgage permission / lien marking"
+        acceptable_doc_types: ["society_mortgage_permission"]
+      - code: "SOCIETY_NDC"
+        label: "Society NDC (dues clearance)"
+        acceptable_doc_types: ["society_ndc"]
+      - code: "REGISTRY"
+        label: "Registered title instrument (if applicable)"
+        acceptable_doc_types: ["registry_deed", "certified_copy"]
+      - code: "STAMP"
+        label: "E-stamp certificate or paid challan"
+        acceptable_doc_types: ["estamp_certificate", "stamp_challan"]
+  
+  - id: "RUDA_V1"
+    label: "RUDA Controls"
+    regimes: ["RUDA"]
+    hard_stops: ["RUDA_001", "REG_001", "TPA_CHAIN_GAP_001"]
+    rulesets: ["RUDA_RULES_V1", "REG_RULES_V1", "TPA_RULES_V1", "STAMP_RULES_V1"]
+    required_evidence:
+      - code: "RUDA_NOC"
+        label: "RUDA NOC / Approval"
+        acceptable_doc_types: ["ruda_noc", "ruda_notification"]
+      - code: "REGISTRY"
+        label: "Registered title instrument"
+        acceptable_doc_types: ["registry_deed", "certified_copy"]
+      - code: "STAMP"
+        label: "E-stamp certificate or paid challan"
+        acceptable_doc_types: ["estamp_certificate", "stamp_challan"]
+  
+  - id: "CANTONMENT_V1"
+    label: "Cantonment Controls"
+    regimes: ["CANTONMENT"]
+    hard_stops: ["CANT_001", "REG_001", "TPA_CHAIN_GAP_001"]
+    rulesets: ["CANT_RULES_V1", "REG_RULES_V1", "TPA_RULES_V1", "STAMP_RULES_V1"]
+    required_evidence:
+      - code: "CANTONMENT_NOC"
+        label: "Cantonment transfer permission / NOC"
+        acceptable_doc_types: ["cantonment_noc"]
+      - code: "LEASE_GRANT"
+        label: "Lease deed / Grant conditions (if applicable)"
+        acceptable_doc_types: ["lease_deed", "grant_conditions"]
+      - code: "REGISTRY"
+        label: "Registered title instrument"
+        acceptable_doc_types: ["registry_deed", "certified_copy"]
+      - code: "STAMP"
+        label: "E-stamp certificate or paid challan"
+        acceptable_doc_types: ["estamp_certificate", "stamp_challan"]
+  
+  - id: "MUNICIPAL_V1"
+    label: "Municipal / Property Tax Controls"
+    regimes: ["MUNICIPAL"]
+    hard_stops: ["LG_001", "REG_001", "TPA_CHAIN_GAP_001"]
+    rulesets: ["LG_RULES_V1", "REG_RULES_V1", "TPA_RULES_V1", "STAMP_RULES_V1"]
+    required_evidence:
+      - code: "MUNICIPAL_DUES"
+        label: "Municipal dues clearance"
+        acceptable_doc_types: ["municipal_dues_clearance"]
+      - code: "PT1"
+        label: "PT-1 / Property tax evidence (if required)"
+        acceptable_doc_types: ["pt1", "property_tax_receipt"]
+      - code: "REGISTRY"
+        label: "Registered title instrument"
+        acceptable_doc_types: ["registry_deed", "certified_copy"]
+      - code: "STAMP"
+        label: "E-stamp certificate or paid challan"
+        acceptable_doc_types: ["estamp_certificate", "stamp_challan"]
+

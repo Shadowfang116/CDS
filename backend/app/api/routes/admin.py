@@ -12,6 +12,8 @@ from app.models.case import Case
 from app.models.document import Document, DocumentPage, CaseDossierField
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun
 from app.models.export import Export
+from app.models.user import User, UserOrgRole
+from app.models.audit_log import AuditLog
 from app.api.deps import get_current_user, CurrentUser
 from app.services.audit import write_audit_event
 from app.services.storage import delete_object, delete_objects_by_prefix
@@ -417,4 +419,261 @@ async def run_retention_cleanup(
         cases_deleted=cases_deleted,
         cutoff_date=cutoff_date.isoformat(),
     )
+
+
+# ============================================================
+# USER MANAGEMENT (Phase 10)
+# ============================================================
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    role: str
+    created_at: datetime
+
+
+class UserCreateRequest(BaseModel):
+    email: str
+    full_name: str
+    role: str  # Admin, Reviewer, Approver, Viewer
+
+
+class UserUpdateRequest(BaseModel):
+    role: str
+
+
+class AuditLogResponse(BaseModel):
+    id: str
+    actor_user_id: str
+    action: str
+    entity_type: Optional[str]
+    entity_id: Optional[str]
+    event_metadata: dict
+    created_at: datetime
+
+
+@router.get("/users", response_model=list[UserResponse])
+async def list_users(
+    request: Request,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List all users in the org (Admin only)."""
+    require_admin(current_user)
+    
+    # Get all user-org-role mappings for this org
+    user_roles = db.query(UserOrgRole).filter(
+        UserOrgRole.org_id == current_user.org_id
+    ).all()
+    
+    # Get user details
+    user_ids = [ur.user_id for ur in user_roles]
+    users = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()}
+    roles_map = {ur.user_id: ur.role for ur in user_roles}
+    
+    return [
+        UserResponse(
+            id=str(user_id),
+            email=users[user_id].email,
+            full_name=users[user_id].full_name,
+            role=roles_map[user_id],
+            created_at=users[user_id].created_at,
+        )
+        for user_id in user_ids
+        if user_id in users
+    ]
+
+
+@router.post("/users", response_model=UserResponse, status_code=201)
+async def create_user(
+    request: Request,
+    body: UserCreateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Create a user in the org with a role (Admin only, dev mode)."""
+    require_admin(current_user)
+    
+    # Validate role
+    valid_roles = ["Admin", "Reviewer", "Approver", "Viewer"]
+    if body.role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
+    
+    # Check if user exists
+    user = db.query(User).filter(User.email == body.email).first()
+    if not user:
+        # Create user
+        user = User(
+            email=body.email,
+            full_name=body.full_name,
+        )
+        db.add(user)
+        db.flush()
+    
+    # Check if role mapping exists
+    existing_role = db.query(UserOrgRole).filter(
+        UserOrgRole.user_id == user.id,
+        UserOrgRole.org_id == current_user.org_id,
+    ).first()
+    
+    if existing_role:
+        raise HTTPException(status_code=400, detail="User already exists in this org")
+    
+    # Create role mapping
+    user_role = UserOrgRole(
+        user_id=user.id,
+        org_id=current_user.org_id,
+        role=body.role,
+    )
+    db.add(user_role)
+    db.commit()
+    db.refresh(user)
+    
+    # Audit log
+    write_audit_event(
+        db=db,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.user_id,
+        action="admin.user_create",
+        entity_type="user",
+        entity_id=user.id,
+        event_metadata={
+            "email": body.email,
+            "role": body.role,
+        },
+    )
+    
+    return UserResponse(
+        id=str(user.id),
+        email=user.email,
+        full_name=user.full_name,
+        role=body.role,
+        created_at=user.created_at,
+    )
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+async def update_user_role(
+    request: Request,
+    user_id: uuid.UUID,
+    body: UserUpdateRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a user's role in the org (Admin only)."""
+    require_admin(current_user)
+    
+    # Validate role
+    valid_roles = ["Admin", "Reviewer", "Approver", "Viewer"]
+    if body.role not in valid_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
+    
+    # Get role mapping
+    user_role = db.query(UserOrgRole).filter(
+        UserOrgRole.user_id == user_id,
+        UserOrgRole.org_id == current_user.org_id,
+    ).first()
+    
+    if not user_role:
+        raise HTTPException(status_code=404, detail="User not found in this org")
+    
+    old_role = user_role.role
+    user_role.role = body.role
+    db.commit()
+    
+    # Get user
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    # Audit log
+    write_audit_event(
+        db=db,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.user_id,
+        action="admin.user_update",
+        entity_type="user",
+        entity_id=user_id,
+        event_metadata={
+            "email": user.email if user else None,
+            "old_role": old_role,
+            "new_role": body.role,
+        },
+    )
+    
+    return UserResponse(
+        id=str(user_id),
+        email=user.email if user else "",
+        full_name=user.full_name if user else "",
+        role=body.role,
+        created_at=user.created_at if user else datetime.utcnow(),
+    )
+
+
+@router.post("/smoke/ping")
+async def smoke_ping(
+    request: Request,
+    event: str,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Admin-only endpoint for smoke tests to record audit events.
+    Events: smoke.run_start, smoke.run_complete, smoke.ocr_done
+    """
+    require_admin(current_user)
+    
+    # Write audit event
+    write_audit_event(
+        db=db,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.user_id,
+        action=f"smoke.{event}",
+        event_metadata={
+            "request_id": str(uuid.uuid4()),
+            "ip": request.client.host if request.client else None,
+            "user_agent": request.headers.get("user-agent"),
+            "smoke_event": event,
+        },
+    )
+    
+    return {"status": "ok", "event": f"smoke.{event}"}
+
+
+@router.get("/audit", response_model=list[AuditLogResponse])
+async def list_audit_logs(
+    request: Request,
+    days: int = 7,
+    limit: int = 200,
+    action_prefix: Optional[str] = None,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List audit logs for the org (Admin only)."""
+    require_admin(current_user)
+    
+    from datetime import timedelta
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    
+    query = db.query(AuditLog).filter(
+        AuditLog.org_id == current_user.org_id,
+        AuditLog.created_at >= cutoff,
+    )
+    
+    if action_prefix:
+        query = query.filter(AuditLog.action.like(f"{action_prefix}%"))
+    
+    logs = query.order_by(AuditLog.created_at.desc()).limit(limit).all()
+    
+    return [
+        AuditLogResponse(
+            id=str(log.id),
+            actor_user_id=str(log.actor_user_id),
+            action=log.action,
+            entity_type=log.entity_type,
+            entity_id=str(log.entity_id) if log.entity_id else None,
+            event_metadata=log.event_metadata or {},
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]
 

@@ -5,7 +5,7 @@ from sqlalchemy import text
 from app.api.router import api_router
 from app.db.session import engine
 from app.db.base import Base
-from app.models import Org, User, UserOrgRole, Case, AuditLog, Document, DocumentPage, CaseDossierField, Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun, Export, Verification, VerificationEvidenceRef  # Import to register models
+from app.models import Org, User, UserOrgRole, Case, AuditLog, Document, DocumentPage, CaseDossierField, Exception_, ConditionPrecedent, ExceptionEvidenceRef, CPEvidenceRef, RuleRun, Export, Verification, VerificationEvidenceRef  # Import to register models
 from app.services.storage import ensure_bucket_exists
 from app.core.config import settings
 from app.core.middleware import SecurityHeadersMiddleware, UploadSizeLimitMiddleware

@@ -14,6 +14,7 @@ class DocumentResponse(BaseModel):
     page_count: Optional[int]
     status: str
     error_message: Optional[str]
+    doc_type: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     
@@ -26,6 +27,7 @@ class DocumentListItem(BaseModel):
     original_filename: str
     page_count: Optional[int]
     status: str
+    doc_type: Optional[str] = None
     created_at: datetime
     
     class Config:
@@ -53,6 +55,7 @@ class DocumentDetailResponse(BaseModel):
     page_count: Optional[int]
     status: str
     error_message: Optional[str]
+    doc_type: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     pages: List[DocumentPageResponse]

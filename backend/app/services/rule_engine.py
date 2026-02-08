@@ -134,10 +134,67 @@ def normalize_cnic(cnic: str) -> str:
 
 
 def infer_doc_type_from_filename(filename: str) -> Optional[str]:
-    """Infer document type from filename using heuristics."""
+    """
+    Infer document type from filename (P9 extended patterns).
+    
+    Supports Pakistani banking/legal document patterns including DHA transfer documents.
+    """
     filename_lower = filename.lower()
     
+    # Pakistani banking/legal document patterns (order matters - more specific first)
     type_patterns = [
+        # Legal opinions
+        (["legal opinion", "opinion"], "legal_opinion"),
+        # Registry documents (P9)
+        (["registry deed", "registered deed"], "registry_deed"),
+        (["certified copy", "certifiedcopy"], "certified_copy"),
+        (["ro d", "rod output", "rod verification"], "rod_output"),
+        # Stamp documents (P9)
+        (["estamp", "e-stamp", "e stamp", "stamp certificate"], "estamp_certificate"),
+        (["stamp challan", "challan"], "stamp_challan"),
+        (["stamp receipt"], "stamp_receipt"),
+        # Revenue documents (P9)
+        (["fard", "fard e malkiat", "fard-e-malkiat", "fardmalkiat"], "fard"),
+        (["jamabandi", "jamabandi"], "jamabandi"),
+        (["mutation", "mutation entry", "intiqal"], "mutation_entry"),
+        # Society documents (P9)
+        (["society allotment", "allotment letter"], "society_allotment"),
+        (["society transfer", "transfer letter"], "society_transfer"),
+        (["society membership", "membership"], "society_membership"),
+        (["society mortgage permission", "mortgage permission"], "society_mortgage_permission"),
+        (["society ndc", "society noc"], "society_ndc"),
+        # LDA documents (P9)
+        (["lda layout plan", "layout plan", "approved layout"], "lda_layout_plan"),
+        (["lda noc", "lda approval"], "lda_noc"),
+        (["placement letter", "placement"], "placement_letter"),
+        (["one window receipt", "one window"], "one_window_receipt"),
+        (["commercialization letter", "commercialization"], "commercialization_letter"),
+        # RUDA documents (P9)
+        (["ruda noc", "ruda approval"], "ruda_noc"),
+        (["ruda notification"], "ruda_notification"),
+        # Cantonment documents (P9)
+        (["cantonment noc", "cantonment approval"], "cantonment_noc"),
+        (["lease deed", "lease"], "lease_deed"),
+        (["grant conditions", "grant"], "grant_conditions"),
+        # Municipal documents (P9)
+        (["municipal dues clearance", "dues clearance"], "municipal_dues_clearance"),
+        (["pt-1", "pt1", "property tax pt1"], "pt1"),
+        (["property tax receipt", "tax receipt"], "property_tax_receipt"),
+        # Possession/Tenancy documents (P9)
+        (["possession affidavit", "possession"], "possession_affidavit"),
+        (["rent agreement", "rental"], "rent_agreement"),
+        (["tenant noc", "tenant no objection"], "tenant_noc"),
+        (["site visit memo", "site visit", "inspection memo"], "site_visit_memo"),
+        # DHA documents (existing)
+        (["dha intimation", "intimation"], "dha_intimation_letter"),
+        (["dha consent", "consent"], "seller_consent_letter"),
+        (["ndc", "dha ndc"], "dha_ndc"),
+        (["site plan", "siteplan"], "site_plan"),
+        (["approved drawing", "approved map", "approvedmap", "map"], "approved_map"),
+        (["completion certificate", "completion"], "completion_certificate"),
+        # Registry documents (existing)
+        (["registry", "registered", "sale deed"], "registry_instrument"),
+        # Standard documents (existing)
         (["cnic", "nic", "id card"], "CNIC Copy"),
         (["photo", "photograph", "passport"], "Photograph"),
         (["salary", "payslip", "pay slip"], "Salary Slip"),
@@ -288,6 +345,73 @@ def evaluate_keyword_risk(rule: Dict, ctx: CaseContext) -> RuleResult:
     )
 
 
+def evaluate_constructed_gate(rule: Dict, ctx: CaseContext) -> RuleResult:
+    """Check for missing evidence only if property appears to be constructed.
+    
+    First checks if constructed indicators are present in OCR text or dossier.
+    If constructed indicators found, then checks for missing required doc types.
+    """
+    logic = rule.get("logic", {})
+    constructed_indicators = logic.get("constructed_indicators", [])
+    required_types = logic.get("required_doc_types", [])
+    
+    # Step 1: Check if property appears to be constructed
+    is_constructed_likely = False
+    
+    # Check dossier for constructed field
+    if "property.constructed" in ctx.dossier:
+        constructed_values = ctx.dossier["property.constructed"]
+        if any(v.lower() in ["true", "yes", "1"] for v in constructed_values):
+            is_constructed_likely = True
+    
+    # Check OCR text for constructed indicators
+    if not is_constructed_likely:
+        for doc_id, page_num, ocr_text in ctx.pages:
+            text_lower = ocr_text.lower()
+            for indicator in constructed_indicators:
+                if indicator.lower() in text_lower:
+                    is_constructed_likely = True
+                    break
+            if is_constructed_likely:
+                break
+    
+    # Step 2: If constructed, check for missing required documents
+    triggered = False
+    if is_constructed_likely:
+        effective_types = get_effective_doc_types(ctx)
+        effective_lower = [t.lower() for t in effective_types]
+        found = False
+        for req in required_types:
+            if req.lower() in effective_lower:
+                found = True
+                break
+            # Also check partial matches
+            for eff in effective_lower:
+                if req.lower() in eff or eff in req.lower():
+                    found = True
+                    break
+            if found:
+                break
+        triggered = not found
+    
+    outputs = rule.get("outputs", {})
+    description = outputs.get("exception", "")
+    if is_constructed_likely and triggered:
+        description += " (Property appears constructed)"
+    
+    return RuleResult(
+        rule_id=rule["id"],
+        module=rule["module"],
+        severity=rule["severity"],
+        triggered=triggered,
+        title=outputs.get("title", ""),
+        description=description,
+        cp_text=outputs.get("cp", ""),
+        evidence_required=outputs.get("evidence_required", ""),
+        resolution_conditions=outputs.get("resolution_conditions", ""),
+    )
+
+
 def evaluate_timeline_gap(rule: Dict, ctx: CaseContext) -> RuleResult:
     """Check for date/timeline inconsistencies."""
     # For MVP, this uses keyword-based detection
@@ -408,6 +532,7 @@ EVALUATORS = {
     "keyword_risk": evaluate_keyword_risk,
     "timeline_gap": evaluate_timeline_gap,
     "verification_check": evaluate_verification_check,
+    "constructed_gate": evaluate_constructed_gate,
 }
 
 

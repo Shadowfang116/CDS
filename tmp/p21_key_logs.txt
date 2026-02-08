@@ -1,0 +1,7 @@
+
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [1f9736ee] party_roles_collected doc_id=8fa48b2d-c169-450e-8b16-8855b6a83def count=3 roles_present=['seller', 'buyer', 'witness'] roles_missing=[] missing_reasons={}
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [1f9736ee] EXIT party roles loop total_party_extractions=3 party_role_items_count=3 all_extractions_keys=['party.seller.names', 'party.buyer.names', 'party.witness.names']
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [1f9736ee] ENTER write loop total_candidates_overall=3 party_role_items_count=3 party_field_keys_present=['party.seller.names', 'party.buyer.names', 'party.witness.names'] docs_with_party_roles_count=1 total_fields=3
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [1f9736ee] EXIT write loop attempted_party=3 skipped_party=0 written_party=3
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [1f9736ee] COMMIT done table=ocr_extraction_candidates attempted_party=3 written_party=3 skipped_party=0 total_records=3 party_role_records=3
+

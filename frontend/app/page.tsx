@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { devLogin, setToken, getToken, clearToken, listCases, createCase } from '@/lib/api';
+import { SetPageChrome } from '@/components/layout/set-page-chrome';
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -14,11 +15,20 @@ export default function Home() {
   const [newCaseTitle, setNewCaseTitle] = useState('');
 
   useEffect(() => {
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/f5d810ee-7b87-46b0-a99a-93189a1118fe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:17',message:'Home page mount',data:{pathname:typeof window !== 'undefined' ? window.location.pathname : 'ssr'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     checkAuth();
   }, []);
 
   const checkAuth = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/f5d810ee-7b87-46b0-a99a-93189a1118fe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:21',message:'Home checkAuth called',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     const token = await getToken();
+    // #region agent log
+    fetch('http://127.0.0.1:7245/ingest/f5d810ee-7b87-46b0-a99a-93189a1118fe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:23',message:'Home checkAuth token result',data:{hasToken:!!token,willSetLoggedIn:!!token},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     if (token) {
       setIsLoggedIn(true);
       loadCases();
@@ -118,11 +128,21 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-cyan-400">Bank Diligence Platform</h1>
-        <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
-      </header>
+    <>
+      <SetPageChrome title="Cases" breadcrumbs={[{ label: "Cases" }]} />
+      <div className="min-h-screen p-6">
+        <header className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-cyan-400">Bank Diligence Platform</h1>
+          <div className="flex items-center gap-3">
+            <a
+              href="/dashboard"
+              className="btn btn-primary"
+            >
+              Dashboard
+            </a>
+            <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
+          </div>
+        </header>
 
       <main className="max-w-4xl mx-auto">
         <div className="card mb-6">
@@ -162,7 +182,8 @@ export default function Home() {
           )}
         </div>
       </main>
-    </div>
+      </div>
+    </>
   );
 }
 

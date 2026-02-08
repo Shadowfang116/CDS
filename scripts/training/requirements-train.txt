@@ -1,0 +1,10 @@
+# Training dependencies for LayoutXLM token-classification
+# Install with: pip install -r requirements-train.txt
+
+transformers>=4.40.0,<5.0.0
+datasets>=2.18.0,<3.0.0
+torch>=2.2.0,<3.0.0
+pillow>=10.0.0
+seqeval>=1.2.0
+numpy>=1.24.0
+

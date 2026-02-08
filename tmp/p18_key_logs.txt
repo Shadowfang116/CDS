@@ -1,0 +1,6 @@
+
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [622baa53] EXIT party roles loop total_party_extractions=1 party_role_items_count=1 all_extractions_keys=['party.seller.names']
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [622baa53] ENTER write loop total_candidates_overall=1 party_role_items_count=1 party_field_keys_present=['party.seller.names'] docs_with_party_roles_count=1 total_fields=1
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [622baa53] EXIT write loop attempted_party=1 skipped_party=0 written_party=1
+api-1  | INFO:app.services.dossier_autofill:DOSSIER_AUTOFILL_DEBUG: [622baa53] COMMIT done table=ocr_extraction_candidates attempted_party=1 written_party=1 skipped_party=0 total_records=3 party_role_records=3
+

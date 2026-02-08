@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import jwt
 from app.db.session import get_db
 from app.core.config import settings
+from app.core.roles import validate_role_for_creation
 from app.models.org import Org
 from app.models.user import User, UserOrgRole
 from app.schemas.auth import DevLoginRequest, TokenResponse, UserResponse
@@ -24,6 +25,9 @@ async def dev_login(
     DEV-ONLY: Quick login for development.
     Creates/updates org, user, and role mapping, then returns JWT.
     """
+    # Normalize role upfront (raises 400 if invalid)
+    canonical_role = validate_role_for_creation(login_data.role)
+    
     # Upsert org
     org = db.query(Org).filter(Org.name == login_data.org_name).first()
     if not org:
@@ -40,7 +44,7 @@ async def dev_login(
         db.commit()
         db.refresh(user)
     
-    # Upsert role mapping
+    # Upsert role mapping (always use canonical role)
     role_mapping = db.query(UserOrgRole).filter(
         UserOrgRole.user_id == user.id,
         UserOrgRole.org_id == org.id,
@@ -49,20 +53,20 @@ async def dev_login(
         role_mapping = UserOrgRole(
             user_id=user.id,
             org_id=org.id,
-            role=login_data.role,
+            role=canonical_role,
         )
         db.add(role_mapping)
         db.commit()
     else:
-        role_mapping.role = login_data.role
+        role_mapping.role = canonical_role
         db.commit()
     
-    # Generate JWT
+    # Generate JWT (use canonical role)
     expires = datetime.utcnow() + timedelta(hours=settings.APP_ACCESS_TOKEN_EXPIRE_HOURS)
     token_data = {
         "user_id": str(user.id),
         "org_id": str(org.id),
-        "role": login_data.role,
+        "role": canonical_role,
         "exp": expires,
     }
     token = jwt.encode(token_data, settings.APP_SECRET_KEY, algorithm=settings.APP_ALGORITHM)
@@ -78,7 +82,7 @@ async def dev_login(
             "request_id": str(request_id),
             "ip": request.client.host if request.client else None,
             "user_agent": request.headers.get("user-agent"),
-            "role": login_data.role,
+            "role": canonical_role,
         },
     )
     

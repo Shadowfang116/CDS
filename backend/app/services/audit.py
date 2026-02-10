@@ -12,8 +12,9 @@ def write_audit_event(
     entity_type: Optional[str] = None,
     entity_id: Optional[uuid.UUID] = None,
     event_metadata: Optional[Dict[str, Any]] = None,
+    request_id: Optional[str] = None,
 ):
-    """Append-only audit log writer."""
+    """Append-only audit log writer. request_id should come from request.state.request_id when in HTTP context."""
     audit_entry = AuditLog(
         org_id=org_id,
         actor_user_id=actor_user_id,
@@ -21,6 +22,7 @@ def write_audit_event(
         entity_type=entity_type,
         entity_id=entity_id,
         event_metadata=event_metadata or {},
+        request_id=request_id,
     )
     db.add(audit_entry)
     db.commit()

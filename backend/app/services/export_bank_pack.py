@@ -1,4 +1,4 @@
-"""D5: Bank Pack PDF generation service using ReportLab."""
+"""D5: Bank Pack PDF generation service using ReportLab. Phase 8: deterministic filename and ordering."""
 import io
 from datetime import datetime
 from typing import List, Dict, Any, Tuple
@@ -592,8 +592,29 @@ def generate_bank_pack_pdf(
     # Build PDF
     pdf_doc.build(story)
     buffer.seek(0)
-    
-    filename = f"bank_pack_{case_ref}_{datetime.utcnow().strftime('%Y%m%d')}.pdf"
-    
-    return buffer.getvalue(), filename
+    pdf_bytes = buffer.getvalue()
+
+    # Phase 8: deterministic filename and stable PDF metadata
+    case_id_str = str(case.get("id", ""))
+    date_str = datetime.utcnow().strftime("%Y%m%d")
+    filename = f"BANK_PACK__CASE_{case_id_str}__{date_str}__v1.pdf"
+
+    # Set consistent creator/title (no volatile metadata)
+    try:
+        from pypdf import PdfReader, PdfWriter
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        writer.add_metadata({
+            "/Title": "Bank Pack - Due Diligence Report",
+            "/Creator": "Bank Diligence Platform",
+        })
+        out = io.BytesIO()
+        writer.write(out)
+        pdf_bytes = out.getvalue()
+    except Exception:
+        pass  # keep original bytes if metadata step fails
+
+    return pdf_bytes, filename
 

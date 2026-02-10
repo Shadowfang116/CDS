@@ -12,7 +12,7 @@ from app.schemas.document import (
     DocumentPageResponse,
     PresignedUrlResponse,
 )
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import get_current_user, CurrentUser, require_tenant_scope
 from app.services.audit import write_audit_event
 from app.services.storage import put_object_bytes, get_presigned_get_url
 from app.services.pdf_splitter import split_pdf, PDFSplitError
@@ -40,14 +40,14 @@ async def upload_document(
     request: Request,
     case_id: uuid.UUID,
     file: UploadFile = File(...),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Upload a PDF document, DOCX file, or image to a case."""
-    # Validate case exists and belongs to org
+    """Upload a PDF document, DOCX file, or image to a case (tenant-scoped)."""
     case = db.query(Case).filter(
         Case.id == case_id,
-        Case.org_id == current_user.org_id,
+        Case.org_id == org_id,
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -295,21 +295,21 @@ async def upload_document(
 async def list_documents(
     request: Request,
     case_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List all documents for a case."""
-    # Validate case exists and belongs to org
+    """List all documents for a case (tenant-scoped: 404 if case not in org)."""
     case = db.query(Case).filter(
         Case.id == case_id,
-        Case.org_id == current_user.org_id,
+        Case.org_id == org_id,
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
     documents = db.query(Document).filter(
         Document.case_id == case_id,
-        Document.org_id == current_user.org_id,
+        Document.org_id == org_id,
     ).order_by(Document.created_at.desc()).all()
     
     # Audit log
@@ -335,20 +335,21 @@ async def list_documents(
 async def get_document(
     request: Request,
     document_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get document details including pages."""
+    """Get document details (tenant-scoped: 404 if not in org)."""
     document = db.query(Document).filter(
         Document.id == document_id,
-        Document.org_id == current_user.org_id,
+        Document.org_id == org_id,
     ).first()
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     
     pages = db.query(DocumentPage).filter(
         DocumentPage.document_id == document_id,
-        DocumentPage.org_id == current_user.org_id,
+        DocumentPage.org_id == org_id,
     ).order_by(DocumentPage.page_number).all()
     
     # Audit log
@@ -401,13 +402,14 @@ async def get_document(
 async def download_document(
     request: Request,
     document_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get a signed URL to download the original document."""
+    """Get a signed URL to download the original document (tenant-scoped)."""
     document = db.query(Document).filter(
         Document.id == document_id,
-        Document.org_id == current_user.org_id,
+        Document.org_id == org_id,
     ).first()
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -440,22 +442,21 @@ async def download_page(
     request: Request,
     document_id: uuid.UUID,
     page_number: int,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get a signed URL to download a specific page PDF."""
-    # Validate document
+    """Get a signed URL to download a specific page PDF (tenant-scoped)."""
     document = db.query(Document).filter(
         Document.id == document_id,
-        Document.org_id == current_user.org_id,
+        Document.org_id == org_id,
     ).first()
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    # Validate page
     page = db.query(DocumentPage).filter(
         DocumentPage.document_id == document_id,
-        DocumentPage.org_id == current_user.org_id,
+        DocumentPage.org_id == org_id,
         DocumentPage.page_number == page_number,
     ).first()
     if not page:

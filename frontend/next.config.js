@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   // Proxy API requests to backend for same-origin (no CORS needed in browser)
   // This allows browser to call /api/v1/* which gets proxied to the API container
   async rewrites() {

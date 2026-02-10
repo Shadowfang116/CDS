@@ -1,23 +1,26 @@
-import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+
 from app.api.router import api_router
 from app.db.session import engine
 from app.db.base import Base
 from app.models import Org, User, UserOrgRole, Case, AuditLog, Document, DocumentPage, CaseDossierField, Exception_, ConditionPrecedent, ExceptionEvidenceRef, CPEvidenceRef, RuleRun, Export, Verification, VerificationEvidenceRef  # Import to register models
 from app.services.storage import ensure_bucket_exists
 from app.core.config import settings
-from app.core.middleware import SecurityHeadersMiddleware, UploadSizeLimitMiddleware
+from app.core.middleware import RequestContextMiddleware, SecurityHeadersMiddleware, UploadSizeLimitMiddleware
+from app.core.logging import get_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 app = FastAPI(title="Bank Diligence API", version="0.1.0")
 
 # ============================================================
-# MIDDLEWARE
+# MIDDLEWARE (first added = outermost = runs first)
 # ============================================================
+
+# Request context: X-Request-ID, latency, structured request log
+app.add_middleware(RequestContextMiddleware)
 
 # Security headers
 app.add_middleware(SecurityHeadersMiddleware)

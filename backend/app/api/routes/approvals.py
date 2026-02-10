@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.db.session import get_db
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import get_current_user, CurrentUser, require_tenant_scope, require_role
 from app.services.audit import write_audit_event
 from app.models.approval import ApprovalRequest, APPROVAL_REQUEST_TYPES
 from app.models.case import Case
@@ -101,7 +101,13 @@ async def list_approvals(
         case_ids.add(a.case_id)
     
     users = {u.id: u.email for u in db.query(User).filter(User.id.in_(user_ids)).all()}
-    cases = {c.id: c.title for c in db.query(Case).filter(Case.id.in_(case_ids)).all()}
+    cases = {
+        c.id: c.title
+        for c in db.query(Case).filter(
+            Case.id.in_(case_ids),
+            Case.org_id == current_user.org_id,
+        ).all()
+    }
     
     return ApprovalListResponse(
         approvals=[
@@ -133,19 +139,17 @@ async def list_approvals(
 async def create_approval(
     request: Request,
     payload: ApprovalRequestCreate,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Reviewer", "Admin")),
     db: Session = Depends(get_db),
 ):
     """
     Create a new approval request (Maker action).
-    Only Reviewer or Admin can create requests.
+    Only Reviewer or Admin can create requests. Tenant-scoped: 404 if case not in org.
     """
-    if current_user.role not in ["Reviewer", "Admin"]:
-        raise HTTPException(status_code=403, detail="Only Reviewer or Admin can create approval requests")
-    
     approval = create_approval_request(
         db=db,
-        org_id=current_user.org_id,
+        org_id=org_id,
         case_id=payload.case_id,
         requested_by_user_id=current_user.user_id,
         requested_by_role=current_user.role,
@@ -153,8 +157,10 @@ async def create_approval(
         payload=payload.payload,
     )
     
-    # Get case title
-    case = db.query(Case).filter(Case.id == payload.case_id).first()
+    case = db.query(Case).filter(
+        Case.id == payload.case_id,
+        Case.org_id == org_id,
+    ).first()
     
     # Get requester email
     user = db.query(User).filter(User.id == current_user.user_id).first()
@@ -248,13 +254,15 @@ async def approve_request(
         },
     )
     
-    # Emit integration event
     from app.services.event_bus import emit_event
     requester = db.query(User).filter(User.id == approval.requested_by_user_id).first()
-    case = db.query(Case).filter(Case.id == approval.case_id).first()
+    case = db.query(Case).filter(
+        Case.id == approval.case_id,
+        Case.org_id == approval.org_id,
+    ).first()
     emit_event(
         db=db,
-        org_id=current_user.org_id,
+        org_id=approval.org_id,
         event_type="approval.decided",
         payload={
             "approval_id": str(approval.id),
@@ -309,13 +317,15 @@ async def reject_request(
         },
     )
     
-    # Emit integration event
     from app.services.event_bus import emit_event
     requester = db.query(User).filter(User.id == approval.requested_by_user_id).first()
-    case = db.query(Case).filter(Case.id == approval.case_id).first()
+    case = db.query(Case).filter(
+        Case.id == approval.case_id,
+        Case.org_id == approval.org_id,
+    ).first()
     emit_event(
         db=db,
-        org_id=current_user.org_id,
+        org_id=approval.org_id,
         event_type="approval.decided",
         payload={
             "approval_id": str(approval.id),
@@ -381,8 +391,11 @@ async def get_readiness(
 
 
 def _build_approval_response(db: Session, approval: ApprovalRequest) -> ApprovalRequestResponse:
-    """Helper to build approval response with enriched data."""
-    case = db.query(Case).filter(Case.id == approval.case_id).first()
+    """Helper to build approval response with enriched data (tenant-scoped)."""
+    case = db.query(Case).filter(
+        Case.id == approval.case_id,
+        Case.org_id == approval.org_id,
+    ).first()
     requester = db.query(User).filter(User.id == approval.requested_by_user_id).first()
     decider = db.query(User).filter(User.id == approval.decided_by_user_id).first() if approval.decided_by_user_id else None
     

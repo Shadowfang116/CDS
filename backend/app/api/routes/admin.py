@@ -14,20 +14,14 @@ from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRe
 from app.models.export import Export
 from app.models.user import User, UserOrgRole
 from app.models.audit_log import AuditLog
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import get_current_user, CurrentUser, require_role, require_tenant_scope
 from app.services.audit import write_audit_event
 from app.services.storage import delete_object, delete_objects_by_prefix
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
-def require_admin(current_user: CurrentUser):
-    """Check that user is Admin."""
-    if current_user.role != "Admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin role required"
-        )
+# Admin-only routes use Depends(require_role("Admin")) instead of require_admin().
 
 
 # ============================================================
@@ -46,6 +40,18 @@ class RetentionCleanupResponse(BaseModel):
     cutoff_date: str
 
 
+class MigrationsStatusResponse(BaseModel):
+    current_revision: Optional[str]
+    head_revisions: list[str]
+
+
+class BuildInfoResponse(BaseModel):
+    app_env: str
+    build_sha: Optional[str] = None
+    build_time: Optional[str] = None
+    code_head_revisions: Optional[list[str]] = None
+
+
 # ============================================================
 # DELETE CASE
 # ============================================================
@@ -54,20 +60,18 @@ class RetentionCleanupResponse(BaseModel):
 async def delete_case(
     request: Request,
     case_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """
     Delete a case and all related data (Admin only).
     Removes: exports, exceptions, cps, evidence refs, dossier fields, documents, pages.
-    Also removes all MinIO objects under the case prefix.
+    Also removes all MinIO objects under the case prefix. Tenant-scoped: 404 if case not in org.
     """
-    require_admin(current_user)
-    
-    # Validate case exists and belongs to org
     case = db.query(Case).filter(
         Case.id == case_id,
-        Case.org_id == current_user.org_id,
+        Case.org_id == org_id,
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
@@ -77,7 +81,7 @@ async def delete_case(
     # Delete exports
     exports = db.query(Export).filter(
         Export.case_id == case_id,
-        Export.org_id == current_user.org_id,
+        Export.org_id == org_id,
     ).all()
     for exp in exports:
         db.delete(exp)
@@ -86,63 +90,63 @@ async def delete_case(
     # Delete exception evidence refs (must delete before exceptions)
     exc_ids = db.query(Exception_.id).filter(
         Exception_.case_id == case_id,
-        Exception_.org_id == current_user.org_id,
+        Exception_.org_id == org_id,
     ).all()
     exc_ids = [e[0] for e in exc_ids]
     
     if exc_ids:
         deleted = db.query(ExceptionEvidenceRef).filter(
             ExceptionEvidenceRef.exception_id.in_(exc_ids),
-            ExceptionEvidenceRef.org_id == current_user.org_id,
+            ExceptionEvidenceRef.org_id == org_id,
         ).delete(synchronize_session=False)
         deleted_rows += deleted
     
     # Delete exceptions
     deleted = db.query(Exception_).filter(
         Exception_.case_id == case_id,
-        Exception_.org_id == current_user.org_id,
+        Exception_.org_id == org_id,
     ).delete(synchronize_session=False)
     deleted_rows += deleted
     
     # Delete CPs
     deleted = db.query(ConditionPrecedent).filter(
         ConditionPrecedent.case_id == case_id,
-        ConditionPrecedent.org_id == current_user.org_id,
+        ConditionPrecedent.org_id == org_id,
     ).delete(synchronize_session=False)
     deleted_rows += deleted
     
     # Delete rule runs
     deleted = db.query(RuleRun).filter(
         RuleRun.case_id == case_id,
-        RuleRun.org_id == current_user.org_id,
+        RuleRun.org_id == org_id,
     ).delete(synchronize_session=False)
     deleted_rows += deleted
     
     # Delete dossier fields
     deleted = db.query(CaseDossierField).filter(
         CaseDossierField.case_id == case_id,
-        CaseDossierField.org_id == current_user.org_id,
+        CaseDossierField.org_id == org_id,
     ).delete(synchronize_session=False)
     deleted_rows += deleted
     
     # Delete document pages
     doc_ids = db.query(Document.id).filter(
         Document.case_id == case_id,
-        Document.org_id == current_user.org_id,
+        Document.org_id == org_id,
     ).all()
     doc_ids = [d[0] for d in doc_ids]
     
     if doc_ids:
         deleted = db.query(DocumentPage).filter(
             DocumentPage.document_id.in_(doc_ids),
-            DocumentPage.org_id == current_user.org_id,
+            DocumentPage.org_id == org_id,
         ).delete(synchronize_session=False)
         deleted_rows += deleted
     
     # Delete documents
     deleted = db.query(Document).filter(
         Document.case_id == case_id,
-        Document.org_id == current_user.org_id,
+        Document.org_id == org_id,
     ).delete(synchronize_session=False)
     deleted_rows += deleted
     
@@ -153,14 +157,14 @@ async def delete_case(
     db.commit()
     
     # Delete MinIO objects
-    minio_prefix = f"org/{current_user.org_id}/cases/{case_id}/"
+    minio_prefix = f"org/{org_id}/cases/{case_id}/"
     deleted_minio = delete_objects_by_prefix(minio_prefix)
     
     # Audit log
     request_id = uuid.uuid4()
     write_audit_event(
         db=db,
-        org_id=current_user.org_id,
+        org_id=org_id,
         actor_user_id=current_user.user_id,
         action="case.delete",
         entity_type="case",
@@ -191,15 +195,14 @@ async def delete_case(
 async def delete_export(
     request: Request,
     export_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
-    """Delete an export and its MinIO object (Admin only)."""
-    require_admin(current_user)
-    
+    """Delete an export and its MinIO object (Admin only, tenant-scoped)."""
     export = db.query(Export).filter(
         Export.id == export_id,
-        Export.org_id == current_user.org_id,
+        Export.org_id == org_id,
     ).first()
     if not export:
         raise HTTPException(status_code=404, detail="Export not found")
@@ -252,15 +255,14 @@ async def delete_export(
 async def delete_document(
     request: Request,
     document_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
-    """Delete a document, its pages, and MinIO objects (Admin only)."""
-    require_admin(current_user)
-    
+    """Delete a document, its pages, and MinIO objects (Admin only, tenant-scoped)."""
     document = db.query(Document).filter(
         Document.id == document_id,
-        Document.org_id == current_user.org_id,
+        Document.org_id == org_id,
     ).first()
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -270,7 +272,7 @@ async def delete_document(
     # Delete pages
     deleted = db.query(DocumentPage).filter(
         DocumentPage.document_id == document_id,
-        DocumentPage.org_id == current_user.org_id,
+        DocumentPage.org_id == org_id,
     ).delete(synchronize_session=False)
     deleted_rows += deleted
     
@@ -284,7 +286,7 @@ async def delete_document(
     db.commit()
     
     # Delete MinIO objects for this document
-    minio_prefix = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/"
+    minio_prefix = f"org/{org_id}/cases/{case_id}/docs/{document_id}/"
     deleted_minio = delete_objects_by_prefix(minio_prefix)
     
     # Audit log
@@ -322,21 +324,19 @@ async def delete_document(
 @router.post("/run-retention-cleanup", response_model=RetentionCleanupResponse)
 async def run_retention_cleanup(
     request: Request,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """
-    Delete cases older than RETENTION_DAYS (Admin only).
+    Delete cases older than RETENTION_DAYS (Admin only, tenant-scoped).
     This is a manual cleanup endpoint.
     """
-    require_admin(current_user)
-    
     retention_days = settings.RETENTION_DAYS
     cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
     
-    # Find cases older than cutoff
     old_cases = db.query(Case).filter(
-        Case.org_id == current_user.org_id,
+        Case.org_id == org_id,
         Case.created_at < cutoff_date,
     ).all()
     
@@ -345,48 +345,74 @@ async def run_retention_cleanup(
     total_minio_objects = 0
     
     for case in old_cases:
-        # Delete all related data (same logic as delete_case)
         case_id = case.id
         
-        # Delete exports
-        exports = db.query(Export).filter(Export.case_id == case_id).all()
+        # Delete exports (tenant-scoped)
+        exports = db.query(Export).filter(
+            Export.case_id == case_id,
+            Export.org_id == org_id,
+        ).all()
         for exp in exports:
             db.delete(exp)
         total_db_rows += len(exports)
         
-        # Delete exception evidence refs
-        exc_ids = [e[0] for e in db.query(Exception_.id).filter(Exception_.case_id == case_id).all()]
+        # Delete exception evidence refs (tenant-scoped)
+        exc_ids = [e[0] for e in db.query(Exception_.id).filter(
+            Exception_.case_id == case_id,
+            Exception_.org_id == org_id,
+        ).all()]
         if exc_ids:
             total_db_rows += db.query(ExceptionEvidenceRef).filter(
-                ExceptionEvidenceRef.exception_id.in_(exc_ids)
+                ExceptionEvidenceRef.exception_id.in_(exc_ids),
+                ExceptionEvidenceRef.org_id == org_id,
             ).delete(synchronize_session=False)
         
         # Delete exceptions
-        total_db_rows += db.query(Exception_).filter(Exception_.case_id == case_id).delete(synchronize_session=False)
+        total_db_rows += db.query(Exception_).filter(
+            Exception_.case_id == case_id,
+            Exception_.org_id == org_id,
+        ).delete(synchronize_session=False)
         
         # Delete CPs
-        total_db_rows += db.query(ConditionPrecedent).filter(ConditionPrecedent.case_id == case_id).delete(synchronize_session=False)
+        total_db_rows += db.query(ConditionPrecedent).filter(
+            ConditionPrecedent.case_id == case_id,
+            ConditionPrecedent.org_id == org_id,
+        ).delete(synchronize_session=False)
         
         # Delete rule runs
-        total_db_rows += db.query(RuleRun).filter(RuleRun.case_id == case_id).delete(synchronize_session=False)
+        total_db_rows += db.query(RuleRun).filter(
+            RuleRun.case_id == case_id,
+            RuleRun.org_id == org_id,
+        ).delete(synchronize_session=False)
         
         # Delete dossier fields
-        total_db_rows += db.query(CaseDossierField).filter(CaseDossierField.case_id == case_id).delete(synchronize_session=False)
+        total_db_rows += db.query(CaseDossierField).filter(
+            CaseDossierField.case_id == case_id,
+            CaseDossierField.org_id == org_id,
+        ).delete(synchronize_session=False)
         
-        # Delete document pages
-        doc_ids = [d[0] for d in db.query(Document.id).filter(Document.case_id == case_id).all()]
+        # Delete document pages and documents (tenant-scoped)
+        doc_ids = [d[0] for d in db.query(Document.id).filter(
+            Document.case_id == case_id,
+            Document.org_id == org_id,
+        ).all()]
         if doc_ids:
-            total_db_rows += db.query(DocumentPage).filter(DocumentPage.document_id.in_(doc_ids)).delete(synchronize_session=False)
+            total_db_rows += db.query(DocumentPage).filter(
+                DocumentPage.document_id.in_(doc_ids),
+                DocumentPage.org_id == org_id,
+            ).delete(synchronize_session=False)
         
-        # Delete documents
-        total_db_rows += db.query(Document).filter(Document.case_id == case_id).delete(synchronize_session=False)
+        total_db_rows += db.query(Document).filter(
+            Document.case_id == case_id,
+            Document.org_id == org_id,
+        ).delete(synchronize_session=False)
         
         # Delete case
         db.delete(case)
         total_db_rows += 1
         
         # Delete MinIO objects
-        minio_prefix = f"org/{current_user.org_id}/cases/{case_id}/"
+        minio_prefix = f"org/{org_id}/cases/{case_id}/"
         total_minio_objects += delete_objects_by_prefix(minio_prefix)
         
         cases_deleted += 1
@@ -397,7 +423,7 @@ async def run_retention_cleanup(
     request_id = uuid.uuid4()
     write_audit_event(
         db=db,
-        org_id=current_user.org_id,
+        org_id=org_id,
         actor_user_id=current_user.user_id,
         action="retention.run",
         entity_type="system",
@@ -456,15 +482,13 @@ class AuditLogResponse(BaseModel):
 @router.get("/users", response_model=list[UserResponse])
 async def list_users(
     request: Request,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """List all users in the org (Admin only)."""
-    require_admin(current_user)
-    
-    # Get all user-org-role mappings for this org
     user_roles = db.query(UserOrgRole).filter(
-        UserOrgRole.org_id == current_user.org_id
+        UserOrgRole.org_id == org_id
     ).all()
     
     # Get user details
@@ -489,11 +513,11 @@ async def list_users(
 async def create_user(
     request: Request,
     body: UserCreateRequest,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Create a user in the org with a role (Admin only, dev mode)."""
-    require_admin(current_user)
     
     # Validate role
     valid_roles = ["Admin", "Reviewer", "Approver", "Viewer"]
@@ -511,19 +535,17 @@ async def create_user(
         db.add(user)
         db.flush()
     
-    # Check if role mapping exists
     existing_role = db.query(UserOrgRole).filter(
         UserOrgRole.user_id == user.id,
-        UserOrgRole.org_id == current_user.org_id,
+        UserOrgRole.org_id == org_id,
     ).first()
     
     if existing_role:
         raise HTTPException(status_code=400, detail="User already exists in this org")
     
-    # Create role mapping
     user_role = UserOrgRole(
         user_id=user.id,
-        org_id=current_user.org_id,
+        org_id=org_id,
         role=body.role,
     )
     db.add(user_role)
@@ -558,21 +580,18 @@ async def update_user_role(
     request: Request,
     user_id: uuid.UUID,
     body: UserUpdateRequest,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Update a user's role in the org (Admin only)."""
-    require_admin(current_user)
-    
-    # Validate role
     valid_roles = ["Admin", "Reviewer", "Approver", "Viewer"]
     if body.role not in valid_roles:
         raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
     
-    # Get role mapping
     user_role = db.query(UserOrgRole).filter(
         UserOrgRole.user_id == user_id,
-        UserOrgRole.org_id == current_user.org_id,
+        UserOrgRole.org_id == org_id,
     ).first()
     
     if not user_role:
@@ -613,14 +632,13 @@ async def update_user_role(
 async def smoke_ping(
     request: Request,
     event: str,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """
     Admin-only endpoint for smoke tests to record audit events.
     Events: smoke.run_start, smoke.run_complete, smoke.ocr_done
     """
-    require_admin(current_user)
     
     # Write audit event
     write_audit_event(
@@ -639,23 +657,96 @@ async def smoke_ping(
     return {"status": "ok", "event": f"smoke.{event}"}
 
 
+@router.get("/migrations/status", response_model=MigrationsStatusResponse)
+async def migrations_status(
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
+    db: Session = Depends(get_db),
+):
+    """
+    Admin-only. Returns current DB revision and code head revision(s) for deployment validation.
+    """
+    from pathlib import Path
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+    from alembic.runtime.migration import MigrationContext
+
+    # Resolve alembic.ini: from backend/app/api/routes -> backend
+    backend_dir = Path(__file__).resolve().parent.parent.parent.parent
+    ini_path = backend_dir / "alembic.ini"
+    if not ini_path.exists():
+        return MigrationsStatusResponse(current_revision=None, head_revisions=[])
+
+    alembic_cfg = Config(str(ini_path))
+    script = ScriptDirectory.from_config(alembic_cfg)
+    heads = script.get_heads()
+    head_revisions = [getattr(h, "revision", str(h)) for h in heads]
+
+    # Current revision from DB (read-only)
+    conn = db.connection()
+    context = MigrationContext.configure(conn)
+    current_revision = context.get_current_revision()
+
+    return MigrationsStatusResponse(
+        current_revision=current_revision,
+        head_revisions=head_revisions or [],
+    )
+
+
+@router.get("/build-info", response_model=BuildInfoResponse)
+async def build_info(
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
+):
+    """
+    Admin-only. Returns app_env, optional build_sha/build_time (from env), and optional code head revisions.
+    Helps ops confirm what is deployed.
+    """
+    import os
+    from pathlib import Path
+
+    app_env = settings.APP_ENV
+    build_sha = os.environ.get("APP_BUILD_SHA") or None
+    build_time = os.environ.get("APP_BUILD_TIME") or None
+
+    code_head_revisions = None
+    try:
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+        backend_dir = Path(__file__).resolve().parent.parent.parent.parent
+        ini_path = backend_dir / "alembic.ini"
+        if ini_path.exists():
+            alembic_cfg = Config(str(ini_path))
+            script = ScriptDirectory.from_config(alembic_cfg)
+            heads = script.get_heads()
+            code_head_revisions = [getattr(h, "revision", str(h)) for h in heads] or []
+    except Exception:
+        pass
+
+    return BuildInfoResponse(
+        app_env=app_env,
+        build_sha=build_sha,
+        build_time=build_time,
+        code_head_revisions=code_head_revisions,
+    )
+
+
 @router.get("/audit", response_model=list[AuditLogResponse])
 async def list_audit_logs(
     request: Request,
     days: int = 7,
     limit: int = 200,
     action_prefix: Optional[str] = None,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """List audit logs for the org (Admin only)."""
-    require_admin(current_user)
-    
     from datetime import timedelta
     cutoff = datetime.utcnow() - timedelta(days=days)
     
     query = db.query(AuditLog).filter(
-        AuditLog.org_id == current_user.org_id,
+        AuditLog.org_id == org_id,
         AuditLog.created_at >= cutoff,
     )
     

@@ -12,7 +12,7 @@ celery_app = Celery(
     "bank_diligence_platform",
     broker=broker_url,
     backend=broker_url,
-    include=["app.workers.tasks_ocr", "app.workers.tasks_digest", "app.workers.tasks_integrations"],
+    include=["app.workers.tasks_ocr", "app.workers.tasks_digest", "app.workers.tasks_integrations", "app.workers.tasks_export", "app.workers.tasks_retention"],
 )
 
 # Celery beat schedule for periodic tasks
@@ -24,6 +24,10 @@ celery_app.conf.beat_schedule = {
     "process-integration-events-every-minute": {
         "task": "integrations.process_integration_events",
         "schedule": 60.0,  # Every 60 seconds
+    },
+    "retention-daily-2am-utc": {
+        "task": "retention.run_retention_now",
+        "schedule": crontab(hour=2, minute=0),  # Daily at 2:00 UTC
     },
 }
 celery_app.conf.timezone = "UTC"

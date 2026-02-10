@@ -38,7 +38,7 @@ class GUID(TypeDecorator):
 
 class AuditLog(Base):
     __tablename__ = "audit_log"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     org_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     actor_user_id = Column(UUID(as_uuid=True), nullable=False)
@@ -47,7 +47,9 @@ class AuditLog(Base):
     entity_id = Column(UUID(as_uuid=True), nullable=True)
     event_metadata = Column("metadata", JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
-    
+    # Correlation: set from request.state.request_id when available (append-only, no update/delete)
+    request_id = Column(String, nullable=True, index=True)
+
     __table_args__ = (
         Index("idx_audit_log_org_created", "org_id", "created_at"),
     )

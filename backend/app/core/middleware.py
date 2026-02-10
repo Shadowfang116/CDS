@@ -1,8 +1,54 @@
-"""D6: Security middleware for request processing."""
+"""D6: Security middleware for request processing + request context (request_id, timing)."""
+import time
+import uuid
 from fastapi import Request, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
+
 from app.core.config import settings
+from app.core.logging import get_logger
+
+logger = get_logger(__name__)
+
+
+class RequestContextMiddleware(BaseHTTPMiddleware):
+    """Set request_id (from header or new UUID), add X-Request-ID to response, log per-request line."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        request.state.request_id = request_id
+
+        start = time.time()
+        try:
+            response: Response = await call_next(request)
+        except Exception as e:
+            latency_ms = int((time.time() - start) * 1000)
+            logger.error(
+                "request.error",
+                extra={
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": request.url.path,
+                    "latency_ms": latency_ms,
+                },
+                exc_info=True,
+            )
+            raise
+
+        latency_ms = int((time.time() - start) * 1000)
+        response.headers["X-Request-ID"] = request_id
+
+        logger.info(
+            "request.completed",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "latency_ms": latency_ms,
+            },
+        )
+        return response
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

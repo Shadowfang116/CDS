@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 
 from app.db.session import get_db
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import get_current_user, CurrentUser, require_role, require_tenant_scope
 from app.services.audit import write_audit_event
 from app.models.email_template import EmailTemplate, EmailDelivery
 from app.services.event_bus import emit_event
@@ -56,15 +56,13 @@ VALID_TEMPLATE_KEYS = ["approval.pending", "approval.decided", "case.decided", "
 @router.get("/templates", response_model=List[EmailTemplateResponse])
 async def list_templates(
     request: Request,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """List all email templates for the org (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can manage email templates")
-    
     templates = db.query(EmailTemplate).filter(
-        EmailTemplate.org_id == current_user.org_id
+        EmailTemplate.org_id == org_id
     ).order_by(EmailTemplate.template_key).all()
     
     return [
@@ -85,19 +83,16 @@ async def list_templates(
 async def create_template(
     request: Request,
     payload: EmailTemplateCreate,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Create an email template (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can create email templates")
-    
     if payload.template_key not in VALID_TEMPLATE_KEYS:
         raise HTTPException(status_code=400, detail=f"Invalid template_key. Must be one of: {VALID_TEMPLATE_KEYS}")
     
-    # Check if template already exists
     existing = db.query(EmailTemplate).filter(
-        EmailTemplate.org_id == current_user.org_id,
+        EmailTemplate.org_id == org_id,
         EmailTemplate.template_key == payload.template_key,
     ).first()
     
@@ -105,7 +100,7 @@ async def create_template(
         raise HTTPException(status_code=400, detail=f"Template for {payload.template_key} already exists")
     
     template = EmailTemplate(
-        org_id=current_user.org_id,
+        org_id=org_id,
         template_key=payload.template_key,
         subject=payload.subject,
         body_md=payload.body_md,
@@ -142,16 +137,14 @@ async def update_template(
     request: Request,
     template_id: uuid.UUID,
     payload: EmailTemplateUpdate,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Update an email template (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can update email templates")
-    
     template = db.query(EmailTemplate).filter(
         EmailTemplate.id == template_id,
-        EmailTemplate.org_id == current_user.org_id,
+        EmailTemplate.org_id == org_id,
     ).first()
     
     if not template:
@@ -194,15 +187,13 @@ async def update_template(
 async def list_deliveries(
     request: Request,
     limit: int = Query(default=50, ge=1, le=200),
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """List email deliveries for the org (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can view email deliveries")
-    
     deliveries = db.query(EmailDelivery).filter(
-        EmailDelivery.org_id == current_user.org_id
+        EmailDelivery.org_id == org_id
     ).order_by(EmailDelivery.created_at.desc()).limit(limit).all()
     
     return [
@@ -224,14 +215,10 @@ async def list_deliveries(
 @router.post("/test", status_code=200)
 async def test_email(
     request: Request,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Send a test email to the current user's email (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can send test emails")
-    
-    # Get current user email
     from app.models.user import User
     user = db.query(User).filter(User.id == current_user.user_id).first()
     if not user or not user.email:

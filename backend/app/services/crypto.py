@@ -11,10 +11,11 @@ from app.core.config import settings
 
 def _get_encryption_key() -> bytes:
     """Get or derive encryption key from config."""
-    if settings.INTEGRATIONS_ENCRYPTION_KEY:
+    raw_integrations = settings.INTEGRATIONS_ENCRYPTION_KEY.get_secret_value()
+    if raw_integrations:
         # If provided, use it directly (should be base64-encoded Fernet key)
         try:
-            return base64.urlsafe_b64decode(settings.INTEGRATIONS_ENCRYPTION_KEY.encode())
+            return base64.urlsafe_b64decode(raw_integrations.encode())
         except Exception:
             # If not valid base64, derive from it
             pass
@@ -26,7 +27,7 @@ def _get_encryption_key() -> bytes:
         salt=b"bank_diligence_webhook_secret",
         iterations=100000,
     )
-    key = base64.urlsafe_b64encode(kdf.derive(settings.APP_SECRET_KEY.encode()))
+    key = base64.urlsafe_b64encode(kdf.derive(settings.APP_SECRET_KEY.get_secret_value().encode()))
     return key
 
 

@@ -22,3 +22,12 @@ class CaseResponse(BaseModel):
 class CaseStatusUpdate(BaseModel):
     status: str
 
+
+class CaseListResponse(BaseModel):
+    """Paginated list response for GET /cases."""
+    items: list[CaseResponse]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+

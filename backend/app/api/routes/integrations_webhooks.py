@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, HttpUrl
 
 from app.db.session import get_db
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import get_current_user, CurrentUser, require_role, require_tenant_scope
 from app.services.audit import write_audit_event
 from app.models.webhook import WebhookEndpoint, WebhookDelivery
 from app.services.crypto import encrypt_string, generate_secret, get_secret_preview
@@ -55,15 +55,13 @@ class WebhookDeliveryResponse(BaseModel):
 @router.get("", response_model=List[WebhookEndpointResponse])
 async def list_webhooks(
     request: Request,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """List all webhook endpoints for the org (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can manage webhooks")
-    
     endpoints = db.query(WebhookEndpoint).filter(
-        WebhookEndpoint.org_id == current_user.org_id
+        WebhookEndpoint.org_id == org_id
     ).order_by(WebhookEndpoint.created_at.desc()).all()
     
     return [
@@ -85,13 +83,11 @@ async def list_webhooks(
 async def create_webhook(
     request: Request,
     payload: WebhookEndpointCreate,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Create a webhook endpoint (Admin only). Returns secret ONCE."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can create webhooks")
-    
     # Validate URL
     try:
         HttpUrl(payload.url)
@@ -114,7 +110,7 @@ async def create_webhook(
     
     # Create endpoint
     endpoint = WebhookEndpoint(
-        org_id=current_user.org_id,
+        org_id=org_id,
         name=payload.name,
         url=payload.url,
         is_enabled=True,
@@ -156,16 +152,14 @@ async def update_webhook(
     request: Request,
     endpoint_id: uuid.UUID,
     payload: WebhookEndpointUpdate,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Update a webhook endpoint (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can update webhooks")
-    
     endpoint = db.query(WebhookEndpoint).filter(
         WebhookEndpoint.id == endpoint_id,
-        WebhookEndpoint.org_id == current_user.org_id,
+        WebhookEndpoint.org_id == org_id,
     ).first()
     
     if not endpoint:
@@ -223,16 +217,14 @@ async def update_webhook(
 async def delete_webhook(
     request: Request,
     endpoint_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Delete a webhook endpoint (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can delete webhooks")
-    
     endpoint = db.query(WebhookEndpoint).filter(
         WebhookEndpoint.id == endpoint_id,
-        WebhookEndpoint.org_id == current_user.org_id,
+        WebhookEndpoint.org_id == org_id,
     ).first()
     
     if not endpoint:
@@ -258,17 +250,14 @@ async def list_deliveries(
     request: Request,
     endpoint_id: uuid.UUID,
     limit: int = Query(default=50, ge=1, le=200),
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """List webhook deliveries for an endpoint (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can view deliveries")
-    
-    # Verify endpoint belongs to org
     endpoint = db.query(WebhookEndpoint).filter(
         WebhookEndpoint.id == endpoint_id,
-        WebhookEndpoint.org_id == current_user.org_id,
+        WebhookEndpoint.org_id == org_id,
     ).first()
     
     if not endpoint:
@@ -276,7 +265,7 @@ async def list_deliveries(
     
     deliveries = db.query(WebhookDelivery).filter(
         WebhookDelivery.endpoint_id == endpoint_id,
-        WebhookDelivery.org_id == current_user.org_id,
+        WebhookDelivery.org_id == org_id,
     ).order_by(WebhookDelivery.created_at.desc()).limit(limit).all()
     
     return [
@@ -300,16 +289,14 @@ async def list_deliveries(
 async def test_webhook(
     request: Request,
     endpoint_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    current_user: CurrentUser = Depends(require_role("Admin")),
     db: Session = Depends(get_db),
 ):
     """Send a test webhook event (Admin only)."""
-    if current_user.role != "Admin":
-        raise HTTPException(status_code=403, detail="Only Admin can test webhooks")
-    
     endpoint = db.query(WebhookEndpoint).filter(
         WebhookEndpoint.id == endpoint_id,
-        WebhookEndpoint.org_id == current_user.org_id,
+        WebhookEndpoint.org_id == org_id,
     ).first()
     
     if not endpoint:

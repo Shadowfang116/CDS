@@ -174,7 +174,8 @@ def infer_and_store_regime(
     if existing_field:
         if overwrite or not existing_field.field_value:
             existing_field.field_value = regime.value if regime else None
-            existing_field.updated_at = db.query(Case).filter(Case.id == case_id).first().updated_at if db.query(Case).filter(Case.id == case_id).first() else None
+            case_row = db.query(Case).filter(Case.id == case_id, Case.org_id == org_id).first()
+            existing_field.updated_at = case_row.updated_at if case_row else None
     else:
         from datetime import datetime
         new_field = CaseDossierField(

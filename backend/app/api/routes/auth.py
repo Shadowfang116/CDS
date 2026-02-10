@@ -69,21 +69,20 @@ async def dev_login(
         "role": canonical_role,
         "exp": expires,
     }
-    token = jwt.encode(token_data, settings.APP_SECRET_KEY, algorithm=settings.APP_ALGORITHM)
+    token = jwt.encode(token_data, settings.APP_SECRET_KEY.get_secret_value(), algorithm=settings.APP_ALGORITHM)
     
-    # Audit log
-    request_id = uuid.uuid4()
+    request_id = getattr(request.state, "request_id", None)
     write_audit_event(
         db=db,
         org_id=org.id,
         actor_user_id=user.id,
         action="auth.dev_login",
         event_metadata={
-            "request_id": str(request_id),
             "ip": request.client.host if request.client else None,
             "user_agent": request.headers.get("user-agent"),
             "role": canonical_role,
         },
+        request_id=request_id,
     )
     
     return TokenResponse(access_token=token)
@@ -102,18 +101,17 @@ async def get_me(
     if not user or not org:
         raise HTTPException(status_code=404, detail="User or org not found")
     
-    # Audit log
-    request_id = uuid.uuid4()
+    request_id = getattr(request.state, "request_id", None)
     write_audit_event(
         db=db,
         org_id=current_user.org_id,
         actor_user_id=current_user.user_id,
         action="auth.me",
         event_metadata={
-            "request_id": str(request_id),
             "ip": request.client.host if request.client else None,
             "user_agent": request.headers.get("user-agent"),
         },
+        request_id=request_id,
     )
     
     return UserResponse(

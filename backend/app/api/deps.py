@@ -14,6 +14,8 @@ security = HTTPBearer()
 
 
 class CurrentUser:
+    """Canonical current-user context: always scoped to one org and one role."""
+
     def __init__(self, user_id: uuid.UUID, org_id: uuid.UUID, role: str):
         self.user_id = user_id
         self.org_id = org_id
@@ -27,7 +29,7 @@ def get_current_user(
     """Extract and validate JWT token, return current user context."""
     try:
         token = credentials.credentials
-        payload = jwt.decode(token, settings.APP_SECRET_KEY, algorithms=[settings.APP_ALGORITHM])
+        payload = jwt.decode(token, settings.APP_SECRET_KEY.get_secret_value(), algorithms=[settings.APP_ALGORITHM])
         user_id = uuid.UUID(payload["user_id"])
         org_id = uuid.UUID(payload["org_id"])
         token_role = payload.get("role")
@@ -71,39 +73,70 @@ def get_current_user(
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 
 
-def _flatten_roles(args):
-    out = []
-    for a in args:
-        if a is None:
-            continue
-        if isinstance(a, (list, tuple, set)):
-            out.extend(list(a))
-        else:
-            out.append(a)
-    return out
+# ---------------------------------------------------------------------------
+# Canonical RBAC + tenant dependencies (deny-by-default)
+# ---------------------------------------------------------------------------
 
 
-def require_roles(*roles):
-    allowed_raw = _flatten_roles(roles)
-    if not allowed_raw:
-        raise RuntimeError("require_roles() called with no roles")
+def require_authenticated_user(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
+    """Ensure the request has a valid authenticated user. Use this or a role/tenant dep."""
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+    return current_user
+
+
+def require_role(*allowed_roles: str):
+    """
+    Dependency factory: allow only the given roles. Deny by default.
+    Usage: Depends(require_role("Admin", "Approver"))
+    """
+    if not allowed_roles:
+        raise RuntimeError("require_role() must be called with at least one role")
 
     allowed = set()
-    for r in allowed_raw:
+    for r in allowed_roles:
+        if r is None:
+            continue
         try:
             allowed.add(normalize_role(str(r)))
         except Exception as e:
-            raise RuntimeError(f"Invalid role passed to require_roles(): {r!r}") from e
+            raise RuntimeError(f"Invalid role passed to require_role(): {r!r}") from e
 
-    def _dep(user: "CurrentUser" = Depends(get_current_user)) -> "CurrentUser":
-        try:
-            user_role = normalize_role(str(user.role))
-        except Exception:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    def _require_role(
+        current_user: CurrentUser = Depends(require_authenticated_user),
+    ) -> CurrentUser:
+        if current_user.role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient role permissions",
+            )
+        return current_user
 
-        if user_role not in allowed:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    return _require_role
 
-        return user
 
-    return _dep
+def require_tenant_scope(
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(require_authenticated_user),
+) -> uuid.UUID:
+    """
+    Returns org_id that MUST be used for all queries in this request.
+    Client must NEVER supply org_id explicitly; it is taken from the token.
+    """
+    if not current_user.org_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tenant context missing",
+        )
+    return current_user.org_id
+
+
+# Backward compatibility: require_roles is an alias for require_role
+def require_roles(*roles):
+    """Alias for require_role. Prefer require_role for new code."""
+    return require_role(*roles)

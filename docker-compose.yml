@@ -69,9 +69,11 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -121,8 +123,8 @@ services:
 
   worker:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     command: celery -A app.workers.celery_app:celery_app worker --loglevel=INFO
     environment:
@@ -167,8 +169,8 @@ services:
 
   beat:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     command: celery -A app.workers.celery_app:celery_app beat --loglevel=INFO
     environment:

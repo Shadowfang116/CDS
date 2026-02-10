@@ -208,6 +208,26 @@ export async function listCases(): Promise<any[]> {
   return fetchApi('/cases');
 }
 
+export interface ListCasesParams {
+  q?: string;
+  page?: number;
+  page_size?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
+}
+
+/** Server-paginated cases list (GET /cases?q=&page=&page_size=&sort=&order=). */
+export async function listCasesPaginated(params: ListCasesParams = {}): Promise<import('@/types/cases').CaseListResponse> {
+  const sp = new URLSearchParams();
+  if (params.q != null && params.q !== '') sp.set('q', params.q);
+  if (params.page != null) sp.set('page', String(params.page));
+  if (params.page_size != null) sp.set('page_size', String(params.page_size));
+  if (params.sort != null) sp.set('sort', params.sort);
+  if (params.order != null) sp.set('order', params.order);
+  const qs = sp.toString();
+  return fetchApi(`/cases${qs ? `?${qs}` : ''}`);
+}
+
 export async function createCase(title: string): Promise<any> {
   return fetchApi('/cases', {
     method: 'POST',

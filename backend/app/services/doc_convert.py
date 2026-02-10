@@ -1,31 +1,43 @@
 """
 DOCX to PDF conversion service using LibreOffice headless.
+Phase 8: configurable timeout, process-group kill on timeout, LO_TIMEOUT error code.
 """
 import os
+import signal
 import subprocess
 import tempfile
 import time
 from pathlib import Path
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, Any
+
+from app.core.config import settings
+
+# Error codes for failure surfacing
+LO_TIMEOUT = "LO_TIMEOUT"
+LO_CONVERSION_FAILED = "LO_CONVERSION_FAILED"
+LO_UNEXPECTED = "LO_UNEXPECTED"
 
 
 class DocConvertError(Exception):
-    """Raised when DOCX conversion fails."""
-    pass
+    """Raised when DOCX conversion fails. Phase 8: optional error_code for API surfacing."""
+
+    def __init__(self, message: str, error_code: Optional[str] = None):
+        super().__init__(message)
+        self.error_code = error_code or LO_UNEXPECTED
 
 
 def convert_docx_bytes_to_pdf(
     docx_bytes: bytes,
     filename: str,
-    timeout_seconds: int = 60
-) -> Tuple[bytes, str, Dict[str, any]]:
+    timeout_seconds: Optional[int] = None,
+) -> Tuple[bytes, str, Dict[str, Any]]:
     """
     Convert DOCX bytes to PDF using LibreOffice headless.
     
     Args:
         docx_bytes: The DOCX file content as bytes
         filename: Original filename (for logging/error messages)
-        timeout_seconds: Maximum time to wait for conversion (default: 60s)
+        timeout_seconds: Maximum time to wait for conversion (default from DOC_CONVERT_TIMEOUT_SECONDS, 90)
     
     Returns:
         Tuple of (pdf_bytes, pdf_filename, metadata_dict)
@@ -34,13 +46,15 @@ def convert_docx_bytes_to_pdf(
         - metadata: Dict with keys: processing_seconds, converter, original_filename
     
     Raises:
-        DocConvertError: If conversion fails for any reason
+        DocConvertError: If conversion fails (error_code LO_TIMEOUT on timeout).
     """
+    timeout = timeout_seconds if timeout_seconds is not None else settings.DOC_CONVERT_TIMEOUT_SECONDS
     start_time = time.time()
     temp_dir = None
     input_path = None
     output_path = None
-    
+    proc = None
+
     try:
         # Create temporary directory for conversion
         temp_dir = tempfile.mkdtemp(prefix="docx_convert_")
@@ -95,27 +109,41 @@ def convert_docx_bytes_to_pdf(
             str(input_path)
         ]
         
-        # Run with timeout
+        # Run with timeout; use Popen + communicate so we can kill process group on timeout
         try:
-            result = subprocess.run(
+            proc = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=timeout_seconds,
-                check=False,  # We'll check the output file instead
                 env=env,
+                start_new_session=True,
             )
-        except subprocess.TimeoutExpired:
-            raise DocConvertError(
-                f"Document conversion timed out after {timeout_seconds} seconds. "
-                "The document may be too large or complex. Please try a smaller file."
-            )
+            try:
+                stdout, stderr = proc.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                try:
+                    if os.name != "nt" and proc.pid:
+                        os.killpg(proc.pid, signal.SIGKILL)
+                except Exception:
+                    pass
+                proc.wait()
+                raise DocConvertError(
+                    f"Document conversion timed out after {timeout} seconds. "
+                    "The document may be too large or complex. Please try a smaller file.",
+                    error_code=LO_TIMEOUT,
+                )
+        except DocConvertError:
+            raise
         except Exception as e:
             raise DocConvertError(
                 f"Failed to start conversion process: {str(e)}. "
-                "Please ensure the document is a valid DOCX file."
+                "Please ensure the document is a valid DOCX file.",
+                error_code=LO_UNEXPECTED,
             )
-        
+
+        result = subprocess.CompletedProcess(cmd, proc.returncode, stdout=stdout, stderr=stderr)
+
         # Check if output PDF was created
         if not output_path.exists():
             error_msg = "Conversion failed: PDF output file was not created."
@@ -129,7 +157,7 @@ def convert_docx_bytes_to_pdf(
                 error_msg += f" Stderr: {stderr_preview}"
             if result.returncode != 0:
                 error_msg += f" Exit code: {result.returncode}"
-            raise DocConvertError(error_msg)
+            raise DocConvertError(error_msg, error_code=LO_CONVERSION_FAILED)
         
         # Read PDF bytes
         with open(output_path, "rb") as f:
@@ -139,14 +167,16 @@ def convert_docx_bytes_to_pdf(
         if len(pdf_bytes) == 0:
             raise DocConvertError(
                 "Conversion failed: Generated PDF is empty. "
-                "The document may be corrupted or unsupported."
+                "The document may be corrupted or unsupported.",
+                error_code=LO_CONVERSION_FAILED,
             )
-        
+
         # Validate PDF header (starts with %PDF)
         if not pdf_bytes.startswith(b"%PDF"):
             raise DocConvertError(
                 "Conversion failed: Generated file does not appear to be a valid PDF. "
-                "The document may be corrupted or unsupported."
+                "The document may be corrupted or unsupported.",
+                error_code=LO_CONVERSION_FAILED,
             )
         
         # Calculate processing time
@@ -168,13 +198,13 @@ def convert_docx_bytes_to_pdf(
         return pdf_bytes, pdf_filename, metadata
         
     except DocConvertError:
-        # Re-raise our custom errors
         raise
     except Exception as e:
-        # Wrap unexpected errors
+        code = getattr(e, "error_code", None) or LO_UNEXPECTED
         raise DocConvertError(
             f"Unexpected error during document conversion: {str(e)}. "
-            "Please try again or contact support if the issue persists."
+            "Please try again or contact support if the issue persists.",
+            error_code=code,
         )
     finally:
         # Clean up temporary files

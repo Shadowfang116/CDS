@@ -95,8 +95,9 @@ def send_email(
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
             if settings.SMTP_USE_TLS:
                 server.starttls()
-            if settings.SMTP_USERNAME and settings.SMTP_PASSWORD:
-                server.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
+            smtp_password = settings.SMTP_PASSWORD.get_secret_value()
+            if settings.SMTP_USERNAME and smtp_password:
+                server.login(settings.SMTP_USERNAME, smtp_password)
             server.send_message(msg)
         
         return True

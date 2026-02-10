@@ -31,6 +31,9 @@ Thumbs.db
 .env
 .env.local
 
+# Ops diagnostics bundle (support tickets)
+diagnostics/
+
 # Real documents (P12 - never commit PII)
 docs/pilot_samples_real/
 

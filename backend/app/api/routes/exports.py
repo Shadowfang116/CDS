@@ -12,9 +12,9 @@ from app.models.org import Org
 from app.models.user import User
 from app.models.document import Document, CaseDossierField
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef
-from app.models.export import Export
+from app.models.export import Export, EXPORT_STATUS_PENDING, EXPORT_STATUS_RUNNING, EXPORT_STATUS_SUCCEEDED, EXPORT_STATUS_FAILED
 from app.models.verification import Verification, VerificationEvidenceRef
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import get_current_user, CurrentUser, require_tenant_scope
 from app.services.audit import write_audit_event
 from app.services.storage import put_object_bytes, get_presigned_get_url
 from app.services.export_drafts import (
@@ -37,17 +37,23 @@ class ExportResponse(BaseModel):
     export_id: str
     filename: str
     export_type: str
-    url: str
-    expires_in_seconds: int
+    status: str  # pending | running | succeeded | failed
+    url: Optional[str] = None  # present when status=succeeded
+    expires_in_seconds: Optional[int] = None
     created_at: datetime
+    error_code: Optional[str] = None
+    error_message: Optional[str] = None
 
 
 class ExportListItem(BaseModel):
     id: str
     export_type: str
     filename: str
+    status: str
     created_at: datetime
-    
+    error_code: Optional[str] = None
+    error_message: Optional[str] = None
+
     class Config:
         from_attributes = True
 
@@ -103,11 +109,11 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
             "source_page_number": row.source_page_number,
         })
     
-    # Get exceptions
+    # Get exceptions (deterministic: severity desc, then id asc)
     exceptions = db.query(Exception_).filter(
         Exception_.case_id == case_id,
         Exception_.org_id == org_id,
-    ).order_by(Exception_.severity.desc(), Exception_.created_at).all()
+    ).order_by(Exception_.severity.desc(), Exception_.id.asc()).all()
     
     exceptions_list = [
         {
@@ -125,11 +131,11 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
         for e in exceptions
     ]
     
-    # Get CPs
+    # Get CPs (deterministic: severity desc, then id asc)
     cps = db.query(ConditionPrecedent).filter(
         ConditionPrecedent.case_id == case_id,
         ConditionPrecedent.org_id == org_id,
-    ).order_by(ConditionPrecedent.severity.desc(), ConditionPrecedent.created_at).all()
+    ).order_by(ConditionPrecedent.severity.desc(), ConditionPrecedent.id.asc()).all()
     
     cps_list = [
         {
@@ -143,12 +149,12 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
         for c in cps
     ]
     
-    # Get documents
+    # Get documents (deterministic: doc_type, original_filename, id)
     documents = db.query(Document).filter(
         Document.case_id == case_id,
         Document.org_id == org_id,
-    ).all()
-    
+    ).order_by(Document.doc_type.asc(), Document.original_filename.asc(), Document.id.asc()).all()
+
     documents_list = [
         {
             "id": str(d.id),
@@ -236,6 +242,22 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
     }
 
 
+def _existing_pending_or_running_export(
+    db: Session, org_id: uuid.UUID, case_id: uuid.UUID, export_type: str
+) -> Optional[Export]:
+    """Return an existing export of the same kind for this case in pending or running state (idempotency)."""
+    return (
+        db.query(Export)
+        .filter(
+            Export.org_id == org_id,
+            Export.case_id == case_id,
+            Export.export_type == export_type,
+            Export.status.in_([EXPORT_STATUS_PENDING, EXPORT_STATUS_RUNNING]),
+        )
+        .first()
+    )
+
+
 def _store_export(
     db: Session,
     org_id: uuid.UUID,
@@ -246,14 +268,12 @@ def _store_export(
     data: bytes,
     filename: str,
 ) -> tuple:
-    """Store export in MinIO and create DB record."""
+    """Store export in MinIO and create DB record (status=succeeded)."""
     export_id = uuid.uuid4()
     minio_key = f"org/{org_id}/cases/{case_id}/exports/{export_id}/{filename}"
-    
-    # Upload to MinIO
+
     put_object_bytes(minio_key, data, content_type)
-    
-    # Create export record
+
     export = Export(
         id=export_id,
         org_id=org_id,
@@ -263,14 +283,13 @@ def _store_export(
         content_type=content_type,
         minio_key=minio_key,
         created_by_user_id=user_id,
+        status=EXPORT_STATUS_SUCCEEDED,
     )
     db.add(export)
     db.commit()
     db.refresh(export)
-    
-    # Generate presigned URL
+
     url = get_presigned_get_url(minio_key, DOWNLOAD_EXPIRES_SECONDS)
-    
     return export, url
 
 
@@ -282,11 +301,12 @@ def _store_export(
 async def generate_discrepancy_letter_draft(
     request: Request,
     case_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Generate a discrepancy letter DOCX."""
-    data = _load_case_data(db, case_id, current_user.org_id)
+    """Generate a discrepancy letter DOCX (tenant-scoped)."""
+    data = _load_case_data(db, case_id, org_id)
     
     # Generate DOCX
     doc_bytes, filename = generate_discrepancy_letter(
@@ -300,7 +320,7 @@ async def generate_discrepancy_letter_draft(
     # Store export
     export, url = _store_export(
         db=db,
-        org_id=current_user.org_id,
+        org_id=org_id,
         case_id=case_id,
         user_id=current_user.user_id,
         export_type="discrepancy_letter",
@@ -344,10 +364,21 @@ async def generate_discrepancy_letter_draft(
         },
     )
     
+    write_audit_event(
+        db=db,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.user_id,
+        action="export.succeeded",
+        entity_type="export",
+        entity_id=export.id,
+        event_metadata={"export_id": str(export.id), "case_id": str(case_id), "export_type": "discrepancy_letter", "storage_key": export.minio_key},
+        request_id=str(request_id),
+    )
     return ExportResponse(
         export_id=str(export.id),
         filename=filename,
         export_type="discrepancy_letter",
+        status=EXPORT_STATUS_SUCCEEDED,
         url=url,
         expires_in_seconds=DOWNLOAD_EXPIRES_SECONDS,
         created_at=export.created_at,
@@ -358,11 +389,12 @@ async def generate_discrepancy_letter_draft(
 async def generate_undertaking_indemnity_draft(
     request: Request,
     case_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Generate an undertaking and indemnity DOCX."""
-    data = _load_case_data(db, case_id, current_user.org_id)
+    """Generate an undertaking and indemnity DOCX (tenant-scoped)."""
+    data = _load_case_data(db, case_id, org_id)
     
     # Generate DOCX
     doc_bytes, filename = generate_undertaking_indemnity(
@@ -376,7 +408,7 @@ async def generate_undertaking_indemnity_draft(
     # Store export
     export, url = _store_export(
         db=db,
-        org_id=current_user.org_id,
+        org_id=org_id,
         case_id=case_id,
         user_id=current_user.user_id,
         export_type="undertaking_indemnity",
@@ -424,6 +456,7 @@ async def generate_undertaking_indemnity_draft(
         export_id=str(export.id),
         filename=filename,
         export_type="undertaking_indemnity",
+        status=EXPORT_STATUS_SUCCEEDED,
         url=url,
         expires_in_seconds=DOWNLOAD_EXPIRES_SECONDS,
         created_at=export.created_at,
@@ -434,11 +467,12 @@ async def generate_undertaking_indemnity_draft(
 async def generate_internal_opinion_draft(
     request: Request,
     case_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Generate an internal legal opinion skeleton DOCX."""
-    data = _load_case_data(db, case_id, current_user.org_id)
+    """Generate an internal legal opinion skeleton DOCX (tenant-scoped)."""
+    data = _load_case_data(db, case_id, org_id)
     
     # Generate DOCX
     doc_bytes, filename = generate_internal_opinion_skeleton(
@@ -452,7 +486,7 @@ async def generate_internal_opinion_draft(
     # Store export
     export, url = _store_export(
         db=db,
-        org_id=current_user.org_id,
+        org_id=org_id,
         case_id=case_id,
         user_id=current_user.user_id,
         export_type="internal_opinion",
@@ -500,6 +534,7 @@ async def generate_internal_opinion_draft(
         export_id=str(export.id),
         filename=filename,
         export_type="internal_opinion",
+        status=EXPORT_STATUS_SUCCEEDED,
         url=url,
         expires_in_seconds=DOWNLOAD_EXPIRES_SECONDS,
         created_at=export.created_at,
@@ -510,85 +545,80 @@ async def generate_internal_opinion_draft(
 # BANK PACK ENDPOINT
 # ============================================================
 
+def _export_response(export: Export, request_id: Optional[str] = None) -> ExportResponse:
+    """Build ExportResponse from Export; include url only when status=succeeded."""
+    url = None
+    expires = None
+    if export.status == EXPORT_STATUS_SUCCEEDED and export.minio_key:
+        url = get_presigned_get_url(export.minio_key, DOWNLOAD_EXPIRES_SECONDS)
+        expires = DOWNLOAD_EXPIRES_SECONDS
+    return ExportResponse(
+        export_id=str(export.id),
+        filename=export.filename,
+        export_type=export.export_type,
+        status=export.status,
+        url=url,
+        expires_in_seconds=expires,
+        created_at=export.created_at,
+        error_code=export.error_code,
+        error_message=export.error_message,
+    )
+
+
 @router.post("/cases/{case_id}/exports/bank-pack", response_model=ExportResponse)
 async def generate_bank_pack(
     request: Request,
     case_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Generate a Bank Pack PDF. Requires authenticated user with access to the case."""
-    # Verify case belongs to user's org (enforced by _load_case_data)
-    data = _load_case_data(db, case_id, current_user.org_id)
-    
-    # Generate PDF
-    pdf_bytes, filename = generate_bank_pack_pdf(
-        case=data["case"],
-        org=data["org"],
-        dossier=data["dossier"],
-        exceptions=data["exceptions"],
-        cps=data["cps"],
-        documents=data["documents"],
-        evidence_refs=data["evidence_refs"],
-        verifications=data.get("verifications", []),
-        dossier_fields=data.get("dossier_fields", []),
-    )
-    
-    # Store export
-    export, url = _store_export(
-        db=db,
-        org_id=current_user.org_id,
+    """Generate a Bank Pack PDF (async). Idempotent: returns existing export if same case has pending/running."""
+    request_id = getattr(request.state, "request_id", None) or str(uuid.uuid4())
+
+    existing = _existing_pending_or_running_export(db, org_id, case_id, "bank_pack_pdf")
+    if existing:
+        return _export_response(existing, request_id)
+
+    from datetime import datetime
+    filename = f"BANK_PACK__CASE_{case_id}__{datetime.utcnow().strftime('%Y%m%d')}__v1.pdf"
+    export = Export(
+        org_id=org_id,
         case_id=case_id,
-        user_id=current_user.user_id,
         export_type="bank_pack_pdf",
-        content_type="application/pdf",
-        data=pdf_bytes,
         filename=filename,
+        content_type="application/pdf",
+        minio_key=None,
+        created_by_user_id=current_user.user_id,
+        status=EXPORT_STATUS_PENDING,
+        request_id=request_id,
     )
-    
-    # Audit log
-    request_id = uuid.uuid4()
+    db.add(export)
+    db.commit()
+    db.refresh(export)
+
+    from app.workers.tasks_export import generate_bank_pack_task
+    generate_bank_pack_task.delay(
+        str(org_id), str(case_id), str(export.id), request_id=request_id
+    )
+
     write_audit_event(
         db=db,
         org_id=current_user.org_id,
         actor_user_id=current_user.user_id,
-        action="export.generate",
+        action="export.triggered",
         entity_type="export",
         entity_id=export.id,
         event_metadata={
-            "request_id": str(request_id),
-            "ip": request.client.host if request.client else None,
-            "user_agent": request.headers.get("user-agent"),
+            "request_id": request_id,
             "case_id": str(case_id),
             "export_id": str(export.id),
             "export_type": "bank_pack_pdf",
-            "filename": filename,
         },
+        request_id=request_id,
     )
-    
-    # Emit integration event
-    from app.services.event_bus import emit_event
-    emit_event(
-        db=db,
-        org_id=current_user.org_id,
-        event_type="export.generated",
-        payload={
-            "export_id": str(export.id),
-            "export_type": "bank_pack_pdf",
-            "filename": filename,
-            "case_id": str(case_id),
-            "case_title": data["case"]["title"],
-        },
-    )
-    
-    return ExportResponse(
-        export_id=str(export.id),
-        filename=filename,
-        export_type="bank_pack_pdf",
-        url=url,
-        expires_in_seconds=DOWNLOAD_EXPIRES_SECONDS,
-        created_at=export.created_at,
-    )
+
+    return _export_response(export, request_id)
 
 
 # ============================================================
@@ -599,22 +629,21 @@ async def generate_bank_pack(
 async def list_exports(
     request: Request,
     case_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """List all exports for a case."""
-    # Validate case
+    """List all exports for a case (tenant-scoped: 404 if case not in org)."""
     case = db.query(Case).filter(
         Case.id == case_id,
-        Case.org_id == current_user.org_id,
+        Case.org_id == org_id,
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
     
-    # Get exports
     exports = db.query(Export).filter(
         Export.case_id == case_id,
-        Export.org_id == current_user.org_id,
+        Export.org_id == org_id,
     ).order_by(Export.created_at.desc()).all()
     
     export_list = [
@@ -622,7 +651,10 @@ async def list_exports(
             id=str(e.id),
             export_type=e.export_type,
             filename=e.filename,
+            status=e.status,
             created_at=e.created_at,
+            error_code=e.error_code,
+            error_message=e.error_message,
         )
         for e in exports
     ]
@@ -656,18 +688,31 @@ async def list_exports(
 async def download_export(
     request: Request,
     export_id: uuid.UUID,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get a fresh presigned URL for an export."""
+    """Get a fresh presigned URL for an export. Returns 409 if export not ready (pending/running/failed)."""
     export = db.query(Export).filter(
         Export.id == export_id,
-        Export.org_id == current_user.org_id,
+        Export.org_id == org_id,
     ).first()
     if not export:
         raise HTTPException(status_code=404, detail="Export not found")
-    
-    # Generate presigned URL
+
+    if export.status != EXPORT_STATUS_SUCCEEDED:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": f"Export not ready. Status={export.status}.",
+                "status": export.status,
+                "error_code": export.error_code,
+                "error_message": export.error_message,
+            },
+        )
+    if not export.minio_key:
+        raise HTTPException(status_code=409, detail={"message": "Export not ready. No file.", "status": export.status})
+
     url = get_presigned_get_url(export.minio_key, DOWNLOAD_EXPIRES_SECONDS)
     
     # Audit log

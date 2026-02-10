@@ -191,7 +191,7 @@ def generate_discrepancy_letter(
     doc.save(buffer)
     buffer.seek(0)
     
-    filename = f"discrepancy_letter_{case_ref}_{datetime.utcnow().strftime('%Y%m%d')}.docx"
+    filename = f"DISCREPANCY_LETTER__CASE_{str(case.get('id', ''))}__{datetime.utcnow().strftime('%Y%m%d')}__v1.docx"
     
     return buffer.getvalue(), filename
 
@@ -277,7 +277,7 @@ def generate_undertaking_indemnity(
     doc.save(buffer)
     buffer.seek(0)
     
-    filename = f"undertaking_indemnity_{case_ref}_{datetime.utcnow().strftime('%Y%m%d')}.docx"
+    filename = f"UNDERTAKING_INDEMNITY__CASE_{str(case.get('id', ''))}__{datetime.utcnow().strftime('%Y%m%d')}__v1.docx"
     
     return buffer.getvalue(), filename
 
@@ -382,7 +382,7 @@ def generate_internal_opinion_skeleton(
     doc.save(buffer)
     buffer.seek(0)
     
-    filename = f"internal_opinion_{case_ref}_{datetime.utcnow().strftime('%Y%m%d')}.docx"
+    filename = f"INTERNAL_OPINION__CASE_{str(case.get('id', ''))}__{datetime.utcnow().strftime('%Y%m%d')}__v1.docx"
     
     return buffer.getvalue(), filename
 

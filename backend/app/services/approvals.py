@@ -280,7 +280,10 @@ def apply_approval_side_effects(
             )
     
     elif approval_request.request_type == "case_decision":
-        case = db.query(Case).filter(Case.id == approval_request.case_id).first()
+        case = db.query(Case).filter(
+            Case.id == approval_request.case_id,
+            Case.org_id == approval_request.org_id,
+        ).first()
         if case:
             case.decision = payload["decision"]
             case.decided_at = now

@@ -5,6 +5,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
+    "gunicorn",
     "pydantic[email]",
     "pydantic-settings",
     "sqlalchemy",

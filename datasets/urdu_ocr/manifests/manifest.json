@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "items": [
+    {
+      "id": "sample1",
+      "pdf_path": "datasets/urdu_ocr/samples/sample1.pdf",
+      "pages": [
+        { "page": 0, "gt_path": "datasets/urdu_ocr/samples/sample1.page1.txt" },
+        { "page": 1, "gt_path": "datasets/urdu_ocr/samples/sample1.page2.txt" }
+      ],
+      "notes": "Fard, Urdu scan, stamps"
+    }
+  ]
+}

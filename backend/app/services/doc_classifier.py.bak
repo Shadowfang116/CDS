@@ -1,0 +1,141 @@
+from __future__ import annotations
+
+from collections import defaultdict
+from typing import Optional, Tuple
+
+from app.models.document import DocumentType
+
+
+KEYWORDS = {
+    DocumentType.SALE_DEED.value: [
+        "sale deed",
+        "bay nama",
+        "baynama",
+        "bai nama",
+        "conveyance deed",
+    ],
+    DocumentType.REGISTRY_DEED.value: [
+        "registry",
+        "registered deed",
+        "registry deed",
+    ],
+    DocumentType.FARD.value: [
+        "fard",
+        "fard e malkiat",
+        "fard e malkiyat",
+        "malkiyat",
+    ],
+    DocumentType.JAMABANDI.value: [
+        "jamabandi",
+    ],
+    DocumentType.SOCIETY_NOC.value: [
+        "noc",
+        "no objection certificate",
+        "society approval",
+    ],
+    DocumentType.ALLOTMENT_LETTER.value: [
+        "allotment",
+        "allocation letter",
+        "allotment letter",
+    ],
+    DocumentType.POWER_OF_ATTORNEY.value: [
+        "power of attorney",
+        "poa",
+        "wakalatnama",
+    ],
+    DocumentType.SEARCH_REPORT.value: [
+        "search report",
+    ],
+    DocumentType.MAP_OR_SITE_PLAN.value: [
+        "site plan",
+        "map",
+        "site map",
+    ],
+}
+
+
+def _count_occurrences(haystack: str, needle: str) -> int:
+    return haystack.count(needle)
+
+
+def classify_document(
+    filename: str,
+    ocr_text: Optional[str] = None,
+) -> Tuple[str, float, dict]:
+    """
+    Heuristic classifier using filename + OCR text.
+    Returns: (doc_type, confidence [0-1], details)
+    """
+    name = (filename or "").lower()
+    text = (ocr_text or "").lower()
+
+    scores = defaultdict(float)
+    hits = defaultdict(int)
+
+    # Score keywords
+    for doc_type, phrases in KEYWORDS.items():
+        for p in phrases:
+            if not p:
+                continue
+            # filename hits (higher weight)
+            if p in name:
+                c = max(1, _count_occurrences(name, p))
+                scores[doc_type] += 1.0 * c
+                hits[doc_type] += c
+            # OCR text hits (lower weight per occurrence; cap to avoid inflation)
+            if p in text:
+                c = _count_occurrences(text, p)
+                if c:
+                    scores[doc_type] += min(5, c) * 0.5
+                    hits[doc_type] += c
+
+    # Fallback patterns (reduce unknowns)
+    if scores:
+        best_type = max(scores, key=lambda k: scores[k])
+        second = sorted(scores.values(), reverse=True)[1] if len(scores) > 1 else 0.0
+        raw = scores[best_type]
+    else:
+        best_type = DocumentType.UNKNOWN.value
+        second = 0.0
+        raw = 0.0
+
+    # Additional fallbacks when nothing matched
+    if raw == 0.0:
+        # 'deed' + sale context
+        if ("deed" in name or "deed" in text):
+            if ("sale" in name or "sale" in text) or ("conveyance" in name or "conveyance" in text):
+                best_type = DocumentType.SALE_DEED.value
+                raw = 1.0
+            else:
+                best_type = DocumentType.REGISTRY_DEED.value
+                raw = 0.8
+        elif "jamabandi" in name or "jamabandi" in text:
+            best_type = DocumentType.JAMABANDI.value
+            raw = 1.0
+        elif "fard" in name or "malkiat" in text or "malkiyat" in text:
+            best_type = DocumentType.FARD.value
+            raw = 0.9
+        elif ("noc" in name or "no objection" in text or "society" in text):
+            best_type = DocumentType.SOCIETY_NOC.value
+            raw = 0.7
+        elif ("power of attorney" in text) or ("poa" in name) or ("wakalat" in text):
+            best_type = DocumentType.POWER_OF_ATTORNEY.value
+            raw = 0.9
+
+    # Confidence calibration
+    if raw <= 0:
+        confidence = 0.0
+    else:
+        denom = raw + max(0.0, second)
+        comp = (raw / denom) if denom > 0 else 1.0
+        # map to [0.55, 0.98] and give a small boost for multiple hits
+        boost = 0.02 * max(0, hits.get(best_type, 0) - 1)
+        confidence = max(0.55, min(0.98, 0.55 + 0.4 * comp + boost))
+
+    details = {
+        "scores": dict(scores),
+        "hits": dict(hits),
+    }
+    return best_type, confidence, details
+
+

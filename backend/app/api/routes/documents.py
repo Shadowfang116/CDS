@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFi
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.case import Case
-from app.models.document import Document, DocumentPage
+from app.models.document import Document, DocumentPage, DocumentClassificationLog
 from app.schemas.document import (
     DocumentResponse,
     DocumentListItem,
@@ -255,6 +255,38 @@ async def upload_document(
         db.commit()
         db.refresh(document)
     
+        # Classification (best-effort; filename + first page OCR if available)
+    try:
+        from app.services.doc_classifier import classify_document
+        first_page_text = None
+        try:
+            first_page = db.query(DocumentPage).filter(
+                DocumentPage.document_id == document_id,
+                DocumentPage.org_id == current_user.org_id,
+                DocumentPage.page_number == 1,
+            ).first()
+            if first_page and first_page.ocr_text:
+                first_page_text = first_page.ocr_text
+        except Exception:
+            first_page_text = None
+
+        pred_type, confidence, _ = classify_document(safe_filename, first_page_text)
+        document.predicted_doc_type = pred_type
+        document.classification_confidence = confidence
+        document.classification_status = "auto"
+        document.needs_review = bool(confidence is None or float(confidence) < 0.7)
+
+        db.add(DocumentClassificationLog(
+            document_id=document.id,
+            predicted_doc_type=pred_type,
+            corrected_doc_type=None,
+            confidence=confidence,
+        ))
+        db.commit()
+        db.refresh(document)
+    except Exception:
+        # Classification should not block upload
+        pass
     # Audit log (include classification if inferred, and original mime type)
     request_id = uuid.uuid4()
     audit_metadata = {
@@ -484,4 +516,6 @@ async def download_page(
     )
     
     return PresignedUrlResponse(url=url, expires_in_seconds=DOWNLOAD_URL_EXPIRES_SECONDS)
+
+
 

@@ -31,7 +31,7 @@ interface DocumentViewerProps {
 }
 
 export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvidence, initialDocId, initialPage }: DocumentViewerProps) {
-    const formatType = (t?: string) => (t ? t.replace(/_/g, ' ').replace(/\\b\\w/g, (l) => l.toUpperCase()) : '');
+  const router = useRouter();
   // Use documents from prop if provided (single source of truth), otherwise fetch independently
   const [documentsState, setDocumentsState] = useState<any[]>([]);
   const documents = documentsProp ?? documentsState;
@@ -263,31 +263,15 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
               }`}
             >
               <div className="font-medium text-sm">{doc.original_filename}</div>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                {doc.predicted_doc_type && (
-                  <Badge variant="info" className="text-xs">
-                    {formatType(String(doc.predicted_doc_type))}
-                  </Badge>
-                )}
-                {doc.needs_review ? (
-                  <Badge variant="warning" className="text-xs">Needs Review</Badge>
-                ) : null}
+              <div className="flex items-center gap-2 mt-1">
                 {doc.doc_type && (
                   <Badge variant="outline" className="text-xs">
-                    {formatType(String(doc.doc_type))}
+                    {doc.doc_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </Badge>
                 )}
                 <span className="text-xs text-slate-500">
                   {doc.page_count || 0} pages
                 </span>
-              </div>
-              <div className="mt-1 text-[11px] text-slate-500">
-                {typeof doc.classification_confidence === 'number' && (
-                  <span>Conf {Math.round(Number(doc.classification_confidence) * 100)}%</span>
-                )}
-                {doc.classification_status && (
-                  <span className="ml-2">Status {String(doc.classification_status)}</span>
-                )}
               </div>
             </button>
           ))}
@@ -330,18 +314,6 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
                 <Badge variant="outline" className="text-xs">
                   Type: {selectedDoc.doc_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </Badge>
-              )}
-              {selectedDoc?.predicted_doc_type && (
-                <Badge variant="info" className="text-xs">Predicted: {formatType(String(selectedDoc.predicted_doc_type))}</Badge>
-              )}
-              {selectedDoc?.needs_review && (
-                <Badge variant="warning" className="text-xs">Needs Review</Badge>
-              )}
-              {typeof selectedDoc?.classification_confidence === "number" && (
-                <span className="text-xs text-slate-400">Conf {Math.round(Number(selectedDoc.classification_confidence) * 100)}%</span>
-              )}
-              {selectedDoc?.classification_status && (
-                <span className="text-xs text-slate-400">Status {String(selectedDoc.classification_status)}</span>
               )}
               {selectedDoc && getOcrStatusBadge()}
             </div>
@@ -748,4 +720,5 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
     </div>
   );
 }
+
 

@@ -3,6 +3,20 @@ from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Index, BigInteger, Integer, Numeric, ForeignKey, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.db.base import Base
+from enum import Enum
+
+
+class DocumentType(str, Enum):
+    SALE_DEED = "sale_deed"
+    REGISTRY_DEED = "registry_deed"
+    FARD = "fard"
+    JAMABANDI = "jamabandi"
+    SOCIETY_NOC = "society_noc"
+    ALLOTMENT_LETTER = "allotment_letter"
+    POWER_OF_ATTORNEY = "power_of_attorney"
+    SEARCH_REPORT = "search_report"
+    MAP_OR_SITE_PLAN = "map_or_site_plan"
+    UNKNOWN = "unknown"
 
 
 class Document(Base):
@@ -23,6 +37,12 @@ class Document(Base):
     doc_type = Column(String, nullable=True)
     doc_type_source = Column(String, nullable=True)  # "auto" or "manual"
     doc_type_updated_at = Column(DateTime, nullable=True)
+    # P15: Classification tracking
+    predicted_doc_type = Column(String, nullable=True)
+    classification_confidence = Column(Numeric, nullable=True)
+    corrected_doc_type = Column(String, nullable=True)
+    classification_status = Column(String, nullable=False, default="auto")
+    needs_review = Column(Boolean, nullable=False, default=False)
     # P13: Metadata JSON for conversion info, source format, etc.
     meta_json = Column(JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -78,3 +98,13 @@ class CaseDossierField(Base):
         Index("idx_case_dossier_fields_org_case_key", "org_id", "case_id", "field_key"),
     )
 
+
+class DocumentClassificationLog(Base):
+    __tablename__ = "document_classification_logs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=False, index=True)
+    predicted_doc_type = Column(String, nullable=False)
+    corrected_doc_type = Column(String, nullable=True)
+    confidence = Column(Numeric, nullable=True)
+    created_at = Column(DateTime, nullable=False, default=datetime.utcnow)

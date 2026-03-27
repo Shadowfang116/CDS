@@ -4,19 +4,21 @@ import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DocumentViewer } from "@/components/documents/DocumentViewer";
 
 import { ExceptionsTable } from "@/components/exceptions/exceptions-table";
 import { ExceptionDetail } from "@/components/exceptions/exception-detail";
 import { ExceptionRow } from "@/components/exceptions/exception-types";
 
 export function CaseDetailTabs(props: {
+  caseId: string;
   exceptions: ExceptionRow[];
   onEvidenceFromException?: (ex: ExceptionRow) => void;
   onResolve?: (ex: ExceptionRow) => Promise<void>;
   onWaive?: (ex: ExceptionRow, waiver_reason: string) => Promise<void>;
   role: "Admin" | "Reviewer" | "Approver" | "Viewer";
 }) {
-  const { exceptions, onEvidenceFromException, onResolve, onWaive, role } = props;
+  const { caseId, exceptions, onEvidenceFromException, onResolve, onWaive, role } = props;
 
   const [selectedId, setSelectedId] = React.useState<string>(exceptions[0]?.id ?? "");
 
@@ -95,10 +97,7 @@ export function CaseDetailTabs(props: {
             <CardTitle className="text-sm">Documents / Annexures</CardTitle>
           </CardHeader>
           <CardContent>
-            <EmptyState
-              title="No documents wired"
-              description="Next: annexure list with deep links to document viewer pages."
-            />
+            <DocumentViewer caseId={caseId} />
           </CardContent>
         </Card>
       </TabsContent>

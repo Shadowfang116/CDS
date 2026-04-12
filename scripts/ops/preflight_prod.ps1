@@ -15,11 +15,11 @@ if ($LASTEXITCODE -ne 0) {
     $failed = $true
 } else { Write-Host "[OK] docker compose present" -ForegroundColor Green }
 
-$envPath = Join-Path (Get-Location) ".env"
+$envPath = Join-Path (Get-Location) ".env.production"
 if (-not (Test-Path $envPath)) {
-    Write-Host "[FAIL] .env not found. Copy from .env.prod.example and set secrets." -ForegroundColor Red
+    Write-Host "[FAIL] .env.production not found. Copy from .env.production.example and set secrets." -ForegroundColor Red
     $failed = $true
-} else { Write-Host "[OK] .env exists" -ForegroundColor Green }
+} else { Write-Host "[OK] .env.production exists" -ForegroundColor Green }
 
 $envVars = @{}
 if (Test-Path $envPath) {
@@ -30,19 +30,32 @@ if (Test-Path $envPath) {
     }
 }
 
-$appEnv = $envVars["APP_ENV"]
+function Get-EnvValue {
+    param(
+        [Parameter(Mandatory = $true)][string[]]$Names
+    )
+    foreach ($name in $Names) {
+        if ($envVars.ContainsKey($name) -and $envVars[$name]) {
+            return $envVars[$name]
+        }
+    }
+    return $null
+}
+
+$appEnv = Get-EnvValue -Names @("APP_ENV", "ENVIRONMENT")
 if ($appEnv -ne "production") {
     Write-Host "[WARN] APP_ENV is '$appEnv'; should be 'production' for prod." -ForegroundColor Yellow
 } else { Write-Host "[OK] APP_ENV=production" -ForegroundColor Green }
 
 $checks = @(
-    @("POSTGRES_PASSWORD", 12),
-    @("APP_SECRET_KEY", 32),
-    @("MINIO_ROOT_PASSWORD", 12)
+    @(@("POSTGRES_PASSWORD"), 12),
+    @(@("APP_SECRET_KEY", "SECRET_KEY"), 32),
+    @(@("MINIO_ROOT_PASSWORD"), 12)
 )
 foreach ($c in $checks) {
-    $name = $c[0]; $minLen = $c[1]
-    $val = $envVars[$name]
+    $names = $c[0]; $minLen = $c[1]
+    $name = $names[0]
+    $val = Get-EnvValue -Names $names
     if (-not $val) {
         Write-Host "[FAIL] $name is missing." -ForegroundColor Red
         $failed = $true

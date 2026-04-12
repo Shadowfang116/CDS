@@ -67,6 +67,22 @@ services:
       timeout: 10s
       retries: 3
 
+  ocr_service:
+    build: ./ocr_service
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      OCR_ENGINE: ${OCR_ENGINE:-surya}
+      OCR_MAX_CONCURRENT_PAGES: ${OCR_MAX_CONCURRENT_PAGES:-2}
+      OCR_MAX_WORKERS: ${OCR_MAX_WORKERS:-1}
+      OMP_NUM_THREADS: ${OMP_NUM_THREADS:-1}
+      OPENBLAS_NUM_THREADS: ${OPENBLAS_NUM_THREADS:-1}
+      MKL_NUM_THREADS: ${MKL_NUM_THREADS:-1}
+      NUMEXPR_NUM_THREADS: ${NUMEXPR_NUM_THREADS:-1}
+    cpus: ${OCR_SERVICE_CPUS:-2.0}
+    mem_limit: ${OCR_SERVICE_MEM_LIMIT:-2g}
+
   api:
     build:
       context: .
@@ -108,6 +124,8 @@ services:
       PARTY_ROLES_DEBUG: ${PARTY_ROLES_DEBUG:-true}
       # HF Extractor service
       HF_EXTRACTOR_URL: ${HF_EXTRACTOR_URL:-http://hf-extractor:8090}
+      # OCR service
+      OCR_SERVICE_URL: ${OCR_SERVICE_URL:-http://ocr_service:8001}
     volumes:
       - ./docs:/app/docs:ro
       - ./scripts:/app/scripts:ro
@@ -126,7 +144,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     restart: unless-stopped
-    command: celery -A app.workers.celery_app:celery_app worker --loglevel=INFO
+    command: celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=${CELERY_WORKER_CONCURRENCY:-1} --prefetch-multiplier=${CELERY_PREFETCH_MULTIPLIER:-1}
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
@@ -156,6 +174,8 @@ services:
       DOSSIER_AUTOFILL_DEBUG: ${DOSSIER_AUTOFILL_DEBUG:-true}
       # HF Extractor service
       HF_EXTRACTOR_URL: ${HF_EXTRACTOR_URL:-http://hf-extractor:8090}
+      # OCR service
+      OCR_SERVICE_URL: ${OCR_SERVICE_URL:-http://ocr_service:8001}
     volumes:
       - ./docs:/app/docs:ro
       - ./scripts:/app/scripts:ro
@@ -166,6 +186,12 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app:celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   beat:
     build:
@@ -193,19 +219,22 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery beat' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        API_INTERNAL_BASE_URL: ${API_INTERNAL_BASE_URL:-http://api:8000}
     restart: unless-stopped
     environment:
-      # API_INTERNAL_BASE_URL: Used by Next.js server-side rewrites to proxy /api/v1/* to API container
-      # This enables same-origin requests from browser (no CORS needed)
+      # Used by Next.js server-side proxy routes to reach the API container.
       API_INTERNAL_BASE_URL: ${API_INTERNAL_BASE_URL:-http://api:8000}
-      # NEXT_PUBLIC_API_BASE_URL: Not needed anymore (browser uses relative /api/v1)
-      # Kept for backward compatibility but not used
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
     ports:
       - "3000:3000"
     depends_on:

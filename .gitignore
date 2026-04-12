@@ -30,6 +30,8 @@ Thumbs.db
 # Environment
 .env
 .env.local
+.env.production
+.env.production.local
 
 # Ops diagnostics bundle (support tickets)
 diagnostics/
@@ -53,4 +55,12 @@ logs/
 /scripts/training/data/
 /scripts/training/datasets/*.jsonl
 /scripts/training/labelstudio_exports/
+
+# Local runtime artifacts
+/.playwright-cli/
+/frontend/.playwright-cli/
+/frontend/output/
+/output/
+/tmp/
+/repo_tree.txt
 

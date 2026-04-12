@@ -11,6 +11,11 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 COPY . .
+
+# Pass API URL at build time so next.config.mjs rewrites bake in the correct destination
+ARG API_INTERNAL_BASE_URL=http://api:8000
+ENV API_INTERNAL_BASE_URL=$API_INTERNAL_BASE_URL
+
 RUN npm run build
 
 # -----------------------------------------------------------------------------
@@ -18,7 +23,9 @@ RUN npm run build
 # -----------------------------------------------------------------------------
 FROM node:20-alpine AS runtime
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000
 # Non-root user
 RUN addgroup -g 10001 -S nodegroup \
     && adduser -u 10001 -S nodeuser -G nodegroup

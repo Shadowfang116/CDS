@@ -24,10 +24,13 @@ from app.models.approval import ApprovalRequest
 from app.models.digest import DigestSchedule
 from app.models.notification import Notification
 from app.models.ocr_extraction import OCRExtractionCandidate
+from app.core.security import get_password_hash
 from app.services.storage import put_object_bytes
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 import io
+
+LOCAL_DEMO_PASSWORD = "ChangeMe123!"
 
 
 def create_synthetic_pdf(title: str, content: str) -> bytes:
@@ -101,6 +104,12 @@ def seed_demo_data():
                 user = User(email=email, full_name=f"{role} User")
                 db.add(user)
                 db.flush()
+            user.full_name = f"{role} User"
+            user.password_hash = get_password_hash(LOCAL_DEMO_PASSWORD)
+            user.must_change_password = False
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            user.is_active = True
             
             # Create role mapping
             role_map = db.query(UserOrgRole).filter(
@@ -121,6 +130,12 @@ def seed_demo_data():
                 user = User(email=email, full_name=f"{role} User")
                 db.add(user)
                 db.flush()
+            user.full_name = f"{role} User"
+            user.password_hash = get_password_hash(LOCAL_DEMO_PASSWORD)
+            user.must_change_password = False
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            user.is_active = True
             
             role_map = db.query(UserOrgRole).filter(
                 UserOrgRole.user_id == user.id,
@@ -755,9 +770,9 @@ def seed_demo_data():
         print(f"   OrgA: {len(cases_orga)} cases, {len(users_orga)} users")
         print(f"   OrgB: {len(cases_orgb)} cases, {len(users_orgb)} users")
         print("\nLogin credentials:")
-        print("   OrgA Admin: admin@orga.com")
-        print("   OrgA Reviewer: reviewer@orga.com")
-        print("   OrgB Admin: admin@orgb.com")
+        print(f"   OrgA Admin: admin@orga.com / {LOCAL_DEMO_PASSWORD}")
+        print(f"   OrgA Reviewer: reviewer@orga.com / {LOCAL_DEMO_PASSWORD}")
+        print(f"   OrgB Admin: admin@orgb.com / {LOCAL_DEMO_PASSWORD}")
         print("\nDemo IDs (for smoke tests):")
         print(f"DEMO_CASE_ID={demo_case.id}")
         print(f"DEMO_DOC_ID={demo_doc.id}")

@@ -1,116 +1,172 @@
-# Production compose: no dev mounts, healthchecks, non-root images, env-driven config.
-# Usage: docker compose -f docker-compose.prod.yml up -d --build
-# Requires .env with strong secrets (POSTGRES_PASSWORD, APP_SECRET_KEY, MINIO_ROOT_*).
-
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env.production
+    depends_on:
+      frontend:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    healthcheck:
+      test: ["CMD", "caddy", "version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - internal
+      - public
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.production
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-bank_diligence}
+      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-bank_diligence}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bank_diligence} -d ${POSTGRES_DB:-bank_diligence}"]
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - app
+      - internal
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    volumes:
+      - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-h", "127.0.0.1", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
     networks:
-      - app
+      - internal
 
   minio:
-    # Pin tag for reproducibility. Note: recent MinIO images may omit curl; if healthcheck fails, override with a custom check or use an image that includes curl.
     image: minio/minio:RELEASE.2024-01-16T16-07-38Z
     restart: unless-stopped
     command: server /data --console-address ":9001"
-    env_file: .env
+    env_file: .env.production
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live || wget -q -O /dev/null http://localhost:9000/minio/health/live || exit 1"]
+      test: ["CMD-SHELL", "test -f /data/.minio.sys/format.json"]
       interval: 30s
-      timeout: 20s
+      timeout: 10s
+      retries: 5
+    networks:
+      - internal
+
+  hf-extractor:
+    build:
+      context: ./backend/hf_extractor
+      dockerfile: Dockerfile
+      args:
+        INSTALL_ML_DEPS: ${INSTALL_ML_DEPS:-0}
+        INSTALL_VLM_DEPS: ${INSTALL_VLM_DEPS:-0}
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      MODEL_NAME: ${MODEL_NAME:-microsoft/layoutxlm-base}
+      EXTRACTOR_VERSION: ${EXTRACTOR_VERSION:-layoutxlm-v1}
+      DEVICE: ${DEVICE:-cpu}
+      HF_LAYOUTXLM_MODEL_PATH: ${HF_LAYOUTXLM_MODEL_PATH:-/models/layoutxlm}
+      HF_DEVICE: ${HF_DEVICE:-cpu}
+      HF_ENABLE_QAARI: ${HF_ENABLE_QAARI:-false}
+      HF_QAARI_MODEL_PATH: ${HF_QAARI_MODEL_PATH:-}
+    expose:
+      - "8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 10s
       retries: 3
     networks:
-      - app
+      - internal
+
+  ocr_service:
+    build: ./ocr_service
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      OCR_ENGINE: ${OCR_ENGINE:-surya}
+      OCR_MAX_CONCURRENT_PAGES: ${OCR_MAX_CONCURRENT_PAGES:-2}
+      OCR_MAX_WORKERS: ${OCR_MAX_WORKERS:-1}
+      OMP_NUM_THREADS: ${OMP_NUM_THREADS:-1}
+      OPENBLAS_NUM_THREADS: ${OPENBLAS_NUM_THREADS:-1}
+      MKL_NUM_THREADS: ${MKL_NUM_THREADS:-1}
+      NUMEXPR_NUM_THREADS: ${NUMEXPR_NUM_THREADS:-1}
+    expose:
+      - "8001"
+    cpus: ${OCR_SERVICE_CPUS:-2.0}
+    mem_limit: ${OCR_SERVICE_MEM_LIMIT:-2g}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - internal
 
   migrate:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: bank-diligence-api:prod
-    env_file: .env
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST:-db}
-      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_USER: ${POSTGRES_USER:-bank_diligence}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-bank_diligence}
+    env_file: .env.production
     command: ["/bin/bash", "/app/backend_scripts/run_migrations.sh"]
     depends_on:
       db:
         condition: service_healthy
     networks:
-      - app
-    restart: "no"
+      - internal
 
   api:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    image: bank-diligence-api:prod
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.production
     environment:
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
-      POSTGRES_USER: ${POSTGRES_USER:-bank_diligence}
+      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-bank_diligence}
-      REDIS_HOST: ${REDIS_HOST:-redis}
-      REDIS_PORT: ${REDIS_PORT:-6379}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REDIS_URL: ${REDIS_URL}
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
       MINIO_PORT: ${MINIO_PORT:-9000}
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_EXTERNAL_ENDPOINT: ${MINIO_EXTERNAL_ENDPOINT:-localhost}
-      MINIO_EXTERNAL_PORT: ${MINIO_EXTERNAL_PORT:-9000}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       APP_ENV: ${APP_ENV:-production}
       APP_SECRET_KEY: ${APP_SECRET_KEY}
-      RULEPACK_PATH: /app/docs/05_rulepack_v1.yaml
-      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-1025}
-      SMTP_USERNAME: ${SMTP_USERNAME:-}
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Bank Diligence Platform}
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@example.com}
-      WEBHOOK_DELIVERY_ENABLED: ${WEBHOOK_DELIVERY_ENABLED:-true}
-      WEBHOOK_TIMEOUT_SECONDS: ${WEBHOOK_TIMEOUT_SECONDS:-10}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
-    ports:
-      - "8000:8000"
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      RULEPACK_PATH: ${RULEPACK_PATH:-/app/backend/rules/diligence_rules.yaml}
+      OCR_SERVICE_URL: http://ocr_service:8001
+      HF_EXTRACTOR_URL: http://hf-extractor:8090
+    expose:
+      - "8000"
+    volumes:
+      - ./backend/rules:/app/backend/rules:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -120,30 +176,137 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      hf-extractor:
+        condition: service_healthy
+      ocr_service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - app
+      - internal
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app:celery_app worker --loglevel=INFO --concurrency=${CELERY_WORKER_CONCURRENCY:-1} --prefetch-multiplier=${CELERY_PREFETCH_MULTIPLIER:-1}
+    env_file: .env.production
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      APP_ENV: ${APP_ENV:-production}
+      APP_SECRET_KEY: ${APP_SECRET_KEY}
+      DEMO_MODE: ${DEMO_MODE:-false}
+      RULEPACK_PATH: ${RULEPACK_PATH:-/app/backend/rules/diligence_rules.yaml}
+      OCR_SERVICE_URL: http://ocr_service:8001
+      HF_EXTRACTOR_URL: http://hf-extractor:8090
+    volumes:
+      - ./backend/rules:/app/backend/rules:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      hf-extractor:
+        condition: service_healthy
+      ocr_service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app:celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+
+  beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app:celery_app beat --loglevel=INFO
+    env_file: .env.production
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      REDIS_URL: ${REDIS_URL}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+      MINIO_REGION: ${MINIO_REGION:-us-east-1}
+      MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+      APP_ENV: ${APP_ENV:-production}
+      APP_SECRET_KEY: ${APP_SECRET_KEY}
+      RULEPACK_PATH: ${RULEPACK_PATH:-/app/backend/rules/diligence_rules.yaml}
+    volumes:
+      - ./backend/rules:/app/backend/rules:ro
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery beat' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - internal
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: bank-diligence-frontend:prod
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.production
     environment:
-      API_INTERNAL_BASE_URL: ${API_INTERNAL_BASE_URL:-http://api:8000}
-    ports:
-      - "3000:3000"
+      API_INTERNAL_BASE_URL: http://api:8000
+    expose:
+      - "3000"
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     networks:
-      - app
+      - internal
 
 volumes:
-  db_data:
+  caddy_config:
+  caddy_data:
   minio_data:
+  postgres_data:
+  redis_data:
 
 networks:
-  app:
+  internal:
+    driver: bridge
+    internal: true
+  public:
     driver: bridge

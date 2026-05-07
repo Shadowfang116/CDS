@@ -1159,7 +1159,7 @@ setMounted(true);
             <div className="space-y-3" data-dashboard-reveal>
               <div className="max-w-3xl">
                 <div className="text-lg font-semibold tracking-tight text-stone-100">
-                  Case Diligence Suite
+                  Covenant Diligence Systems
                 </div>
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-stone-500">
                   {nextStepSummary}

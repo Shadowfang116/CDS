@@ -1,4 +1,4 @@
-# Bank Diligence Platform - MinIO Backup Script (PowerShell)
+# Covenant Diligence Systems - MinIO Backup Script (PowerShell)
 # Uses mc (MinIO Client) to mirror bucket contents to local directory
 
 param(

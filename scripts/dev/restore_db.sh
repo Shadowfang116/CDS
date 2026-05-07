@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bank Diligence Platform - PostgreSQL Restore Script (Bash)
+# Covenant Diligence Systems - PostgreSQL Restore Script (Bash)
 # Restores database from a pg_dump backup file
 
 set -e
@@ -60,4 +60,3 @@ fi
 echo ""
 echo "IMPORTANT: Run migrations to ensure schema is up-to-date:"
 echo "  docker compose exec api alembic upgrade head"
-

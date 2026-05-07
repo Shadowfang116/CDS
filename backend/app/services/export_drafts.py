@@ -121,7 +121,7 @@ def generate_discrepancy_letter(
 
     case_ref = str(case.get("id", ""))[:8].upper()
     date_str = datetime.utcnow().strftime("%d %B %Y")
-    org_name = org.get("name", "Bank Diligence Platform")
+    org_name = org.get("name", "Covenant Diligence Systems")
     borrower = _get_borrower_info(dossier)
     property_desc = _get_property_info(dossier)
 
@@ -183,7 +183,7 @@ def generate_undertaking_indemnity(
 
     case_ref = str(case.get("id", ""))[:8].upper()
     date_str = datetime.utcnow().strftime("%d %B %Y")
-    org_name = org.get("name", "Bank Diligence Platform")
+    org_name = org.get("name", "Covenant Diligence Systems")
     borrower = _get_borrower_info(dossier)
     property_desc = _get_property_info(dossier)
 
@@ -243,7 +243,7 @@ def generate_internal_opinion_skeleton(
 
     case_ref = str(case.get("id", ""))[:8].upper()
     date_str = datetime.utcnow().strftime("%d %B %Y")
-    org_name = org.get("name", "Bank Diligence Platform")
+    org_name = org.get("name", "Covenant Diligence Systems")
     borrower = _get_borrower_info(dossier)
     property_desc = _get_property_info(dossier)
 

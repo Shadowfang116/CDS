@@ -1,6 +1,6 @@
 # Backup and Restore Runbook (Ops)
 
-This runbook covers **PostgreSQL** and **MinIO** backup/restore for the Bank Diligence Platform in production. Use the scripts under `scripts/ops/` (Windows PowerShell) or run the equivalent commands manually.
+This runbook covers **PostgreSQL** and **MinIO** backup/restore for Covenant Diligence Systems in production. Use the scripts under `scripts/ops/` (Windows PowerShell) or run the equivalent commands manually.
 
 ---
 

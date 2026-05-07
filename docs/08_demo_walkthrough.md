@@ -1,4 +1,4 @@
-# Demo Walkthrough - Bank Diligence Platform
+# Demo Walkthrough - Covenant Diligence Systems
 
 ## PILOT QUICKSTART
 

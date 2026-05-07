@@ -107,8 +107,8 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str = ""
     SMTP_PASSWORD: SecretStr = SecretStr("")
     SMTP_USE_TLS: bool = False
-    SMTP_FROM_NAME: str = "Bank Diligence Platform"
-    SMTP_FROM_EMAIL: str = "noreply@bankdiligence.local"
+    SMTP_FROM_NAME: str = "Covenant Diligence Systems"
+    SMTP_FROM_EMAIL: str = "noreply@cds.local"
 
     # Webhooks (Phase 9)
     WEBHOOK_DELIVERY_ENABLED: bool = True

@@ -113,8 +113,8 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Bank Diligence Platform}
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@bankdiligence.local}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Covenant Diligence Systems}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@cds.local}
       WEBHOOK_DELIVERY_ENABLED: ${WEBHOOK_DELIVERY_ENABLED:-true}
       WEBHOOK_TIMEOUT_SECONDS: ${WEBHOOK_TIMEOUT_SECONDS:-10}
       # CORS_ORIGINS: Comma-separated origins for CORS (for direct API access, Swagger, etc.)
@@ -164,8 +164,8 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-false}
-      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Bank Diligence Platform}
-      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@bankdiligence.local}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Covenant Diligence Systems}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@cds.local}
       WEBHOOK_DELIVERY_ENABLED: ${WEBHOOK_DELIVERY_ENABLED:-true}
       WEBHOOK_TIMEOUT_SECONDS: ${WEBHOOK_TIMEOUT_SECONDS:-10}
       # Party role extraction debug logging

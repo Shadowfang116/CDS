@@ -1,6 +1,6 @@
 # Incident Response Runbook
 
-Quick triage, common incidents, diagnostics collection, and restore. For Bank Diligence Platform production.
+Quick triage, common incidents, diagnostics collection, and restore. For Covenant Diligence Systems production.
 
 ---
 

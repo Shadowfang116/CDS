@@ -297,7 +297,7 @@ def generate_bank_pack_pdf(
     document_lookup = {str(document.get("id")): document for document in documents}
     case_ref = str(case.get("id", ""))[:8].upper()
     generated_on = datetime.utcnow().strftime("%d %B %Y")
-    org_name = org.get("name", "Bank Diligence Platform")
+    org_name = org.get("name", "Covenant Diligence Systems")
     borrower = _get_borrower_label(dossier)
     open_counts = _open_exception_counts(exceptions)
     open_cps = sum(1 for cp in cps if cp.get("status") == "Open")
@@ -609,7 +609,7 @@ def generate_bank_pack_pdf(
         writer.add_metadata(
             {
                 "/Title": "Bank Pack - Credit Decision Support Memorandum",
-                "/Creator": "Bank Diligence Platform",
+                "/Creator": "Covenant Diligence Systems",
             }
         )
         out = io.BytesIO()

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bank Diligence Platform - MinIO Backup Script (Bash)
+# Covenant Diligence Systems - MinIO Backup Script (Bash)
 # Uses mc (MinIO Client) to mirror bucket contents to local directory
 
 set -e
@@ -52,4 +52,3 @@ fi
 
 echo ""
 echo "Backup complete. Files saved to: $BACKUP_PATH"
-

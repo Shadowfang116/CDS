@@ -1,4 +1,4 @@
-# Bank Diligence Platform - MinIO Restore Script (PowerShell)
+# Covenant Diligence Systems - MinIO Restore Script (PowerShell)
 # Restores MinIO bucket from local backup directory
 
 param(

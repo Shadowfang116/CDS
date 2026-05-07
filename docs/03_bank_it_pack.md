@@ -8,7 +8,7 @@
 
 ## 1. System Architecture Overview
 
-The Bank Diligence Platform is a multi-tenant document analysis and due diligence system deployed as containerized microservices.
+Covenant Diligence Systems is a multi-tenant document analysis and due diligence system deployed as containerized microservices.
 
 ### 1.1 High-Level Architecture
 

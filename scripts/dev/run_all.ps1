@@ -6,7 +6,7 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "PILOT FULL RUN - Bank Diligence Platform" -ForegroundColor Cyan
+Write-Host "PILOT FULL RUN - Covenant Diligence Systems" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "This script runs: reset -> smoke_test -> pilot_uat" -ForegroundColor Yellow

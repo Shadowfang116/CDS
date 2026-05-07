@@ -32,7 +32,7 @@ function Assert-Ok {
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "PILOT RESET - Bank Diligence Platform" -ForegroundColor Cyan
+Write-Host "PILOT RESET - Covenant Diligence Systems" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "IMPORTANT: Run scripts using .\scripts\dev\pilot_reset.ps1" -ForegroundColor Yellow

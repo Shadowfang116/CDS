@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Bank Diligence Platform uses two primary data stores:
+Covenant Diligence Systems uses two primary data stores:
 1. **PostgreSQL** - Structured data (cases, users, audit logs, etc.)
 2. **MinIO** - Object storage (PDF documents, exports)
 

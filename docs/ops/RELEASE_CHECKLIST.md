@@ -1,6 +1,6 @@
 # Release Checklist and Rollback Procedure
 
-Use this for each production release of the Bank Diligence Platform.
+Use this for each production release of Covenant Diligence Systems.
 
 ---
 

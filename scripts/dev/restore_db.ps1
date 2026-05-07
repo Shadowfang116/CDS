@@ -1,4 +1,4 @@
-# Bank Diligence Platform - PostgreSQL Restore Script (PowerShell)
+# Covenant Diligence Systems - PostgreSQL Restore Script (PowerShell)
 # Restores database from a pg_dump backup file
 
 param(

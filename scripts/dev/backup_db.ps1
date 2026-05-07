@@ -1,4 +1,4 @@
-# Bank Diligence Platform - PostgreSQL Backup Script (PowerShell)
+# Covenant Diligence Systems - PostgreSQL Backup Script (PowerShell)
 # Creates a timestamped pg_dump backup of the database
 
 param(

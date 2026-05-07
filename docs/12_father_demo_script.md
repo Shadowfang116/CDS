@@ -1,6 +1,6 @@
 # Father Demo Script - 15-20 Minute Walkthrough
 
-This script provides a timed, step-by-step walkthrough for demonstrating the Bank Diligence Platform to stakeholders (e.g., your father).
+This script provides a timed, step-by-step walkthrough for demonstrating Covenant Diligence Systems to stakeholders (e.g., your father).
 
 ## Pre-Demo Setup
 
@@ -27,7 +27,7 @@ This script provides a timed, step-by-step walkthrough for demonstrating the Ban
 - Risk summary visible
 
 **Talk Track:**
-> "This is the Bank Diligence Platform. I'm logged in as an admin for Organization A. The dashboard shows our active cases, risk summary, and pending verifications."
+> "This is Covenant Diligence Systems. I'm logged in as an admin for Organization A. The dashboard shows our active cases, risk summary, and pending verifications."
 
 ---
 

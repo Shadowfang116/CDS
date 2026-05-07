@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bank Diligence Platform - MinIO Restore Script (Bash)
+# Covenant Diligence Systems - MinIO Restore Script (Bash)
 # Restores MinIO bucket from local backup directory
 
 set -e
@@ -55,4 +55,3 @@ else
     echo "Restore failed!"
     exit 1
 fi
-

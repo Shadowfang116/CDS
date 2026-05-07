@@ -1,6 +1,6 @@
 # Production Deployment Runbook
 
-Deploy the Bank Diligence Platform for on-prem pilots and bank IT. Copy/paste-friendly.
+Deploy Covenant Diligence Systems for on-prem pilots and bank IT. Copy/paste-friendly.
 
 ---
 

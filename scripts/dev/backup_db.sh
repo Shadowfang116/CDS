@@ -1,5 +1,5 @@
 #!/bin/bash
-# Bank Diligence Platform - PostgreSQL Backup Script (Bash)
+# Covenant Diligence Systems - PostgreSQL Backup Script (Bash)
 # Creates a timestamped pg_dump backup of the database
 
 set -e
@@ -40,4 +40,3 @@ fi
 
 echo ""
 echo "Backup complete. Files saved to: $BACKUP_DIR"
-

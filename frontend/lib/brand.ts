@@ -1,7 +1,7 @@
 export const short = "CDS";
-export const full = "Case Diligence Suite";
+export const full = "Covenant Diligence Systems";
 export const subtitle = "Pakistan property diligence workspace";
-export const product = "Bank Diligence Platform";
+export const product = "Covenant Diligence Systems";
 
 export const BRAND = {
   short,

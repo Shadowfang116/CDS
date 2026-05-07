@@ -335,7 +335,7 @@ function Test-Step {
 }
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "SMOKE TESTS - Bank Diligence Platform" -ForegroundColor Cyan
+Write-Host "SMOKE TESTS - Covenant Diligence Systems" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 

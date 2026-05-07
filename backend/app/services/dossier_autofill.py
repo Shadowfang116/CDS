@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.models.document import Document, DocumentPage, CaseDossierField
 from app.models.ocr_extraction import OCRExtractionCandidate
 from app.models.ocr_text_correction import OCRTextCorrection
+from app.services.candidate_validation import HIGH_RISK_FIELDS as VALIDATION_HIGH_RISK_FIELDS, validate_candidate
+from app.services.ocr_pipeline import HIGH_RISK_FIELDS
 from app.services.extractors.name_lines import extract_name_lines, is_name_like_field, normalize_whitespace
 from app.services.extractors.validators import get_field_validator, is_probably_name_line
 from app.services.extractors.candidate_gate import normalize_and_validate_candidate
@@ -22,6 +24,28 @@ logger = logging.getLogger(__name__)
 # Debug flag for dossier autofill write-path observability
 DOSSIER_AUTOFILL_DEBUG = os.getenv("DOSSIER_AUTOFILL_DEBUG", "true").lower() == "true"
 PARTY_ROLES_DEBUG = os.getenv("PARTY_ROLES_DEBUG", "true").lower() == "true"
+LOW_QUALITY_CONFIDENCE_CAP = 0.4
+LOW_QUALITY_SHORT_VALUE_LEN = 10
+PAGE_QUALITY_FACTORS = {
+    "good": 1.0,
+    "fair": 0.8,
+    "poor": 0.4,
+    "unusable": 0.2,
+    "unavailable": 0.3,
+}
+SOFT_VALIDATION_CONFIDENCE_FLOOR = 0.05
+HIGH_RISK_FIELD_ALIASES = {
+    "party.seller.names": "seller_name",
+    "party.buyer.names": "buyer_name",
+    "party.witness.names": "party_name",
+    "party.name.raw": "party_name",
+    "party.cnic": "cnic",
+    "party.cnic_number": "cnic_number",
+    "consideration.amount": "consideration",
+    "property.khasra_numbers": "khasra_number",
+    "property.khasra_number": "khasra_number",
+    "property.plot_number": "plot_number",
+}
 
 
 @dataclass
@@ -289,10 +313,10 @@ def get_document_ocr_quality(
     db: Session,
     org_id: uuid.UUID,
     document_id: uuid.UUID,
-) -> Tuple[str, List[str]]:
+) -> Tuple[str, List[str], Optional[float]]:
     """
     Get OCR quality level for a document.
-    Returns: (quality_level, reasons)
+    Returns: (quality_level, reasons, quality_score)
     """
     pages = db.query(DocumentPage).filter(
         DocumentPage.document_id == document_id,
@@ -300,36 +324,217 @@ def get_document_ocr_quality(
     ).all()
     
     if not pages:
-        return "Low", ["No pages found"]
+        return "unavailable", ["No pages found"], 0.0
     
     done_pages = [p for p in pages if p.ocr_status == "Done"]
     failed_pages = [p for p in pages if p.ocr_status == "Failed"]
     
     if not done_pages:
-        return "Low", ["No pages with completed OCR"]
-    
-    # Calculate average chars per page
-    total_chars = sum(len(p.ocr_text or "") for p in done_pages)
-    avg_chars = total_chars / len(done_pages) if done_pages else 0
-    
-    quality_level = "Good"
-    reasons = []
-    
-    if avg_chars < 80:
-        quality_level = "Low"
-        reasons.append(f"Low average characters per page ({avg_chars:.0f} < 80)")
-    
+        return "unavailable", ["No pages with completed OCR"], 0.0
+
+    page_scores: List[float] = []
+    page_levels: List[str] = []
+    reasons: List[str] = []
+
+    for page in done_pages:
+        score, level, page_reason = _score_page_text_quality(page.ocr_text or "", page.ocr_confidence)
+        page_scores.append(score)
+        page_levels.append(level)
+        if page_reason and page_reason not in reasons:
+            reasons.append(page_reason)
+
+    quality_score = sum(page_scores) / len(page_scores) if page_scores else 0.0
+    quality_level = _quality_level_from_score(quality_score)
+
     failed_pct = (len(failed_pages) / len(pages)) * 100 if pages else 0
-    if len(failed_pages) > 0:
+    if failed_pages:
+        reasons.append(f"{len(failed_pages)} page(s) failed OCR")
         if failed_pct > 20:
-            quality_level = "Critical"
+            quality_level = _downgrade_quality_level(quality_level)
             reasons.append(f"High failure rate ({failed_pct:.0f}% pages failed)")
+
+    poor_or_worse = sum(1 for level in page_levels if level in {"poor", "unusable", "unavailable"})
+    if poor_or_worse and quality_level == "good":
+        quality_level = "fair"
+    if poor_or_worse > max(1, len(page_levels) // 2):
+        quality_level = _downgrade_quality_level(quality_level)
+
+    return quality_level, reasons, quality_score
+
+
+def _quality_level_from_score(score: Optional[float]) -> str:
+    if score is None:
+        return "unavailable"
+    if score >= 0.7:
+        return "good"
+    if score >= 0.45:
+        return "fair"
+    if score >= 0.3:
+        return "poor"
+    return "unusable"
+
+
+def _downgrade_quality_level(level: str) -> str:
+    if level == "good":
+        return "fair"
+    if level == "fair":
+        return "poor"
+    if level == "poor":
+        return "unusable"
+    return level
+
+
+def _legacy_quality_level(level: str) -> Optional[str]:
+    if level == "good":
+        return "Good"
+    if level == "fair":
+        return "Low"
+    if level == "poor":
+        return "Low"
+    if level in {"unusable", "unavailable"}:
+        return "Critical"
+    return None
+
+
+def _normalize_confidence(confidence: Optional[float]) -> Optional[float]:
+    if confidence is None:
+        return None
+
+    if confidence < 0:
+        return None
+
+    if 1.5 < confidence <= 100:
+        normalized = confidence / 100.0
+    elif 100 < confidence <= 10000:
+        normalized = min(confidence / 100.0, 1.0)
+    else:
+        normalized = confidence
+
+    return max(0.0, min(1.0, normalized))
+
+
+def _score_page_text_quality(
+    text: str,
+    confidence: Optional[float],
+) -> Tuple[float, str, Optional[str]]:
+    words = [word for word in re.split(r"\s+", text or "") if word]
+    word_count = len(words)
+    avg_chars_per_word = (
+        sum(len(word) for word in words) / word_count if word_count else 0.0
+    )
+    confidence_score = _normalize_confidence(float(confidence)) if confidence is not None else 0.5
+
+    if word_count < 5:
+        return 0.1, "unusable", f"Too few detected words ({word_count} < 5)"
+
+    base_score = min(word_count / 40.0, 1.0) * 0.5
+    base_score += min(avg_chars_per_word / 5.0, 1.0) * 0.35
+    base_score += confidence_score * 0.15
+    quality_score = max(0.0, min(1.0, base_score))
+
+    if avg_chars_per_word < 2.5:
+        return min(quality_score, 0.29), "poor", (
+            f"Average characters per word too low ({avg_chars_per_word:.2f} < 2.50)"
+        )
+
+    quality_level = _quality_level_from_score(quality_score)
+    if quality_level in {"good", "fair"}:
+        return quality_score, quality_level, None
+
+    return quality_score, quality_level, f"Low OCR text quality ({quality_level})"
+
+
+def harden_low_quality_candidate(
+    proposed_value: str,
+    confidence: Optional[float],
+    warning_reason: Optional[str],
+    *,
+    is_low_quality: bool,
+) -> Tuple[Optional[float], bool, Optional[str]]:
+    """
+    Downgrade suspicious candidates from low-quality OCR so they require review.
+    """
+    final_confidence = _normalize_confidence(confidence)
+    needs_review = is_low_quality
+    notes: List[str] = []
+    value_len = len((proposed_value or "").strip())
+
+    if is_low_quality:
+        if final_confidence is None:
+            final_confidence = LOW_QUALITY_CONFIDENCE_CAP
         else:
-            if quality_level == "Good":
-                quality_level = "Low"
-            reasons.append(f"{len(failed_pages)} page(s) failed OCR")
-    
-    return quality_level, reasons
+            final_confidence = min(final_confidence, LOW_QUALITY_CONFIDENCE_CAP)
+        notes.append("Autofill downgraded due to low-quality OCR")
+
+        if value_len < LOW_QUALITY_SHORT_VALUE_LEN:
+            notes.append(
+                f"Autofill downgraded: short value ({value_len} chars) on low-quality OCR"
+            )
+
+    if notes:
+        combined_notes = [warning_reason] if warning_reason else []
+        for note in notes:
+            if note not in combined_notes:
+                combined_notes.append(note)
+        warning_reason = "; ".join(filter(None, combined_notes))
+
+    return final_confidence, needs_review, warning_reason
+
+
+def apply_candidate_quality_gate(
+    field_name: str,
+    proposed_value: str,
+    quality_level: str,
+    confidence: Optional[float],
+    warning_reason: Optional[str],
+) -> Tuple[Optional[float], bool, str, Optional[str]]:
+    normalized_confidence = _normalize_confidence(confidence) or 0.0
+    page_quality_factor = PAGE_QUALITY_FACTORS.get(quality_level, PAGE_QUALITY_FACTORS["unavailable"])
+    validation_result = validate_candidate(field_name, proposed_value, quality_level)
+    base_confidence = normalized_confidence * page_quality_factor
+    final_confidence = max(0.0, min(1.0, base_confidence * validation_result.confidence_factor))
+    needs_review = False
+    review_status = "extracted"
+    notes: List[str] = []
+
+    if quality_level in {"poor", "unusable", "unavailable"}:
+        needs_review = True
+        review_status = "needs_review"
+        notes.append(f"Autofill promotion blocked due to OCR quality ({quality_level})")
+    elif _is_high_risk_field(field_name) and quality_level != "good":
+        needs_review = True
+        review_status = "needs_review"
+        notes.append(f"High-risk field requires good OCR quality (current: {quality_level})")
+
+    if not validation_result.valid:
+        needs_review = True
+        review_status = "needs_review"
+        if validation_result.reason:
+            notes.append(validation_result.reason)
+    elif validation_result.confidence_factor < 1.0:
+        final_confidence = max(
+            final_confidence,
+            min(base_confidence, SOFT_VALIDATION_CONFIDENCE_FLOOR),
+        )
+        if validation_result.reason:
+            notes.append(validation_result.reason)
+
+    if notes:
+        combined_notes = [warning_reason] if warning_reason else []
+        for note in notes:
+            if note not in combined_notes:
+                combined_notes.append(note)
+        warning_reason = "; ".join(filter(None, combined_notes))
+
+    return final_confidence, needs_review, review_status, warning_reason
+
+
+def _is_high_risk_field(field_name: str) -> bool:
+    if field_name in HIGH_RISK_FIELDS or field_name in VALIDATION_HIGH_RISK_FIELDS:
+        return True
+
+    canonical_field = HIGH_RISK_FIELD_ALIASES.get(field_name, field_name.split(".")[-1])
+    return canonical_field in VALIDATION_HIGH_RISK_FIELDS
 
 
 def autofill_dossier(
@@ -847,8 +1052,7 @@ def autofill_dossier(
                 snippet = extract_snippet(ocr_text_for_snippet, start_idx, end_idx)
                 
                 # Normalize confidence
-                from app.services.ocr_engine import normalize_confidence
-                confidence_normalized = normalize_confidence(confidence)
+                confidence_normalized = _normalize_confidence(confidence)
                 
                 # Include names_list in evidence metadata if available
                 evidence_metadata = {
@@ -894,8 +1098,7 @@ def autofill_dossier(
             value, confidence, doc_id, page_num, start_idx, end_idx = best
             
             # Normalize confidence to 0.0-1.0 before creating ExtractedField
-            from app.services.ocr_engine import normalize_confidence
-            confidence_normalized = normalize_confidence(confidence)
+            confidence_normalized = _normalize_confidence(confidence)
             
             # Get OCR text for snippet
             ocr_text_for_snippet = None
@@ -1026,6 +1229,31 @@ def autofill_dossier(
                 continue
             
             # Create new candidate with normalized value
+            hf_warning_reason = None
+            hf_is_low_quality = False
+            page_ocr_confidence = getattr(entity, 'ocr_metadata', {}).get("ocr_page_confidence")
+            if low_confidence:
+                hf_is_low_quality = True
+                hf_warning_reason = "HF extractor flagged low confidence"
+            if page_ocr_confidence is not None and float(page_ocr_confidence) < 0.55:
+                hf_is_low_quality = True
+                page_conf_reason = f"Low OCR page confidence ({float(page_ocr_confidence):.2f} < 0.55)"
+                hf_warning_reason = f"{hf_warning_reason}; {page_conf_reason}" if hf_warning_reason else page_conf_reason
+
+            hf_quality_score = (
+                _normalize_confidence(float(page_ocr_confidence))
+                if page_ocr_confidence is not None
+                else _normalize_confidence(float(entity.confidence))
+            )
+            hf_quality_level = "poor" if hf_is_low_quality else _quality_level_from_score(hf_quality_score)
+            hf_confidence, hf_needs_review, hf_review_status, hf_warning_reason = apply_candidate_quality_gate(
+                field_key,
+                normalized_value,
+                hf_quality_level,
+                float(entity.confidence),
+                hf_warning_reason,
+            )
+
             new_candidate = OCRExtractionCandidate(
                 org_id=org_id,
                 case_id=case_id,
@@ -1033,9 +1261,16 @@ def autofill_dossier(
                 page_number=page_num,
                 field_key=field_key,
                 proposed_value=normalized_value,  # P16: Use normalized value
-                confidence=float(entity.confidence),
+                confidence=hf_confidence,
                 snippet=entity.evidence.get("snippet", ""),
                 status="Pending",
+                review_status=hf_review_status,
+                needs_review=hf_needs_review,
+                quality_score=hf_quality_score,
+                quality_level=hf_quality_level,
+                quality_level_at_create=_legacy_quality_level(hf_quality_level),
+                is_low_quality=hf_quality_level in {"poor", "unusable", "unavailable"},
+                warning_reason=hf_warning_reason,
                 extraction_method="hf_extractor",
                 evidence_json=evidence_json,
             )
@@ -1194,8 +1429,8 @@ def autofill_dossier(
             
             # P10: Check OCR quality for this document
             doc_id_uuid = uuid.UUID(ef.evidence["document_id"])
-            quality_level, quality_reasons = get_document_ocr_quality(db, org_id, doc_id_uuid)
-            is_low_quality = quality_level != "Good"
+            quality_level, quality_reasons, quality_score = get_document_ocr_quality(db, org_id, doc_id_uuid)
+            is_low_quality = quality_level in {"poor", "unusable", "unavailable"}
             warning_reason = "; ".join(quality_reasons) if quality_reasons else None
             
             # P14: Combine validation warning with quality warning
@@ -1205,9 +1440,13 @@ def autofill_dossier(
                 else:
                     warning_reason = f"Field validation weak: {validation_warning}"
             
-            # Normalize confidence one more time before persisting (safety check)
-            from app.services.ocr_engine import normalize_confidence
-            final_confidence = normalize_confidence(ef.confidence)
+            final_confidence, needs_review, review_status, warning_reason = apply_candidate_quality_gate(
+                ef.field_path,
+                validated_value,
+                quality_level,
+                ef.confidence,
+                warning_reason,
+            )
             
             # If candidate exists, update it; otherwise create new
             if existing_candidate:
@@ -1223,9 +1462,14 @@ def autofill_dossier(
                 existing_candidate.snippet = ef.evidence.get("snippet")
                 existing_candidate.document_id = doc_id_uuid
                 existing_candidate.page_number = ef.evidence["page_number"]
-                existing_candidate.quality_level_at_create = quality_level
+                existing_candidate.quality_score = quality_score
+                existing_candidate.quality_level = quality_level
+                existing_candidate.quality_level_at_create = _legacy_quality_level(quality_level)
                 existing_candidate.is_low_quality = is_low_quality
                 existing_candidate.warning_reason = warning_reason
+                existing_candidate.needs_review = needs_review or bool(getattr(existing_candidate, "needs_review", False))
+                if review_status == "needs_review" and existing_candidate.review_status not in {"reviewed", "verified"}:
+                    existing_candidate.review_status = "needs_review"
                 existing_candidate.updated_at = datetime.utcnow()
                 # P20: Set run_id on update
                 if is_party_role_field:
@@ -1263,7 +1507,11 @@ def autofill_dossier(
                     confidence=final_confidence,
                     snippet=ef.evidence.get("snippet"),
                     status="Pending",
-                    quality_level_at_create=quality_level,
+                    review_status=review_status,
+                    needs_review=needs_review,
+                    quality_score=quality_score,
+                    quality_level=quality_level,
+                    quality_level_at_create=_legacy_quality_level(quality_level),
                     is_low_quality=is_low_quality,
                     warning_reason=warning_reason,
                     evidence_json=evidence_json if evidence_json else None,  # P16: Include evidence_json

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { AppShell } from '@/components/app/AppShell';
+import { SetPageChrome } from '@/components/layout/set-page-chrome';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,7 @@ import {
   cancelApproval,
   ApprovalRequest,
 } from '@/lib/api';
+import { getCaseDetailPath } from '@/lib/routes';
 
 // Format relative time
 function formatRelativeTime(dateString: string): string {
@@ -126,17 +127,21 @@ export default function ApprovalsPage() {
   };
 
   const requestTypeColors: Record<string, string> = {
-    exception_waive: 'bg-rose-500/20 text-rose-400',
-    cp_waive: 'bg-amber-500/20 text-amber-400',
-    case_decision: 'bg-cyan-500/20 text-cyan-400',
-    export_release: 'bg-emerald-500/20 text-emerald-400',
+    exception_waive: 'bg-[rgba(189,90,86,0.16)] text-[rgb(219,156,153)]',
+    cp_waive: 'bg-[rgba(184,151,95,0.16)] text-[rgb(219,194,137)]',
+    case_decision: 'bg-[rgba(126,133,111,0.16)] text-[rgb(194,200,185)]',
+    export_release: 'bg-[rgba(111,140,115,0.16)] text-[rgb(187,205,189)]',
   };
 
   return (
-    <AppShell pageTitle="Approvals">
-      <div className="space-y-6">
+    <>
+      <SetPageChrome
+        title="Approvals"
+        breadcrumbs={[{ label: 'Approvals' }]}
+      />
+      <div className="space-y-6" data-dashboard-reveal>
         {error && (
-          <div className="bg-rose-500/10 border border-rose-500/30 rounded-lg px-4 py-3 text-sm text-rose-400">
+          <div className="rounded-lg border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] px-4 py-3 text-sm text-[rgb(219,156,153)]">
             {error}
             <button onClick={() => setError(null)} className="ml-4 underline">
               Dismiss
@@ -145,15 +150,15 @@ export default function ApprovalsPage() {
         )}
 
         {/* Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-700 pb-px">
+        <div className="flex items-center gap-2 border-b border-[rgba(82,90,99,0.36)] pb-px">
           {(['pending', 'decided', 'mine'] as TabValue[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab
-                  ? 'text-cyan-400 border-cyan-400'
-                  : 'text-slate-400 border-transparent hover:text-slate-200'
+                  ? 'border-[rgba(126,133,111,0.9)] text-stone-100'
+                  : 'border-transparent text-stone-500 hover:text-stone-300'
               }`}
             >
               {tab === 'pending' && 'Pending'}
@@ -266,7 +271,7 @@ export default function ApprovalsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => router.push(`/cases/${approval.case_id}`)}
+                      onClick={() => router.push(getCaseDetailPath(approval.case_id))}
                     >
                       View Case
                     </Button>
@@ -280,11 +285,11 @@ export default function ApprovalsPage() {
         {/* Decision Modal */}
         {decisionModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
-              <h2 className="text-lg font-semibold text-slate-100 mb-2">
+            <div className="w-full max-w-md rounded-lg border border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] p-6 shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
+              <h2 className="mb-2 text-lg font-semibold text-stone-100">
                 {decisionModal.action === 'approve' ? 'Approve Request' : 'Reject Request'}
               </h2>
-              <p className="text-sm text-slate-400 mb-4">
+              <p className="mb-4 text-sm text-stone-400">
                 {decisionModal.approval.request_type_label} for{' '}
                 {decisionModal.approval.case_title || 'Unknown Case'}
               </p>
@@ -297,7 +302,7 @@ export default function ApprovalsPage() {
                   onChange={(e) => setDecisionReason(e.target.value)}
                   placeholder="Add a reason for your decision..."
                   rows={3}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                  className="w-full rounded-md border border-[rgba(82,90,99,0.55)] bg-[rgba(22,26,30,0.92)] px-3 py-2 text-sm text-stone-200 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-[rgba(126,133,111,0.85)]"
                 />
               </div>
               <div className="flex gap-3">
@@ -312,7 +317,7 @@ export default function ApprovalsPage() {
                 <Button
                   variant={decisionModal.action === 'approve' ? 'primary' : 'outline'}
                   className={`flex-1 ${
-                    decisionModal.action === 'reject' ? 'text-rose-400 hover:text-rose-300' : ''
+                    decisionModal.action === 'reject' ? 'text-stone-50' : ''
                   }`}
                   onClick={submitDecision}
                   disabled={!!actionLoading}
@@ -328,7 +333,7 @@ export default function ApprovalsPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }
 

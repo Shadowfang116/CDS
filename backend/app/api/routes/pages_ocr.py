@@ -1,4 +1,4 @@
-﻿"""Phase 10: OCR review, override, and rerun endpoints for document pages."""
+"""Phase 10: OCR review, override, and rerun endpoints for document pages."""
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -10,9 +10,9 @@ from app.db.session import get_db
 from app.core.config import settings
 from app.models.case import Case
 from app.models.document import Document, DocumentPage
-from app.api.deps import get_current_user, CurrentUser, require_role, require_tenant_scope
+from app.api.deps import get_current_user, CurrentUser, require_reviewer, require_tenant_scope
 from app.services.audit import write_audit_event
-from app.services.storage import get_presigned_get_url
+from app.services.download_tokens import create_download_url
 from app.services.page_text import get_effective_page_text
 
 router = APIRouter(tags=["pages"])
@@ -31,6 +31,7 @@ class OcrReviewResponse(BaseModel):
     image_url: str
     ocr: dict
     meta: dict
+    ocr_quality_signal: Optional[str] = None
 
 
 class OcrOverrideRequest(BaseModel):
@@ -110,7 +111,22 @@ async def get_page_ocr_review(
     
     # Get image URL (use thumbnail if available, else page PDF)
     image_key = page.minio_key_thumbnail or page.minio_key_page_pdf
-    image_url = get_presigned_get_url(image_key, DOWNLOAD_URL_EXPIRES_SECONDS)
+    image_filename = (
+        f"{document.original_filename.rsplit('.', 1)[0]}__page_{page_number}__thumbnail.png"
+        if page.minio_key_thumbnail
+        else f"{document.original_filename.rsplit('.', 1)[0]}__page_{page_number}.pdf"
+    )
+    image_content_type = "image/png" if page.minio_key_thumbnail else "application/pdf"
+    image_url = create_download_url(
+        object_key=image_key,
+        org_id=org_id,
+        user_id=current_user.user_id,
+        case_id=case.id,
+        filename=image_filename,
+        content_type=image_content_type,
+        expires_seconds=DOWNLOAD_URL_EXPIRES_SECONDS,
+        disposition="inline",
+    )
     
     # Get OCR metadata (or empty dict)
     ocr_meta = page.ocr_meta if hasattr(page, 'ocr_meta') and page.ocr_meta else {}
@@ -119,6 +135,7 @@ async def get_page_ocr_review(
         page_id=str(page.id),
         page_number=page.page_number,
         image_url=image_url,
+        ocr_quality_signal=getattr(page, "ocr_quality_signal", None),
         ocr={
             "text": effective["text"],
             "source": effective["source"],
@@ -145,7 +162,7 @@ async def set_page_ocr_override(
     page_number: int,
     body: OcrOverrideRequest,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin", "Approver", "Reviewer")),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """
@@ -238,7 +255,7 @@ async def clear_page_ocr_override(
     document_id: uuid.UUID,
     page_number: int,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin", "Approver", "Reviewer")),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """
@@ -319,7 +336,7 @@ async def rerun_page_ocr(
     page_number: int,
     body: OcrRerunRequest,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin", "Approver", "Reviewer")),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """

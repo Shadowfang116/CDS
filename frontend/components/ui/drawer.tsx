@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface DrawerProps {
@@ -31,6 +31,9 @@ export function Drawer({
 }: DrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<Element | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [shouldRender, setShouldRender] = useState(open);
+  const [visible, setVisible] = useState(open);
 
   // Handle escape key
   const handleKeyDown = useCallback(
@@ -42,19 +45,45 @@ export function Drawer({
     [onClose]
   );
 
-  // Focus trap and escape handler
   useEffect(() => {
     if (open) {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+      setShouldRender(true);
+      const frame = window.requestAnimationFrame(() => setVisible(true));
+      return () => window.cancelAnimationFrame(frame);
+    }
+
+    setVisible(false);
+    closeTimerRef.current = setTimeout(() => {
+      setShouldRender(false);
+      closeTimerRef.current = null;
+    }, 180);
+
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, [open]);
+
+  // Focus trap and escape handler
+  useEffect(() => {
+    if (shouldRender) {
       previousActiveElement.current = document.activeElement;
       document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
 
       // Focus the drawer
-      setTimeout(() => {
+      const timeoutId = window.setTimeout(() => {
         drawerRef.current?.focus();
       }, 100);
 
       return () => {
+        window.clearTimeout(timeoutId);
         document.removeEventListener('keydown', handleKeyDown);
         document.body.style.overflow = '';
         // Restore focus
@@ -63,15 +92,16 @@ export function Drawer({
         }
       };
     }
-  }, [open, handleKeyDown]);
+  }, [shouldRender, handleKeyDown]);
 
-  if (!open) return null;
+  if (!shouldRender) return null;
 
   return (
     <div className="fixed inset-0 z-50" aria-modal="true" role="dialog">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+        data-state={visible ? 'open' : 'closed'}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-150 data-[state=closed]:pointer-events-none data-[state=closed]:opacity-0 data-[state=open]:opacity-100"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -80,29 +110,30 @@ export function Drawer({
       <div
         ref={drawerRef}
         tabIndex={-1}
+        data-state={visible ? 'open' : 'closed'}
         className={cn(
-          'fixed right-0 top-0 h-full w-full bg-slate-900 border-l border-slate-700/50 shadow-2xl',
-          'transform transition-transform duration-300 ease-out',
+          'fixed right-0 top-0 h-full w-full border-l border-[rgba(82,90,99,0.34)] bg-[rgba(17,21,25,0.98)] shadow-[0_24px_64px_rgba(0,0,0,0.32)]',
+          'transform transition-transform duration-150 ease-out',
           'focus:outline-none',
-          open ? 'translate-x-0' : 'translate-x-full',
+          'data-[state=open]:translate-x-0 data-[state=closed]:translate-x-full',
           widthClasses[width],
           className
         )}
       >
         {/* Header */}
         {(title || description) && (
-          <div className="flex items-start justify-between p-6 border-b border-slate-700/50">
+          <div className="flex items-start justify-between border-b border-[rgba(82,90,99,0.34)] bg-[rgba(20,24,28,0.82)] p-6">
             <div>
               {title && (
-                <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
+                <h2 className="text-lg font-semibold text-stone-100">{title}</h2>
               )}
               {description && (
-                <p className="mt-1 text-sm text-slate-400">{description}</p>
+                <p className="mt-1 text-sm text-stone-400">{description}</p>
               )}
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+              className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-[rgba(34,39,45,0.9)] hover:text-stone-100"
               aria-label="Close drawer"
             >
               <svg
@@ -133,14 +164,14 @@ export function Drawer({
 
 // Tab components for drawer
 interface TabsProps {
-  value: string;
-  onValueChange: (value: string) => void;
+  value?: string;
+  onValueChange?: (value: string) => void;
   children: React.ReactNode;
 }
 
-export function DrawerTabs({ value, onValueChange, children }: TabsProps) {
+export function DrawerTabs({ children }: TabsProps) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="relative flex h-full flex-col">
       {children}
     </div>
   );
@@ -155,7 +186,7 @@ export function DrawerTabList({ children, className }: TabListProps) {
   return (
     <div
       className={cn(
-        'flex border-b border-slate-700/50 px-6',
+        'flex border-b border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.72)] px-6',
         className
       )}
       role="tablist"
@@ -190,8 +221,8 @@ export function DrawerTabTrigger({
       className={cn(
         'relative px-4 py-3 text-sm font-medium transition-colors',
         isActive
-          ? 'text-cyan-400'
-          : 'text-slate-400 hover:text-slate-200'
+          ? 'text-stone-100'
+          : 'text-stone-400 hover:text-stone-200'
       )}
     >
       <span className="flex items-center gap-2">
@@ -199,10 +230,10 @@ export function DrawerTabTrigger({
         {typeof count === 'number' && (
           <span
             className={cn(
-              'px-1.5 py-0.5 text-xs rounded-full',
+              'rounded-full px-1.5 py-0.5 text-xs',
               isActive
-                ? 'bg-cyan-400/20 text-cyan-400'
-                : 'bg-slate-700 text-slate-400'
+                ? 'bg-[rgba(152,161,135,0.14)] text-stone-100 ring-1 ring-[rgba(152,161,135,0.3)]'
+                : 'bg-[rgba(34,39,45,0.82)] text-stone-400'
             )}
           >
             {count}
@@ -210,7 +241,7 @@ export function DrawerTabTrigger({
         )}
       </span>
       {isActive && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-cyan-400" />
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[rgba(152,161,135,0.82)]" />
       )}
     </button>
   );
@@ -229,12 +260,15 @@ export function DrawerTabContent({
   children,
   className,
 }: TabContentProps) {
-  if (value !== activeValue) return null;
-
   return (
     <div
       role="tabpanel"
-      className={cn('flex-1 overflow-y-auto', className)}
+      aria-hidden={value !== activeValue}
+      data-state={value === activeValue ? 'active' : 'inactive'}
+      className={cn(
+        'flex-1 overflow-y-auto transition-opacity duration-150 data-[state=inactive]:pointer-events-none data-[state=inactive]:absolute data-[state=inactive]:inset-0 data-[state=inactive]:opacity-0 data-[state=active]:relative data-[state=active]:opacity-100',
+        className
+      )}
     >
       {children}
     </div>

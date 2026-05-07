@@ -18,7 +18,7 @@ This script provides a timed, step-by-step walkthrough for demonstrating the Ban
 **Action:**
 - Navigate to `http://localhost:3000`
 - Click "Login"
-- Enter: `admin@orga.com` / any password
+- Enter: `admin@orga.com` / `ChangeMe123!`
 - Select: OrgA / Admin
 
 **Expected:**

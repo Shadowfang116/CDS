@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { AppShell } from '@/components/app/AppShell';
+import { SetPageChrome } from '@/components/layout/set-page-chrome';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,7 +46,6 @@ function formatRelativeTime(dateString: string): string {
 }
 
 export default function DigestsPage() {
-  const router = useRouter();
   const [schedules, setSchedules] = useState<DigestSchedule[]>([]);
   const [runs, setRuns] = useState<DigestRun[]>([]);
   const [loading, setLoading] = useState(true);
@@ -156,17 +154,19 @@ export default function DigestsPage() {
   };
 
   return (
-    <AppShell
-      pageTitle="Scheduled Digests"
-      pageActions={
-        <Button variant="primary" size="sm" onClick={() => setShowCreateForm(true)}>
-          Create Schedule
-        </Button>
-      }
-    >
-      <div className="space-y-8">
+    <>
+      <SetPageChrome
+        title="Scheduled Digests"
+        breadcrumbs={[{ label: 'Digests' }]}
+        actions={
+          <Button variant="primary" size="sm" onClick={() => setShowCreateForm(true)}>
+            Create Schedule
+          </Button>
+        }
+      />
+      <div className="space-y-8" data-dashboard-reveal>
         {error && (
-          <div className="bg-rose-500/10 border border-rose-500/30 rounded-lg px-4 py-3 text-sm text-rose-400">
+          <div className="rounded-lg border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] px-4 py-3 text-sm text-[rgb(219,156,153)]">
             {error}
             <button onClick={() => setError(null)} className="ml-4 underline">
               Dismiss
@@ -177,8 +177,8 @@ export default function DigestsPage() {
         {/* Create Form Modal */}
         {showCreateForm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
-              <h2 className="text-lg font-semibold text-slate-100 mb-4">Create Digest Schedule</h2>
+            <div className="w-full max-w-md rounded-lg border border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] p-6 shadow-[0_18px_48px_rgba(0,0,0,0.35)]">
+              <h2 className="mb-4 text-lg font-semibold text-stone-100">Create Digest Schedule</h2>
               <form onSubmit={handleCreateSchedule} className="space-y-4">
                 <div>
                   <label className="block text-sm text-slate-400 mb-1">Name</label>
@@ -266,7 +266,7 @@ export default function DigestsPage() {
         )}
 
         {/* Schedules Section */}
-        <section>
+        <section data-dashboard-section>
           <h2 className="text-lg font-semibold text-slate-100 mb-4">Schedules</h2>
           {loading ? (
             <div className="space-y-3">
@@ -344,7 +344,7 @@ export default function DigestsPage() {
         </section>
 
         {/* Recent Runs Section */}
-        <section>
+        <section data-dashboard-section>
           <h2 className="text-lg font-semibold text-slate-100 mb-4">Recent Runs</h2>
           {loading ? (
             <div className="space-y-2">
@@ -407,7 +407,7 @@ export default function DigestsPage() {
           )}
         </section>
       </div>
-    </AppShell>
+    </>
   );
 }
 

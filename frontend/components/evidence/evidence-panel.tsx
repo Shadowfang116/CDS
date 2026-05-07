@@ -18,9 +18,9 @@ export function EvidencePanel(props: {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">Evidence</CardTitle>
+          <CardTitle>Evidence Register</CardTitle>
           {onClear ? (
             <Button variant="outline" size="sm" onClick={onClear}>
               Clear
@@ -32,7 +32,7 @@ export function EvidencePanel(props: {
       <CardContent className="space-y-3">
         {items.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            No evidence selected yet. Select an Exception or CP to load its evidence references.
+            No evidence references loaded. Select an exception to populate the review register.
           </div>
         ) : (
           <>
@@ -42,13 +42,13 @@ export function EvidencePanel(props: {
                   key={it.id}
                   onClick={() => onSelect(it.id)}
                   className={[
-                    "w-full rounded-md border px-3 py-2 text-left text-sm",
+                    "w-full rounded-md border border-[rgba(82,90,99,0.42)] px-3 py-2 text-left text-sm",
                     it.id === selected?.id
-                      ? "bg-muted"
-                      : "bg-background hover:bg-muted/50",
+                      ? "bg-[rgba(44,50,57,0.72)] text-stone-100"
+                      : "bg-[rgba(24,28,32,0.74)] hover:bg-[rgba(34,39,45,0.92)]",
                   ].join(" ")}
                 >
-                  <div className="font-medium">{it.title}</div>
+                  <div className="font-medium text-stone-100">{it.title}</div>
                   <div className="text-xs text-muted-foreground">
                     {it.refs.length} reference(s)
                   </div>
@@ -60,15 +60,15 @@ export function EvidencePanel(props: {
 
             {selected ? (
               <div className="space-y-2">
-                <div className="text-sm font-semibold">References</div>
+                <div className="text-sm font-semibold uppercase tracking-[0.08em] text-stone-400">References</div>
                 <div className="space-y-2">
                   {selected.refs.map((r, idx) => (
-                    <div key={idx} className="rounded-md border p-2 text-sm">
-                      <div className="text-xs text-muted-foreground">
-                        Doc: {r.doc_id} • Page: {r.page}
+                    <div key={idx} className="rounded-md border border-[rgba(82,90,99,0.4)] bg-[rgba(24,28,32,0.72)] p-3 text-sm">
+                      <div className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                        Document {r.doc_id} · Page {r.page}
                       </div>
                       {r.snippet ? (
-                        <div className="mt-1 text-xs">{r.snippet}</div>
+                        <div className="mt-2 text-sm leading-6 text-stone-200">{r.snippet}</div>
                       ) : null}
                     </div>
                   ))}

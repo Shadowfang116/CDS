@@ -11,8 +11,9 @@ from app.db.session import get_db
 from app.models.case import Case
 from app.models.document import Document, CaseDossierField
 from app.models.dossier_field_history import DossierFieldHistory
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import CurrentUser, require_reviewer, require_viewer
 from app.services.audit import write_audit_event
+from app.services.dossier_versions import upsert_dossier_field
 
 router = APIRouter(prefix="/cases", tags=["dossier-fields"])
 
@@ -72,7 +73,7 @@ class DossierFieldHistoryResponse(BaseModel):
 async def get_dossier_fields(
     request: Request,
     case_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get all dossier fields for a case with evidence and edit info."""
@@ -145,7 +146,7 @@ async def edit_dossier_field(
     case_id: uuid.UUID,
     field_key: str,
     body: DossierFieldEditRequest,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """Edit a dossier field value. P14: Note required, evidence required for critical fields."""
@@ -221,6 +222,16 @@ async def edit_dossier_field(
     db.flush()
     
     # Write history entry
+    upsert_dossier_field(
+        case,
+        key=field_key,
+        value=field.field_value,
+        source="manual",
+        locked=True,
+        actor_id=str(current_user.user_id),
+        summary="Manual dossier field edit",
+    )
+
     history_entry = DossierFieldHistory(
         org_id=current_user.org_id,
         case_id=case_id,
@@ -286,7 +297,7 @@ async def link_dossier_field_evidence(
     case_id: uuid.UUID,
     field_key: str,
     body: dict,  # {document_id, page_number} OR {snippet_json}
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """Link evidence to a dossier field (document+page or snippet)."""
@@ -357,7 +368,7 @@ async def get_dossier_field_history(
     request: Request,
     case_id: uuid.UUID,
     field_key: str,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get edit history for a dossier field."""

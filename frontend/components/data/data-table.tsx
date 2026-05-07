@@ -44,6 +44,7 @@ export function DataTable<TData, TValue>({
   className,
 }: DataTableProps<TData, TValue>) {
   const empty = emptyText ?? emptyMessage;
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,
@@ -53,7 +54,7 @@ export function DataTable<TData, TValue>({
 
   if (loading) {
     return (
-      <div className={cn("rounded-lg border bg-background", className)}>
+      <div className={cn(className)}>
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -90,7 +91,7 @@ export function DataTable<TData, TValue>({
   const rows = table.getRowModel().rows;
 
   return (
-    <div className={cn("rounded-lg border bg-background", className)}>
+    <div className={cn(className)}>
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (

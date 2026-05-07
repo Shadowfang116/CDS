@@ -1,0 +1,200 @@
+rules:
+  - id: missing_doc_registry
+    title: Registered title deed missing
+    category: missing_doc
+    module: Title
+    severity: High
+    legal_basis: Transfer of Property Act, 1882
+    evidence_acceptable:
+      - Registered sale deed
+      - Registry deed
+      - Certified copy from sub-registrar
+    evaluator: missing_evidence
+    logic:
+      required_doc_types: ["registry_deed", "registry_instrument", "sale deed"]
+    outputs:
+      title: Registered title deed missing
+      exception: Registered title deed was not identified in the uploaded record set.
+      cp: Upload the registered title deed or a certified copy from the relevant sub-registrar.
+      evidence_required: Registered title deed or certified registry copy
+      resolution_conditions: Reviewer must confirm the deed covers the financed property and current owner.
+
+  - id: missing_doc_estamp
+    title: e-Stamp evidence missing
+    category: missing_doc
+    module: Stamp
+    severity: Medium
+    legal_basis: Stamp Act, 1899
+    evidence_acceptable:
+      - e-Stamp certificate
+      - Stamp challan
+      - Stamp receipt
+    evaluator: missing_evidence
+    logic:
+      required_doc_types: ["estamp_certificate", "stamp_challan", "stamp receipt"]
+    outputs:
+      title: e-Stamp evidence missing
+      exception: No acceptable stamp evidence was detected for the transaction package.
+      cp: Provide e-Stamp certificate or equivalent stamp payment evidence acceptable to the bank.
+      evidence_required: e-Stamp certificate, challan, or receipt
+      resolution_conditions: Evidence must show amount, date, and linkage to the transaction.
+
+  - id: missing_doc_society_noc
+    title: Society NOC not available
+    category: missing_doc
+    module: Society
+    severity: High
+    legal_basis: Scheme / society transfer and mortgage restrictions
+    evidence_acceptable:
+      - Society NOC
+      - Society mortgage permission
+      - Society transfer letter
+    evaluator: missing_evidence
+    logic:
+      required_doc_types: ["society_noc", "society ndc", "society mortgage permission"]
+    outputs:
+      title: Society NOC not available
+      exception: Society approval for mortgage or transfer was not identified in the annexures.
+      cp: Obtain valid society NOC or mortgage permission before approval.
+      evidence_required: Society NOC or mortgage permission
+      resolution_conditions: Reviewer must verify validity period and property reference.
+
+  - id: mismatch_cnic
+    title: CNIC mismatch across dossier
+    category: mismatch
+    module: Parties
+    severity: Critical
+    legal_basis: KYC / borrower identity controls
+    evidence_acceptable:
+      - CNIC copy
+      - NADRA verification
+      - Affidavit reconciling identity details
+    evaluator: mismatch
+    logic:
+      field_pattern: "cnic"
+    outputs:
+      title: CNIC mismatch across dossier
+      exception: CNIC values extracted from the case record do not reconcile across documents.
+      cp: Provide reconciled CNIC evidence and reviewer confirmation before approval.
+      evidence_required: Matching CNIC or reconciliatory affidavit
+      resolution_conditions: All party identity fields must reconcile before the exception is closed.
+
+  - id: mismatch_registry_reference
+    title: Registry references do not reconcile
+    category: mismatch
+    module: Registration
+    severity: High
+    legal_basis: Title chain integrity
+    evidence_acceptable:
+      - Registry certified copy
+      - Mutation entry
+      - Fard / jamabandi
+    evaluator: mismatch
+    logic:
+      field_pattern: "registry"
+    outputs:
+      title: Registry references do not reconcile
+      exception: Registry identifiers extracted from the dossier do not reconcile across the transaction documents.
+      cp: Provide certified registry evidence confirming the correct reference set.
+      evidence_required: Certified registry evidence
+      resolution_conditions: Reviewer must reconcile all registry references to one property chain.
+
+  - id: keyword_risk_mortgage_bar
+    title: Restriction keyword identified
+    category: keyword_risk
+    module: Risk Review
+    severity: Critical
+    legal_basis: Contractual restriction / encumbrance review
+    evidence_acceptable:
+      - Clause analysis memo
+      - Updated approval letter
+      - Waiver from competent authority
+    evaluator: keyword_risk
+    logic:
+      keywords_any: ["restriction", "encumbrance", "stay order", "charge already created"]
+    outputs:
+      title: Restriction keyword identified
+      exception: OCR text contains restriction language that may prevent clean mortgage creation.
+      cp: Obtain documented clarification or authority waiver for the identified restriction.
+      evidence_required: Clause analysis memo or formal waiver
+      resolution_conditions: Approver must confirm the restriction is cured or expressly waived.
+
+  - id: keyword_risk_dispute
+    title: Litigation or dispute indicator detected
+    category: keyword_risk
+    module: Litigation
+    severity: High
+    legal_basis: Litigation risk review
+    evidence_acceptable:
+      - Court order
+      - Counsel memo
+      - Borrower affidavit
+    evaluator: keyword_risk
+    logic:
+      keywords_any: ["litigation", "dispute", "injunction", "suit pending"]
+    outputs:
+      title: Litigation or dispute indicator detected
+      exception: OCR text indicates a dispute or pending proceeding linked to the property or parties.
+      cp: Obtain counsel review and supporting litigation documents before approval.
+      evidence_required: Court order or counsel memo
+      resolution_conditions: Reviewer must document the current case posture and risk outcome.
+
+  - id: timeline_gap_chain
+    title: Title chain timeline gap
+    category: timeline_gap
+    module: Title
+    severity: High
+    legal_basis: Continuous ownership chain review
+    evidence_acceptable:
+      - Intermediate transfer deed
+      - Mutation entry
+      - Revenue extract
+    evaluator: timeline_gap
+    logic:
+      date_keywords: ["prior owner", "transferred on", "mutation dated", "before transfer"]
+    outputs:
+      title: Title chain timeline gap
+      exception: The title chain appears to contain a missing or inconsistent transfer step.
+      cp: Provide documentary support for each intermediate transfer in the ownership chain.
+      evidence_required: Intermediate transfer evidence
+      resolution_conditions: Reviewer must confirm uninterrupted chain of title.
+
+  - id: timeline_gap_possession
+    title: Possession timeline gap
+    category: timeline_gap
+    module: Possession
+    severity: Medium
+    legal_basis: Possession and occupancy verification
+    evidence_acceptable:
+      - Possession letter
+      - Site visit memo
+      - Utility bill
+    evaluator: timeline_gap
+    logic:
+      date_keywords: ["possession delivered", "handover", "site visit", "occupancy"]
+    outputs:
+      title: Possession timeline gap
+      exception: Possession timing is not adequately evidenced in the current record set.
+      cp: Obtain possession evidence or site verification confirming current possession.
+      evidence_required: Possession letter or site verification
+      resolution_conditions: Reviewer must confirm possession chronology is documented.
+
+  - id: missing_doc_revenue
+    title: Revenue record missing
+    category: missing_doc
+    module: Revenue
+    severity: Medium
+    legal_basis: Revenue and land record verification
+    evidence_acceptable:
+      - Fard
+      - Jamabandi
+      - Mutation entry
+    evaluator: missing_evidence
+    logic:
+      required_doc_types: ["fard", "jamabandi", "mutation_entry"]
+    outputs:
+      title: Revenue record missing
+      exception: No acceptable revenue record was identified for the financed property.
+      cp: Provide current revenue extract, jamabandi, or mutation evidence before approval.
+      evidence_required: Revenue extract or mutation evidence
+      resolution_conditions: Reviewer must confirm land record alignment with the title documents.

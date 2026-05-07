@@ -9,9 +9,11 @@ interface Breadcrumb {
 
 interface PageChromeContextValue {
   title: string
+  subtitle: string
   breadcrumbs: Breadcrumb[]
   actions: React.ReactNode | null
   setTitle: (title: string) => void
+  setSubtitle: (subtitle: string) => void
   setBreadcrumbs: (breadcrumbs: Breadcrumb[]) => void
   setActions: (actions: React.ReactNode | null) => void
 }
@@ -20,19 +22,22 @@ const PageChromeContext = React.createContext<PageChromeContextValue | null>(nul
 
 export function PageChromeProvider({ children }: { children: React.ReactNode }) {
   const [title, setTitle] = React.useState<string>("")
+  const [subtitle, setSubtitle] = React.useState<string>("")
   const [breadcrumbs, setBreadcrumbs] = React.useState<Breadcrumb[]>([])
   const [actions, setActions] = React.useState<React.ReactNode | null>(null)
 
   const value: PageChromeContextValue = React.useMemo(
     () => ({
       title,
+      subtitle,
       breadcrumbs,
       actions,
       setTitle,
+      setSubtitle,
       setBreadcrumbs,
       setActions,
     }),
-    [title, breadcrumbs, actions]
+    [title, subtitle, breadcrumbs, actions]
   )
 
   return (

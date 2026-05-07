@@ -285,7 +285,7 @@ async def run_digest_now(
     
     # Trigger Celery task (import here to avoid circular imports)
     try:
-        from app.workers.tasks.digest_tasks import generate_digest_pdf
+        from app.workers.tasks_digest import generate_digest_pdf
         generate_digest_pdf.delay(str(run.id), str(current_user.user_id))
     except Exception as e:
         # If Celery not available, run synchronously (MVP fallback)

@@ -11,6 +11,7 @@ from app.models.rules import Exception_, ConditionPrecedent
 from app.models.export import Export
 from app.services.audit import write_audit_event
 from app.services.notifications import notify_user, notify_approvers
+from app.services.workflow import normalize_case_status, transition_case
 
 
 def validate_request_payload(request_type: str, payload: Dict[str, Any]) -> None:
@@ -285,7 +286,19 @@ def apply_approval_side_effects(
             Case.org_id == approval_request.org_id,
         ).first()
         if case:
-            case.decision = payload["decision"]
+            decision = payload["decision"]
+            decision_to_status = {
+                "PASS": "Approved",
+                "FAIL": "Rejected",
+                "CONDITIONAL_PASS": "Approved",
+            }
+            transition_target = decision_to_status.get(decision)
+            if transition_target is None:
+                raise HTTPException(status_code=400, detail=f"Unsupported case decision: {decision}")
+            previous_status = normalize_case_status(case.status)
+            transition_case(db, case=case, next_status=transition_target)
+
+            case.decision = decision
             case.decided_at = now
             case.decided_by_user_id = decided_by_user_id
             case.decision_notes = {
@@ -293,15 +306,7 @@ def apply_approval_side_effects(
                 "conditions": payload.get("conditions", []),
                 "effective_date": payload.get("effective_date"),
             }
-            
-            # Update case status based on decision
-            if payload["decision"] == "PASS":
-                case.status = "Approved"
-            elif payload["decision"] == "FAIL":
-                case.status = "Rejected"
-            elif payload["decision"] == "CONDITIONAL_PASS":
-                case.status = "Approved"  # With conditions
-            
+
             write_audit_event(
                 db=db,
                 org_id=approval_request.org_id,
@@ -311,7 +316,9 @@ def apply_approval_side_effects(
                 entity_id=case.id,
                 event_metadata={
                     "approval_request_id": str(approval_request.id),
-                    "decision": payload["decision"],
+                    "decision": decision,
+                    "previous_status": previous_status,
+                    "status": transition_target,
                     "rationale": payload.get("rationale"),
                 },
             )
@@ -464,16 +471,16 @@ def get_case_readiness(
     if case.status not in ["Review", "Ready for Approval"]:
         reasons.append(f"Case status is '{case.status}', expected 'Review' or 'Ready for Approval'")
     
-    # Check open high exceptions
-    open_high = db.query(func.count(Exception_.id)).filter(
+    # Check open critical exceptions
+    open_critical = db.query(func.count(Exception_.id)).filter(
         Exception_.case_id == case_id,
         Exception_.org_id == org_id,
-        Exception_.severity == "High",
+        Exception_.severity == "Critical",
         Exception_.status == "Open",
     ).scalar() or 0
-    
-    if open_high > 0:
-        reasons.append(f"{open_high} open high-severity exception(s) remaining")
+
+    if open_critical > 0:
+        reasons.append(f"{open_critical} open critical exception(s) remaining")
     
     # Check hard-stop exceptions (P9)
     hard_stop_exceptions = db.query(Exception_).filter(
@@ -532,7 +539,8 @@ def get_case_readiness(
         "ready": ready,
         "reasons": reasons if not ready else ["All criteria met"],
         "metrics": {
-            "open_high_exceptions": open_high,
+            "open_critical_exceptions": open_critical,
+            "open_high_exceptions": open_critical,
             "pending_verifications": pending_verifs,
             "cp_completion_pct": round(cp_pct, 1),
             "cp_threshold_pct": cp_threshold_pct,

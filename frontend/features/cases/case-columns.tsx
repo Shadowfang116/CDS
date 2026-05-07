@@ -5,6 +5,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { CaseListItem } from "@/types/cases";
 import { CaseStatusPill } from "@/components/ui/case-status-pill";
 import { Button } from "@/components/ui/button";
+import { getCaseDetailPath } from "@/lib/routes";
 
 function shortRef(id: string | number): string {
   const s = String(id ?? "");
@@ -72,7 +73,7 @@ export const caseColumns: ColumnDef<CaseListItem>[] = [
       return (
         <div className="flex justify-end">
           <Button variant="outline" size="sm" asChild>
-            <Link href={`/dashboard/cases/${String(id)}`}>View</Link>
+            <Link href={getCaseDetailPath(String(id))}>View</Link>
           </Button>
         </div>
       );

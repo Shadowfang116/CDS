@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 // Label component - create simple one if not available
@@ -24,7 +25,7 @@ import {
 export default function OcrReviewPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const user = useCurrentUser();
   
   const caseId = params.caseId as string;
   const documentId = params.documentId as string;
@@ -42,11 +43,7 @@ export default function OcrReviewPage() {
   
   const canEdit = user && ['Admin', 'Approver', 'Reviewer'].includes(user.role);
   
-  useEffect(() => {
-    loadData();
-  }, [caseId, documentId, pageNumber]);
-  
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const result = await getPageOcrReview(caseId, documentId, pageNumber);
@@ -57,7 +54,11 @@ export default function OcrReviewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [caseId, documentId, pageNumber]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
   
   const handleSaveOverride = async () => {
     if (!overrideText.trim()) {
@@ -256,6 +257,16 @@ export default function OcrReviewPage() {
         
         {/* Right: OCR Content */}
         <div className="space-y-4">
+          {data?.ocr_quality_signal === 'LOW_CONFIDENCE' && (
+            <Alert variant='destructive' className='mb-4'>
+              <AlertDescription>Low-confidence OCR detected. Manual review is recommended before relying on extracted text.</AlertDescription>
+            </Alert>
+          )}
+          {data?.ocr_quality_signal === 'REVIEW_REQUIRED' && (
+            <Alert className='mb-4'>
+              <AlertDescription>This page appears to contain handwritten or diagrammatic content. OCR results may be incomplete.</AlertDescription>
+            </Alert>
+          )}
           <Tabs defaultValue="text" className="w-full">
             <TabsList>
               <TabsTrigger value="text">Effective Text</TabsTrigger>

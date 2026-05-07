@@ -1,16 +1,13 @@
 import uuid
 from typing import Optional
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 import jwt
 from app.db.session import get_db
 from app.core.config import settings
-from app.core.roles import normalize_role
+from app.core.roles import expand_allowed_roles, normalize_role
 from app.models.user import User, UserOrgRole
 from app.models.org import Org
-
-security = HTTPBearer()
 
 
 class CurrentUser:
@@ -23,12 +20,16 @@ class CurrentUser:
 
 
 def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
+    request: Request,
+    access_token: Optional[str] = Cookie(default=None),
     db: Session = Depends(get_db),
 ) -> CurrentUser:
     """Extract and validate JWT token, return current user context."""
+    if not access_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     try:
-        token = credentials.credentials
+        token = access_token
         payload = jwt.decode(token, settings.APP_SECRET_KEY.get_secret_value(), algorithms=[settings.APP_ALGORITHM])
         user_id = uuid.UUID(payload["user_id"])
         org_id = uuid.UUID(payload["org_id"])
@@ -41,11 +42,13 @@ def get_current_user(
         # Verify user and org still exist
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-        
+            raise HTTPException(status_code=401, detail="Authentication failed")
+        if not user.is_active:
+            raise HTTPException(status_code=401, detail="Authentication failed")
+
         org = db.query(Org).filter(Org.id == org_id).first()
         if not org:
-            raise HTTPException(status_code=401, detail="Organization not found")
+            raise HTTPException(status_code=401, detail="Authentication failed")
         
         # Verify role mapping still exists
         role_mapping = db.query(UserOrgRole).filter(
@@ -53,13 +56,25 @@ def get_current_user(
             UserOrgRole.org_id == org_id,
         ).first()
         if not role_mapping:
-            raise HTTPException(status_code=401, detail="Role mapping not found")
+            raise HTTPException(status_code=401, detail="Authentication failed")
         
         # Normalize DB role and compare canonical forms
         db_canonical_role = normalize_role(role_mapping.role)
         if db_canonical_role != canonical_role:
-            raise HTTPException(status_code=401, detail="Role mapping mismatch")
-        
+            raise HTTPException(status_code=401, detail="Authentication failed")
+
+        if user.must_change_password:
+            allowed_paths = {
+                "/api/v1/auth/me",
+                "/api/v1/auth/change-password",
+                "/api/v1/auth/logout",
+            }
+            if request.url.path not in allowed_paths:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Password change required",
+                )
+
         # Return canonical role for consistent RBAC checks
         return CurrentUser(user_id=user_id, org_id=org_id, role=canonical_role)
     except jwt.InvalidTokenError:
@@ -69,8 +84,8 @@ def get_current_user(
     except HTTPException:
         # Re-raise HTTPExceptions as-is (including those from normalize_role)
         raise
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 
 # ---------------------------------------------------------------------------
@@ -98,14 +113,11 @@ def require_role(*allowed_roles: str):
     if not allowed_roles:
         raise RuntimeError("require_role() must be called with at least one role")
 
-    allowed = set()
-    for r in allowed_roles:
-        if r is None:
-            continue
-        try:
-            allowed.add(normalize_role(str(r)))
-        except Exception as e:
-            raise RuntimeError(f"Invalid role passed to require_role(): {r!r}") from e
+    try:
+        allowed = expand_allowed_roles(*allowed_roles)
+    except Exception as e:
+        invalid_role = next((r for r in allowed_roles if r is not None), None)
+        raise RuntimeError(f"Invalid role passed to require_role(): {invalid_role!r}") from e
 
     def _require_role(
         current_user: CurrentUser = Depends(require_authenticated_user),
@@ -140,3 +152,27 @@ def require_tenant_scope(
 def require_roles(*roles):
     """Alias for require_role. Prefer require_role for new code."""
     return require_role(*roles)
+
+
+def require_viewer(
+    current_user: CurrentUser = Depends(require_authenticated_user),
+) -> CurrentUser:
+    return current_user
+
+
+def require_reviewer(
+    current_user: CurrentUser = Depends(require_role("Reviewer")),
+) -> CurrentUser:
+    return current_user
+
+
+def require_approver(
+    current_user: CurrentUser = Depends(require_role("Approver")),
+) -> CurrentUser:
+    return current_user
+
+
+def require_admin(
+    current_user: CurrentUser = Depends(require_role("Admin")),
+) -> CurrentUser:
+    return current_user

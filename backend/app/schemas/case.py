@@ -12,6 +12,7 @@ class CaseResponse(BaseModel):
     org_id: UUID
     title: str
     status: str
+    assigned_to_user_id: UUID | None = None
     created_at: datetime
     updated_at: datetime
     
@@ -21,6 +22,10 @@ class CaseResponse(BaseModel):
 
 class CaseStatusUpdate(BaseModel):
     status: str
+
+
+class CaseAssignmentUpdate(BaseModel):
+    action: str  # "claim" | "unassign"
 
 
 class CaseListResponse(BaseModel):

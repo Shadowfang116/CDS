@@ -16,7 +16,7 @@ Reference for deployment. **Required** means the app will fail or refuse to star
 | **POSTGRES_DB** | No | No | `bank_diligence` | |
 | **APP_SECRET_KEY** | No | **Yes** | *(secret)* | Min 32 chars in prod. Used for JWT signing. |
 | **APP_ALGORITHM** | No | No | `HS256` | |
-| **APP_ACCESS_TOKEN_EXPIRE_HOURS** | No | No | `24` | |
+| **ACCESS_TOKEN_EXPIRE_MINUTES** | No | No | `480` | JWT cookie/session lifetime. |
 | **MINIO_ENDPOINT** | No | No | `minio` | Service name in Compose. |
 | **MINIO_PORT** | No | No | `9000` | |
 | **MINIO_ROOT_USER** | No | No | `minioadmin` | |
@@ -59,4 +59,4 @@ Reference for deployment. **Required** means the app will fail or refuse to star
   - **APP_SECRET_KEY:** Generate a new 32+ character secret. Deploy with the new value; all existing JWTs will be invalid after deploy (users must log in again).
   - **POSTGRES_PASSWORD:** Change in DB and in `.env`, then recreate/restart the `db` service and any app that connects to it.
   - **MINIO_ROOT_PASSWORD:** Update in MinIO and in `.env`, restart MinIO and API/worker so they reconnect.
-- **Do not store `.env` in git.** Use `.env.prod.example` as a template and keep real `.env` only on the deployment host or in a secrets manager.
+- **Do not store `.env.production` in git.** Use `.env.production.example` as a template and keep the real file only on the deployment host or in a secrets manager.

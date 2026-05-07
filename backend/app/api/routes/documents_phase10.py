@@ -6,9 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models.document import Document, DocumentPage
-from app.models.ocr_text_correction import OCRTextCorrection
-from app.api.deps import get_current_user, CurrentUser
-from app.services.storage import get_presigned_get_url
+from app.api.deps import CurrentUser, require_viewer
+from app.services.download_tokens import create_download_url
 from app.services.thumbnails import ensure_thumbnail_exists
 from app.services.audit import write_audit_event
 from app.schemas.document import PresignedUrlResponse
@@ -23,7 +22,7 @@ async def get_page_thumbnail(
     request: Request,
     document_id: uuid.UUID,
     page_number: int,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get a signed URL to download a page thumbnail. Generates thumbnail if missing."""
@@ -54,7 +53,16 @@ async def get_page_thumbnail(
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to generate thumbnail: {str(e)}")
     
-    url = get_presigned_get_url(page.minio_key_thumbnail, DOWNLOAD_URL_EXPIRES_SECONDS)
+    url = create_download_url(
+        object_key=page.minio_key_thumbnail,
+        org_id=current_user.org_id,
+        user_id=current_user.user_id,
+        case_id=document.case_id,
+        filename=f"{document.original_filename.rsplit('.', 1)[0]}__page_{page_number}__thumbnail.png",
+        content_type="image/png",
+        expires_seconds=DOWNLOAD_URL_EXPIRES_SECONDS,
+        disposition="inline",
+    )
     return PresignedUrlResponse(url=url, expires_in_seconds=DOWNLOAD_URL_EXPIRES_SECONDS)
 
 
@@ -64,7 +72,7 @@ async def get_page_ocr_text(
     document_id: uuid.UUID,
     page_number: int,
     mode: str = Query("effective", regex="^(effective|raw|corrected)$"),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get OCR text for a page. P14: Supports corrections overlay."""
@@ -85,16 +93,9 @@ async def get_page_ocr_text(
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
     
-    # P14: Get correction if exists
-    correction = db.query(OCRTextCorrection).filter(
-        OCRTextCorrection.org_id == current_user.org_id,
-        OCRTextCorrection.document_id == document_id,
-        OCRTextCorrection.page_number == page_number,
-    ).first()
-    
     raw_text = page.ocr_text or ""
-    corrected_text = correction.corrected_text if correction else None
-    has_correction = correction is not None
+    corrected_text = page.corrected_text
+    has_correction = bool(page.corrected_text)
     
     # Determine effective text based on mode
     if mode == "raw":
@@ -115,11 +116,11 @@ async def get_page_ocr_text(
     
     if has_correction:
         result["corrected_text"] = corrected_text
-        result["correction_note"] = correction.note
-        result["corrected_at"] = correction.created_at.isoformat() if correction.created_at else None
+        result["correction_note"] = None
+        result["corrected_at"] = page.corrected_at.isoformat() if page.corrected_at else None
         # Get user email if available
         from app.models.user import User
-        user = db.query(User).filter(User.id == correction.created_by_user_id).first()
+        user = db.query(User).filter(User.id == page.corrected_by_user_id).first()
         result["corrected_by_email"] = user.email if user else None
     else:
         result["corrected_text"] = None

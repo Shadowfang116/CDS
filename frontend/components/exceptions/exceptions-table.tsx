@@ -43,17 +43,17 @@ export function ExceptionsTable(props: {
       />
 
       <div className="rounded-lg border bg-background">
-        <div className="grid grid-cols-[140px_120px_1fr_120px] gap-0 border-b px-3 py-2 text-xs font-medium text-muted-foreground">
+        <div className="grid grid-cols-[120px_140px_1fr_120px] gap-0 border-b border-[rgba(82,90,99,0.36)] bg-[rgba(31,36,41,0.96)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           <div>Severity</div>
           <div>Module</div>
-          <div>Title</div>
+          <div>Exception</div>
           <div>Status</div>
         </div>
 
         {filtered.length === 0 ? (
           <div className="p-4 text-sm text-muted-foreground">No results.</div>
         ) : (
-          <div className="divide-y">
+          <div className="divide-y divide-[rgba(82,90,99,0.28)]">
             {filtered.map((r) => {
               const active = r.id === selectedId;
               return (
@@ -61,15 +61,18 @@ export function ExceptionsTable(props: {
                   key={r.id}
                   onClick={() => onSelect(r.id)}
                   className={[
-                    "grid w-full grid-cols-[140px_120px_1fr_120px] gap-0 px-3 py-3 text-left text-sm",
-                    active ? "bg-muted" : "bg-background hover:bg-muted/50",
+                    "grid w-full grid-cols-[120px_140px_1fr_120px] gap-0 px-3 py-3 text-left text-sm",
+                    active ? "bg-[rgba(44,50,57,0.72)]" : "bg-[rgba(24,28,32,0.74)] hover:bg-[rgba(34,39,45,0.92)]",
                   ].join(" ")}
                 >
                   <div>
                     <SeverityBadge severity={r.severity} />
                   </div>
                   <div className="text-muted-foreground">{r.module}</div>
-                  <div className="font-medium">{r.title}</div>
+                  <div>
+                    <div className="font-medium text-stone-100">{r.title}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{r.id}</div>
+                  </div>
                   <div>{statusBadge(r.status)}</div>
                 </button>
               );

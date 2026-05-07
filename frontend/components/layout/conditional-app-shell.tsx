@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { AppShell } from "@/components/app/AppShell";
+import { AppShell } from "@/components/layout/app-shell";
 
 interface ConditionalAppShellProps {
   children: React.ReactNode;
@@ -11,14 +11,14 @@ export function ConditionalAppShell({ children }: ConditionalAppShellProps) {
   const pathname = usePathname();
 
   // Public/auth routes: no AppShell
-  const authRoutes = ["/login", "/auth/login", "/signin"];
-  const isAuthRoute =
+  const publicRoutes = ["/", "/login", "/auth/login", "/signin", "/change-password"];
+  const isPublicRoute =
     pathname &&
-    authRoutes.some(
+    publicRoutes.some(
       (route) => pathname === route || pathname.startsWith(route + "/")
     );
 
-  if (isAuthRoute) {
+  if (isPublicRoute) {
     return <>{children}</>;
   }
 

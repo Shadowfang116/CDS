@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { getCaseControls, CaseControlsResponse } from '@/lib/api';
+import { CaseControlsResponse } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,24 +9,18 @@ import { SkeletonCard } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 
 interface CaseControlsCardProps {
-  caseId: string;
   controls: CaseControlsResponse | null; // Passed from parent (single source of truth)
   onViewDocument?: (documentId: string) => void;
+  onNavigateToDocuments?: () => void;
 }
 
-export function CaseControlsCard({ caseId, controls, onViewDocument }: CaseControlsCardProps) {
+export function CaseControlsCard({ controls, onViewDocument, onNavigateToDocuments }: CaseControlsCardProps) {
   // No longer fetches independently - receives controls as prop from parent
   // This prevents duplicate fetches and ensures single source of truth
 
   if (!controls) {
     return <SkeletonCard className="h-96" />;
   }
-
-  const riskColor = 
-    controls.risk.label === 'Green' ? 'badge-success' :
-    controls.risk.label === 'Amber' ? 'badge-warning' : 'badge-error';
-
-  const readinessColor = controls.readiness.ready ? 'badge-success' : 'badge-error';
 
   return (
     <Card>
@@ -86,7 +79,11 @@ export function CaseControlsCard({ caseId, controls, onViewDocument }: CaseContr
         <div>
           <h3 className="text-sm font-semibold text-cyan-400 uppercase mb-3">Evidence Checklist</h3>
           {controls.evidence_checklist.length === 0 ? (
-            <p className="text-slate-400 text-sm">No evidence requirements defined.</p>
+            <EmptyState
+              title="No evidence checklist recorded."
+              description="Evidence requirements for this case have not been generated yet."
+              className="min-h-[160px]"
+            />
           ) : (
             <div className="space-y-3">
               {controls.evidence_checklist.map((item) => (
@@ -169,13 +166,7 @@ export function CaseControlsCard({ caseId, controls, onViewDocument }: CaseContr
         {/* Go to Documents button */}
         <div className="pt-2">
           <Button
-            onClick={() => {
-              // Navigate to documents tab (this will be handled by parent)
-              if (typeof window !== 'undefined') {
-                const event = new CustomEvent('navigateToTab', { detail: 'documents' });
-                window.dispatchEvent(event);
-              }
-            }}
+            onClick={onNavigateToDocuments}
             variant="secondary"
             className="w-full"
           >

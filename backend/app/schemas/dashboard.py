@@ -11,6 +11,7 @@ class DashboardKPIs(BaseModel):
     open_high_exceptions: int
     cp_completion_pct: float
     verification_completion_pct: float
+    pending_verifications: int
 
 
 class NeedsAttentionItem(BaseModel):
@@ -23,6 +24,9 @@ class NeedsAttentionItem(BaseModel):
     open_low: int
     pending_verifications: int
     updated_at: datetime
+    assigned_to_user_id: Optional[UUID] = None
+    assigned_to_email: Optional[str] = None
+    assigned_to_name: Optional[str] = None
 
 
 class ActivityItem(BaseModel):
@@ -32,6 +36,8 @@ class ActivityItem(BaseModel):
     action: str
     entity_type: Optional[str] = None
     entity_id: Optional[UUID] = None
+    case_id: Optional[UUID] = None
+    case_title: Optional[str] = None
 
 
 class TimeseriesEntry(BaseModel):
@@ -52,10 +58,14 @@ class ExceptionsBySeverity(BaseModel):
 class ApprovalPreviewItem(BaseModel):
     """Preview item for pending approvals."""
     id: UUID
+    case_id: UUID
     request_type: str
     request_type_label: str
     case_title: str
     created_at: datetime
+    assigned_to_user_id: Optional[UUID] = None
+    assigned_to_email: Optional[str] = None
+    assigned_to_name: Optional[str] = None
 
 
 class ReadyForApprovalItem(BaseModel):
@@ -65,12 +75,17 @@ class ReadyForApprovalItem(BaseModel):
     status: str
     cp_completion_pct: float
     updated_at: datetime
+    assigned_to_user_id: Optional[UUID] = None
+    assigned_to_email: Optional[str] = None
+    assigned_to_name: Optional[str] = None
 
 
 class DashboardResponse(BaseModel):
     """Full dashboard response."""
     range_days: int
     kpis: DashboardKPIs
+    processing_cases_count: int = 0
+    oldest_processing_case_updated_at: Optional[datetime] = None
     cases_by_status: Dict[str, int]
     exceptions_by_severity: ExceptionsBySeverity
     timeseries: List[TimeseriesEntry]
@@ -83,12 +98,36 @@ class DashboardResponse(BaseModel):
     ready_for_approval_list: List[ReadyForApprovalItem] = []
 
 
+class DashboardSummaryResponse(BaseModel):
+    """Critical first-screen dashboard response."""
+    range_days: int
+    kpis: DashboardKPIs
+    processing_cases_count: int = 0
+    oldest_processing_case_updated_at: Optional[datetime] = None
+    needs_attention: List[NeedsAttentionItem]
+    recent_activity: List[ActivityItem]
+    approvals_pending_count: int = 0
+    approvals_pending_preview: List[ApprovalPreviewItem] = []
+    ready_for_approval_count: int = 0
+    ready_for_approval_list: List[ReadyForApprovalItem] = []
+
+
+class DashboardAnalyticsResponse(BaseModel):
+    """Secondary analytics response for below-the-fold dashboard widgets."""
+    range_days: int
+    cases_by_status: Dict[str, int]
+    exceptions_by_severity: ExceptionsBySeverity
+    timeseries: List[TimeseriesEntry]
+
+
 # Cohort endpoint schemas
 class CohortFilters(BaseModel):
     """Filters applied to cohort query."""
     severity: Optional[str] = None
     status: Optional[str] = None
     date: Optional[str] = None
+    owner: Optional[str] = None
+    escalation: Optional[str] = None
 
 
 class CohortCaseItem(BaseModel):
@@ -101,6 +140,9 @@ class CohortCaseItem(BaseModel):
     open_medium: int
     open_low: int
     pending_verifications: int
+    assigned_to_user_id: Optional[UUID] = None
+    assigned_to_email: Optional[str] = None
+    assigned_to_name: Optional[str] = None
 
 
 class CohortActivityItem(BaseModel):
@@ -135,6 +177,7 @@ class SavedViewConfig(BaseModel):
     days: int = 30
     severity: Optional[str] = None
     status: Optional[str] = None
+    owner: Optional[str] = None
 
 
 class SavedViewCreate(BaseModel):

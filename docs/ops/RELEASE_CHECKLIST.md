@@ -9,7 +9,7 @@ Use this for each production release of the Bank Diligence Platform.
 - [ ] **CI green:** Frontend build, Docker build, and smoke tests pass (e.g. GitHub Actions or local equivalent).
 - [ ] **Migrations reviewed:** Run `alembic heads` and `alembic current` (or use GET `/api/v1/admin/migrations/status` on a staging DB). Ensure no conflicting heads; plan for any new migrations in this release.
 - [ ] **Backup taken** before upgrade: Postgres (pg_dump custom) and MinIO (mc mirror or volume). See [BACKUP_AND_RESTORE.md](./BACKUP_AND_RESTORE.md).
-- [ ] **Validate .env.prod.example:** Any new or changed variables are documented in [ENVIRONMENT_MATRIX.md](./ENVIRONMENT_MATRIX.md) and reflected in `.env.prod.example`.
+- [ ] **Validate .env.production.example:** Any new or changed variables are documented in [ENVIRONMENT_MATRIX.md](./ENVIRONMENT_MATRIX.md) and reflected in `.env.production.example`.
 
 ---
 

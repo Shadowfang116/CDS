@@ -1,14 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
-  // TEMP: until auth is wired, take from env or default. Later derive from session/JWT.
-  const role =
-    (process.env.DEV_ROLE as "Admin" | "Reviewer" | "Approver" | "Viewer") ??
-    "Reviewer";
-  const email =
-    (process.env.DEV_EMAIL as string) ?? "user@example.com";
-  const org_name =
-    (process.env.DEV_ORG_NAME as string) ?? "Organization";
+const API_INTERNAL_BASE_URL = process.env.API_INTERNAL_BASE_URL ?? "http://api:8000";
 
-  return NextResponse.json({ role, email, org_name });
+export async function GET(request: NextRequest) {
+  const cookie = request.headers.get("cookie");
+  const response = await fetch(`${API_INTERNAL_BASE_URL}/api/v1/auth/me`, {
+    headers: cookie ? { cookie } : {},
+    cache: "no-store",
+  });
+
+  const body = await response.text();
+
+  return new NextResponse(body, {
+    status: response.status,
+    headers: {
+      "content-type": response.headers.get("content-type") ?? "application/json",
+    },
+  });
 }

@@ -1,41 +1,24 @@
-﻿"""Phase 10: Celery task for re-running OCR on a single page."""
-import uuid
+"""Phase 10: Celery task for re-running OCR on a single page."""
 import logging
-import tempfile
-import os
+import uuid
 from datetime import datetime
 
-from app.workers.celery_app import celery_app
+from celery.exceptions import MaxRetriesExceededError, Retry
+
+from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.document import Document, DocumentPage
-from app.models.audit_log import AuditLog
-from app.services.ocr_engine import ocr_page_pdf
-from app.services.storage import get_object_bytes
-from app.core.config import settings
+from app.services.audit import write_audit_event
+from app.services.ocr import ocr_page_pdf
+from app.services.ocr_quality import compute_ocr_quality_signal
+from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
 
-def write_audit_event_sync(
-    db,
-    org_id: uuid.UUID,
-    actor_user_id: uuid.UUID,
-    action: str,
-    entity_type: str = None,
-    entity_id: uuid.UUID = None,
-    event_metadata: dict = None,
-):
-    """Synchronous audit log writer for Celery tasks."""
-    audit_entry = AuditLog(
-        org_id=org_id,
-        actor_user_id=actor_user_id,
-        action=action,
-        entity_type=entity_type,
-        entity_id=entity_id,
-        event_metadata=event_metadata or {},
-    )
-    db.add(audit_entry)
-    db.commit()
+def _retry_countdown(task, base_seconds: int = 60, max_seconds: int = 300) -> int:
+    retries = max(0, int(getattr(getattr(task, "request", None), "retries", 0) or 0))
+    return min(base_seconds * (2 ** retries), max_seconds)
 
 
 @celery_app.task(name="ocr.rerun_page", bind=True, max_retries=3)
@@ -50,7 +33,7 @@ def rerun_page_ocr_task(
 ):
     """
     Re-run OCR for a single page with optional forced settings.
-    
+
     Args:
         org_id: Organization ID
         case_id: Case ID
@@ -58,7 +41,7 @@ def rerun_page_ocr_task(
         page_number: Page number (1-based)
         request_id: Request ID for audit correlation
         options: Dict with force_* options (force_profile, force_detect, etc.)
-    
+
     Updates page.ocr_text, page.ocr_confidence, page.ocr_meta.
     Does NOT overwrite manual override (ocr_text_override).
     """
@@ -66,96 +49,84 @@ def rerun_page_ocr_task(
     case_uuid = uuid.UUID(case_id)
     document_uuid = uuid.UUID(document_id)
     request_uuid = uuid.UUID(request_id)
-    
+
     db = SessionLocal()
-    pdf_temp_path = None
-    
     try:
-        # Load Document and Page (tenant-safe)
         document = db.query(Document).filter(
             Document.id == document_uuid,
             Document.case_id == case_uuid,
             Document.org_id == org_uuid,
         ).first()
-        
+
         if not document:
             logger.error(f"Document {document_id} not found for org {org_id}")
             return {"status": "error", "error": "Document not found"}
-        
+
         page = db.query(DocumentPage).filter(
             DocumentPage.document_id == document_uuid,
             DocumentPage.page_number == page_number,
             DocumentPage.org_id == org_uuid,
         ).first()
-        
+
         if not page:
             logger.error(f"Page {page_number} not found for document {document_id}")
             return {"status": "error", "error": "Page not found"}
-        
-        # Download document PDF to temp file
-        if document.minio_key_original:
-            try:
-                pdf_bytes = get_object_bytes(document.minio_key_original)
-                temp_fd, pdf_temp_path = tempfile.mkstemp(suffix='.pdf')
-                with os.fdopen(temp_fd, 'wb') as f:
-                    f.write(pdf_bytes)
-                logger.info(f"Downloaded document PDF to temp file: {pdf_temp_path}")
-            except Exception as e:
-                logger.error(f"Failed to download document PDF: {e}")
-                return {"status": "error", "error": f"Failed to download PDF: {e}"}
-        else:
-            return {"status": "error", "error": "Document has no PDF key"}
-        
-        # Temporarily override settings based on options
+
         original_settings = {}
-        
+
         if options.get("force_profile"):
-            original_settings["OCR_PREPROCESS_PROFILE"] = settings.OCR_PREPROCESS_PROFILE
+            if hasattr(settings, "OCR_PREPROCESS_PROFILE"):
+                original_settings["OCR_PREPROCESS_PROFILE"] = settings.OCR_PREPROCESS_PROFILE
+                settings.OCR_PREPROCESS_PROFILE = options["force_profile"]
             original_settings["OCR_ENABLE_ENHANCED_PREPROCESS"] = settings.OCR_ENABLE_ENHANCED_PREPROCESS
-            settings.OCR_PREPROCESS_PROFILE = options["force_profile"]
-            settings.OCR_ENABLE_ENHANCED_PREPROCESS = (options["force_profile"] == "enhanced")
-        
+            settings.OCR_ENABLE_ENHANCED_PREPROCESS = options["force_profile"] == "enhanced"
+
         if options.get("force_detect") is not None:
             original_settings["OCR_ENABLE_SCRIPT_DETECTION"] = settings.OCR_ENABLE_SCRIPT_DETECTION
             settings.OCR_ENABLE_SCRIPT_DETECTION = options["force_detect"]
-        
-        if options.get("force_layout") is not None:
+
+        if options.get("force_layout") is not None and hasattr(settings, "OCR_ENABLE_LAYOUT_SEGMENTATION"):
             original_settings["OCR_ENABLE_LAYOUT_SEGMENTATION"] = settings.OCR_ENABLE_LAYOUT_SEGMENTATION
             settings.OCR_ENABLE_LAYOUT_SEGMENTATION = options["force_layout"]
-        
-        if options.get("force_pdf_text_layer") is not None:
+
+        if options.get("force_pdf_text_layer") is not None and hasattr(settings, "OCR_ENABLE_PDF_TEXT_LAYER"):
             original_settings["OCR_ENABLE_PDF_TEXT_LAYER"] = settings.OCR_ENABLE_PDF_TEXT_LAYER
             settings.OCR_ENABLE_PDF_TEXT_LAYER = options["force_pdf_text_layer"]
-        
-        if options.get("engine_mode"):
+
+        if options.get("engine_mode") and hasattr(settings, "OCR_ENGINE_MODE"):
             original_settings["OCR_ENGINE_MODE"] = settings.OCR_ENGINE_MODE
             settings.OCR_ENGINE_MODE = options["engine_mode"]
-        
+
         lang_hint = options.get("force_lang")
-        
+        if lang_hint:
+            original_settings["OCR_LANG"] = settings.OCR_LANG
+            settings.OCR_LANG = lang_hint
+
         try:
-            # Run OCR
             t_start = datetime.utcnow()
-            result = ocr_page_pdf(
-                page.minio_key_page_pdf,
-                lang_hint=lang_hint,
-                pdf_path=pdf_temp_path,
-                page_number=page_number - 1  # Convert to 0-based
-            )
+            text, confidence, metadata = ocr_page_pdf(page.minio_key_page_pdf)
             t_end = datetime.utcnow()
-            
-            # Update page OCR fields (but NOT override)
-            page.ocr_text = result.text
-            page.ocr_confidence = result.confidence
-            
-            # Update ocr_meta with rerun history
-            if not hasattr(page, 'ocr_meta') or not page.ocr_meta:
+
+            page.ocr_text = text
+            page.ocr_confidence = confidence
+            if hasattr(page, "ocr_quality_signal"):
+                avg_confidence = metadata.get("confidence_raw") if isinstance(metadata, dict) else None
+                if avg_confidence is None:
+                    avg_confidence = confidence
+                if avg_confidence is not None and avg_confidence <= 1:
+                    avg_confidence *= 100
+                page.ocr_quality_signal = compute_ocr_quality_signal(
+                    text or "",
+                    avg_confidence,
+                    settings,
+                )
+
+            if not hasattr(page, "ocr_meta") or not page.ocr_meta:
                 page.ocr_meta = {}
-            
+
             if "rerun_history" not in page.ocr_meta:
                 page.ocr_meta["rerun_history"] = []
-            
-            # Append rerun entry (cap at last 10)
+
             rerun_entry = {
                 "when": datetime.utcnow().isoformat(),
                 "options": options,
@@ -164,25 +135,22 @@ def rerun_page_ocr_task(
                     "end": t_end.isoformat(),
                     "duration_ms": (t_end - t_start).total_seconds() * 1000,
                 },
-                "used_pdf_text_layer": result.metadata.get("pdf_text_layer", {}).get("used", False),
-                "layout_used": result.metadata.get("layout_ocr", {}).get("used", False),
-                "ensemble_winner": result.metadata.get("ensemble", {}).get("winner", "tesseract"),
+                "used_pdf_text_layer": metadata.get("pdf_text_layer", {}).get("used", False),
+                "layout_used": metadata.get("layout_ocr", {}).get("used", False),
+                "ensemble_winner": metadata.get("ensemble", {}).get("winner", "tesseract"),
             }
-            
+
             page.ocr_meta["rerun_history"].append(rerun_entry)
             if len(page.ocr_meta["rerun_history"]) > 10:
                 page.ocr_meta["rerun_history"] = page.ocr_meta["rerun_history"][-10:]
-            
-            # Merge other metadata
-            page.ocr_meta.update(result.metadata)
-            
+
+            page.ocr_meta.update(metadata)
             db.commit()
-            
-            # Audit log
-            write_audit_event_sync(
+
+            write_audit_event(
                 db=db,
                 org_id=org_uuid,
-                actor_user_id=None,  # System-initiated rerun
+                actor_user_id=None,
                 action="ocr.page_rerun_succeeded",
                 entity_type="document_page",
                 entity_id=page.id,
@@ -193,18 +161,21 @@ def rerun_page_ocr_task(
                     "page_number": page_number,
                     "page_id": str(page.id),
                     "options": options,
-                    "confidence": float(result.confidence) if result.confidence else None,
+                    "confidence": float(confidence) if confidence is not None else None,
                 },
             )
-            
+
             logger.info(f"OCR rerun completed for page {page_number} of document {document_id}")
             return {"status": "success", "page_id": str(page.id)}
-            
+
+        except Retry:
+            raise
+        except MaxRetriesExceededError:
+            raise
         except Exception as e:
+            countdown = _retry_countdown(self)
             logger.error(f"OCR rerun failed for page {page_number}: {e}")
-            
-            # Audit log failure
-            write_audit_event_sync(
+            write_audit_event(
                 db=db,
                 org_id=org_uuid,
                 actor_user_id=None,
@@ -220,26 +191,19 @@ def rerun_page_ocr_task(
                     "error": str(e)[:500],
                 },
             )
-            
-            raise self.retry(exc=e, countdown=60)
-        
+            raise self.retry(exc=e, countdown=countdown)
         finally:
-            # Restore original settings
             for key, value in original_settings.items():
                 setattr(settings, key, value)
-    
-    except Exception as e:
-        logger.error(f"OCR rerun task failed: {e}")
-        raise self.retry(exc=e, countdown=60)
-    
-    finally:
-        # Clean up temp PDF file
-        if pdf_temp_path and os.path.exists(pdf_temp_path):
-            try:
-                os.remove(pdf_temp_path)
-                logger.debug(f"Cleaned up temp PDF file: {pdf_temp_path}")
-            except Exception as e:
-                logger.warning(f"Failed to delete temp PDF file {pdf_temp_path}: {e}")
-        
-        db.close()
 
+    except Retry:
+        raise
+    except MaxRetriesExceededError:
+        raise
+    except Exception as e:
+        countdown = _retry_countdown(self)
+        logger.error(f"OCR rerun task failed: {e}")
+        raise self.retry(exc=e, countdown=countdown)
+
+    finally:
+        db.close()

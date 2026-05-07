@@ -13,17 +13,17 @@ export type CaseStatus =
   | "Closed";
 
 const STATUS_CLASS: Record<CaseStatus, string> = {
-  New: "border-muted-foreground/30 text-foreground bg-background",
-  Processing: "border-sky-500/30 text-sky-700 dark:text-sky-300 bg-sky-500/10",
-  Review: "border-indigo-500/30 text-indigo-700 dark:text-indigo-300 bg-indigo-500/10",
+  New: "border-[rgba(100,116,139,0.35)] bg-[rgba(100,116,139,0.14)] text-[rgb(214,222,234)]",
+  Processing: "border-[rgba(59,130,246,0.35)] bg-[rgba(59,130,246,0.14)] text-[rgb(191,219,254)]",
+  Review: "border-[rgba(234,179,8,0.35)] bg-[rgba(234,179,8,0.14)] text-[rgb(253,240,138)]",
   "Pending Docs":
-    "border-amber-500/30 text-amber-700 dark:text-amber-300 bg-amber-500/10",
+    "border-[rgba(249,115,22,0.35)] bg-[rgba(249,115,22,0.14)] text-[rgb(254,215,170)]",
   "Ready for Approval":
-    "border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10",
+    "border-[rgba(168,85,247,0.35)] bg-[rgba(168,85,247,0.14)] text-[rgb(233,213,255)]",
   Approved:
-    "border-emerald-500/30 text-emerald-700 dark:text-emerald-300 bg-emerald-500/10",
-  Rejected: "border-red-500/30 text-red-700 dark:text-red-300 bg-red-500/10",
-  Closed: "border-muted-foreground/30 text-muted-foreground bg-muted",
+    "border-[rgba(34,197,94,0.35)] bg-[rgba(34,197,94,0.14)] text-[rgb(187,247,208)]",
+  Rejected: "border-[rgba(239,68,68,0.35)] bg-[rgba(239,68,68,0.14)] text-[rgb(254,202,202)]",
+  Closed: "border-[rgba(107,114,128,0.35)] bg-[rgba(107,114,128,0.14)] text-[rgb(209,213,219)]",
 };
 
 export function CaseStatusPill(props: {
@@ -35,7 +35,7 @@ export function CaseStatusPill(props: {
   return (
     <Badge
       variant="outline"
-      className={cn("font-medium", STATUS_CLASS[status], className)}
+      className={cn("font-semibold", STATUS_CLASS[status], className)}
     >
       {status}
     </Badge>

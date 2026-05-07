@@ -49,7 +49,7 @@ This will automatically test:
 
 ### Step 3: Access the Platform
 1. Open browser: http://localhost:3000/dashboard
-2. Login as: `admin@orga.com` (any password works in dev mode)
+2. Login as: `admin@orga.com` / `ChangeMe123!`
 3. Select Org: "OrgA", Role: "Admin"
 4. Navigate through:
    - Dashboard → View case metrics
@@ -62,6 +62,7 @@ This will automatically test:
 - OrgA Admin: `admin@orga.com`
 - OrgA Reviewer: `reviewer@orga.com`
 - OrgB Admin: `admin@orgb.com`
+- Password for all demo users after `seed_demo_data.py`: `ChangeMe123!`
 
 **Access URLs:**
 - Frontend: http://localhost:3000

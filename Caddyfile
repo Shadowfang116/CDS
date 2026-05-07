@@ -1,0 +1,28 @@
+{$PUBLIC_HOSTNAME} {
+  encode zstd gzip
+
+  @api_health path /api/health
+  rewrite @api_health /health
+
+  @api path /api /api/*
+  reverse_proxy @api api:8000
+
+  # Uncomment if websocket routes are added in the backend.
+  # @ws path /ws /ws/* /api/ws /api/ws/*
+  # reverse_proxy @ws api:8000
+
+  reverse_proxy frontend:3000
+
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Permissions-Policy "accelerometer=(), camera=(), geolocation=(), microphone=()"
+    -Server
+  }
+
+  handle_errors {
+    respond "{http.error.status_code} error" {http.error.status_code}
+  }
+}

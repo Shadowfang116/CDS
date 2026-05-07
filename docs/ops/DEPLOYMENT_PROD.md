@@ -27,8 +27,8 @@ Ensure these ports are free or map them via your reverse proxy.
 
 ```powershell
 # From repo root
-cp .env.prod.example .env
-# Edit .env: replace all REPLACE_ME_* with strong secrets (see ENVIRONMENT_MATRIX.md)
+cp .env.production.example .env.production
+# Edit .env.production: replace all placeholder secrets (see ENVIRONMENT_MATRIX.md)
 
 docker compose -f docker-compose.prod.yml up -d --build
 ```
@@ -135,7 +135,7 @@ YOUR_PUBLIC_HOSTNAME {
 
 - **Preflight (before start):**  
   `.\scripts\ops\preflight_prod.ps1`  
-  Checks Docker, Compose, `.env`, required vars, and warns on placeholders/short secrets.
+  Checks Docker, Compose, `.env.production`, required vars, and warns on placeholders/short secrets.
 
 - **Collect diagnostics (during incidents):**  
   `.\scripts\ops\collect_diagnostics.ps1`  

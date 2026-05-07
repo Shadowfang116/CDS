@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCaseDocumentFocusPath } from '@/lib/routes';
+import { getFieldLabelMeta } from '@/lib/field-labels';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { CaseTabSkeleton } from '@/components/cases/case-workspace-state';
 import { getDossierFields, patchDossierField, getDossierFieldHistory, listDocuments, getMe, DossierFieldItem, DossierFieldHistoryItem } from '@/lib/api';
 
 interface DossierFieldsEditorProps {
@@ -60,7 +64,6 @@ function getFieldSection(fieldKey: string): string {
 }
 
 function getFieldLabel(fieldKey: string): string {
-  // Custom labels for specific fields
   const customLabels: Record<string, string> = {
     'party.seller.names': 'Seller(s)',
     'party.buyer.names': 'Buyer(s)',
@@ -68,17 +71,15 @@ function getFieldLabel(fieldKey: string): string {
     'party.name.borrower': 'Borrower',
     'party.name.seller': 'Seller',
     'party.cnic': 'CNIC',
+    'property.plot_number': 'Plot Number',
   };
-  
+
   if (customLabels[fieldKey]) {
     return customLabels[fieldKey];
   }
-  
-  // Default: capitalize last part
-  const parts = fieldKey.split('.');
-  return parts[parts.length - 1].replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
 
+  return getFieldLabelMeta(fieldKey).label;
+}
 export function DossierFieldsEditor({ caseId, documents: documentsProp }: DossierFieldsEditorProps) {
   const router = useRouter();
   const [fields, setFields] = useState<DossierFieldItem[]>([]);
@@ -117,7 +118,7 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
         }
         loadedRef.current.caseId = caseId;
       } catch (e: any) {
-        console.error('Failed to load data:', e);
+        setError(e.message || 'Failed to load dossier fields');
       } finally {
         setLoading(false);
       }
@@ -161,7 +162,7 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
       if (e.name === 'AbortError') {
         return; // Ignore abort errors
       }
-      console.error('Failed to load data:', e);
+      setError(e.message || 'Failed to load dossier fields');
     } finally {
       if (!abortController.signal.aborted) {
         setLoading(false);
@@ -228,9 +229,6 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
       setFields(prev => prev.map(f => f.field_key === editingField ? updated : f));
       setEditingField(null);
       setEditForm({ value: '', note: '', documentId: '', pageNumber: '', force: false });
-      
-      // Show toast (simple alert for now)
-      alert('Field updated successfully');
     } catch (e: any) {
       const errorMsg = e.message || 'Failed to update field';
       setError(errorMsg);
@@ -245,13 +243,13 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
       const data = await getDossierFieldHistory(caseId, fieldKey);
       setHistory(data.history);
     } catch (e: any) {
-      console.error('Failed to load history:', e);
+      setError(e.message || 'Failed to load field history');
       setHistory([]);
     }
   };
 
   const handleEvidenceClick = (docId: string, pageNum: number) => {
-    router.push(`/cases/${caseId}?tab=documents&docId=${docId}&page=${pageNum}`);
+    router.push(getCaseDocumentFocusPath(caseId, docId, pageNum));
   };
 
   const groupedFields: Record<string, DossierFieldItem[]> = {};
@@ -264,22 +262,32 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
   });
 
   if (loading) {
-    return <div className="text-slate-400">Loading dossier fields...</div>;
+    return <CaseTabSkeleton />;
+  }
+
+  if (fields.length === 0) {
+    return (
+      <EmptyState
+        title="No dossier fields are available for this case."
+        description="Upload documents and run OCR or autofill to populate the dossier workspace."
+        className="min-h-[220px]"
+      />
+    );
   }
 
   return (
     <div className="space-y-6">
       {Object.entries(groupedFields).map(([section, sectionFields]) => (
-        <div key={section} className="bg-slate-800 border border-slate-700 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-slate-100 mb-4">{section}</h3>
+        <div key={section} className="rounded-md border border-[rgba(82,90,99,0.42)] bg-[linear-gradient(180deg,rgba(23,28,33,0.96),rgba(17,21,25,0.96))] px-4 py-3">
+          <h3 className="mb-4 text-lg font-semibold text-stone-100">{section}</h3>
           <div className="space-y-3">
             {sectionFields.map(field => (
-              <div key={field.field_key} className="bg-slate-900 border border-slate-700 rounded p-3">
+              <div key={field.field_key} className="rounded-md border border-[rgba(82,90,99,0.28)] bg-[rgba(18,22,27,0.78)] px-4 py-3">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-cyan-400">{getFieldLabel(field.field_key)}</span>
-                      <span className="text-xs text-slate-500">({field.field_key})</span>
+                      <span className="text-sm font-medium text-stone-100">{getFieldLabel(field.field_key)}</span>
+
                       {CRITICAL_FIELDS.has(field.field_key) && (
                         <Badge variant="destructive" className="text-xs">Critical</Badge>
                       )}
@@ -290,19 +298,19 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                         </Badge>
                       )}
                     </div>
-                    <div className="text-sm text-slate-300 mb-2">
-                      {field.field_value || <span className="text-slate-500">—</span>}
+                    <div className="mb-2 text-sm text-stone-300">
+                      {field.field_value || <span className="text-stone-500">—</span>}
                     </div>
                     {field.source_document_id && field.source_page_number && (
                       <button
                         onClick={() => handleEvidenceClick(field.source_document_id!, field.source_page_number!)}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                        className="text-xs text-[rgb(194,200,185)] underline transition-colors hover:text-stone-100"
                       >
                         {documents.find(d => d.id === field.source_document_id)?.original_filename || 'Doc'} p.{field.source_page_number}
                       </button>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex shrink-0 items-center gap-2">
                     <Button size="sm" variant="outline" onClick={() => handleEdit(field)}>
                       Edit
                     </Button>
@@ -319,37 +327,37 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
 
       {/* Edit Modal */}
       {editingField && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold text-slate-100 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-md border border-[rgba(82,90,99,0.42)] bg-[linear-gradient(180deg,rgba(23,28,33,0.96),rgba(17,21,25,0.96))] p-6">
+            <h3 className="mb-4 text-lg font-semibold text-stone-100">
               Edit Field: {getFieldLabel(editingField)}
             </h3>
 
             {error && (
-              <div className="mb-4 p-3 bg-red-900/20 border border-red-700 rounded text-red-300 text-sm">
+              <div className="mb-4 rounded-md border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] p-3 text-sm text-[rgb(219,156,153)]">
                 {error}
               </div>
             )}
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Value</label>
+                <label className="mb-2 block text-sm font-medium text-stone-300">Value</label>
                 <input
                   type="text"
                   value={editForm.value}
                   onChange={(e) => setEditForm({ ...editForm, value: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100"
+                  className="w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-stone-100"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label className="mb-2 block text-sm font-medium text-stone-300">
                   Note <span className="text-red-400">*</span>
                 </label>
                 <textarea
                   value={editForm.note}
                   onChange={(e) => setEditForm({ ...editForm, note: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100"
+                  className="w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-stone-100"
                   rows={3}
                   placeholder="Explain why you are editing this field (min 5 characters)"
                 />
@@ -360,14 +368,14 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
 
               {CRITICAL_FIELDS.has(editingField) && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="mb-2 block text-sm font-medium text-stone-300">
                     Evidence <span className="text-red-400">*</span> (or use Force below)
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <select
                       value={editForm.documentId}
                       onChange={(e) => setEditForm({ ...editForm, documentId: e.target.value })}
-                      className="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100"
+                      className="rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-stone-100"
                     >
                       <option value="">Select document</option>
                       {documents.map(doc => (
@@ -379,7 +387,7 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                       value={editForm.pageNumber}
                       onChange={(e) => setEditForm({ ...editForm, pageNumber: e.target.value })}
                       placeholder="Page number"
-                      className="bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-100"
+                      className="rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-stone-100"
                       min="1"
                     />
                   </div>
@@ -396,13 +404,13 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                     disabled={!!(editForm.documentId && editForm.pageNumber)}
                     className="w-4 h-4"
                   />
-                  <label htmlFor="force" className="text-sm text-slate-300">
+                  <label htmlFor="force" className="text-sm text-stone-300">
                     Force (no evidence) - Admin only
                   </label>
                 </div>
               )}
 
-              <div className="flex gap-2 justify-end">
+              <div className="flex items-center justify-end gap-2">
                 <Button variant="outline" onClick={() => setEditingField(null)}>
                   Cancel
                 </Button>
@@ -421,10 +429,10 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
 
       {/* History Drawer */}
       {historyField && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-md border border-[rgba(82,90,99,0.42)] bg-[linear-gradient(180deg,rgba(23,28,33,0.96),rgba(17,21,25,0.96))] p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-slate-100">
+              <h3 className="text-lg font-semibold text-stone-100">
                 History: {getFieldLabel(historyField)}
               </h3>
               <Button variant="outline" size="sm" onClick={() => setHistoryField(null)}>
@@ -433,31 +441,31 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
             </div>
             <div className="space-y-3">
               {history.length === 0 ? (
-                <p className="text-slate-400">No history available</p>
+                <p className="text-stone-400">No history available</p>
               ) : (
                 history.map((entry) => (
-                  <div key={entry.id} className="bg-slate-900 border border-slate-700 rounded p-3">
+                  <div key={entry.id} className="rounded-md border border-[rgba(82,90,99,0.24)] bg-[rgba(18,22,27,0.62)] px-4 py-3">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <span className="text-sm font-medium text-slate-300">{entry.edited_by}</span>
-                        <span className="text-xs text-slate-500 ml-2">
+                        <span className="text-sm font-medium text-stone-300">{entry.edited_by}</span>
+                        <span className="ml-2 text-xs text-stone-500">
                           {new Date(entry.edited_at).toLocaleString()}
                         </span>
                       </div>
                       <Badge variant="outline" className="text-xs">{entry.source_type}</Badge>
                     </div>
-                    <div className="text-sm text-slate-400 mb-2">
+                    <div className="mb-2 text-sm text-stone-400">
                       <span className="line-through">{entry.old_value || '—'}</span>
                       {' → '}
-                      <span className="text-slate-300">{entry.new_value || '—'}</span>
+                      <span className="text-stone-300">{entry.new_value || '—'}</span>
                     </div>
                     {entry.note && (
-                      <p className="text-xs text-slate-500 mb-2">Note: {entry.note}</p>
+                      <p className="mb-2 text-xs text-stone-500">Note: {entry.note}</p>
                     )}
                     {entry.source_document_id && entry.source_page_number && (
                       <button
                         onClick={() => handleEvidenceClick(entry.source_document_id!, entry.source_page_number!)}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                        className="text-xs text-[rgb(194,200,185)] underline transition-colors hover:text-stone-100"
                       >
                         Evidence: Doc p.{entry.source_page_number}
                       </button>
@@ -472,4 +480,7 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
     </div>
   );
 }
+
+
+
 

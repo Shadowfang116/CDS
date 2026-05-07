@@ -1,3 +1,2 @@
-// App component exports
-export { AppShell } from './AppShell';
+export { NotificationBell } from "./NotificationBell";
 

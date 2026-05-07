@@ -24,6 +24,23 @@ ROLE_ALIASES: dict[str, str] = {
 }
 
 
+def expand_allowed_roles(*roles: str | None) -> set[str]:
+    allowed: set[str] = set()
+    for role in roles:
+        if role is None:
+            continue
+        allowed.add(normalize_role(str(role)))
+
+    if {"Reviewer", "Approver"}.intersection(allowed):
+        allowed.add("Admin")
+
+    return allowed
+
+
+def role_satisfies(user_role: str | None, *required_roles: str | None) -> bool:
+    return normalize_role(user_role) in expand_allowed_roles(*required_roles)
+
+
 def normalize_role(role: str | None) -> str:
     """
     Normalize a role string to its canonical form.

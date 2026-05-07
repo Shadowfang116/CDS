@@ -10,19 +10,23 @@ from app.db.session import get_db
 from app.models.case import Case
 from app.models.org import Org
 from app.models.user import User
+from app.models.audit_log import AuditLog
+from app.models.cp_evidence import CPEvidenceRef
 from app.models.document import Document, CaseDossierField
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef
 from app.models.export import Export, EXPORT_STATUS_PENDING, EXPORT_STATUS_RUNNING, EXPORT_STATUS_SUCCEEDED, EXPORT_STATUS_FAILED
 from app.models.verification import Verification, VerificationEvidenceRef
-from app.api.deps import get_current_user, CurrentUser, require_tenant_scope
+from app.api.deps import CurrentUser, require_tenant_scope, require_viewer
 from app.services.audit import write_audit_event
-from app.services.storage import put_object_bytes, get_presigned_get_url
+from app.services.download_tokens import create_download_url
+from app.services.storage import put_object_bytes
 from app.services.export_drafts import (
     generate_discrepancy_letter,
     generate_undertaking_indemnity,
     generate_internal_opinion_skeleton,
 )
 from app.services.export_bank_pack import generate_bank_pack_pdf
+from app.services.workflow import can_generate_export
 
 router = APIRouter(tags=["exports"])
 
@@ -127,6 +131,7 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
             "resolution_conditions": e.resolution_conditions,
             "status": e.status,
             "waiver_reason": e.waiver_reason,
+            "closure_note": None,
         }
         for e in exceptions
     ]
@@ -145,6 +150,7 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
             "text": c.text,
             "evidence_required": c.evidence_required,
             "status": c.status,
+            "evidence_refs": [],
         }
         for c in cps
     ]
@@ -182,6 +188,46 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
             "page_number": ref.page_number,
             "note": ref.note,
         })
+
+    cp_ids = [c.id for c in cps]
+    cp_evidence_refs = db.query(CPEvidenceRef).filter(
+        CPEvidenceRef.cp_id.in_(cp_ids),
+        CPEvidenceRef.org_id == org_id,
+    ).all() if cp_ids else []
+
+    cp_evidence_refs_map = {}
+    for ref in cp_evidence_refs:
+        cp_id = str(ref.cp_id)
+        if cp_id not in cp_evidence_refs_map:
+            cp_evidence_refs_map[cp_id] = []
+        cp_evidence_refs_map[cp_id].append({
+            "document_id": str(ref.document_id) if ref.document_id else None,
+            "page_number": ref.page_number,
+            "note": ref.note,
+        })
+
+    for cp_item in cps_list:
+        cp_item["evidence_refs"] = cp_evidence_refs_map.get(cp_item["id"], [])
+
+    audit_events = db.query(AuditLog).filter(
+        AuditLog.org_id == org_id,
+        AuditLog.entity_type == "exception",
+        AuditLog.entity_id.in_([str(exception_id) for exception_id in exception_ids]),
+        AuditLog.action.in_(["exception.resolve", "exception.waive"]),
+    ).order_by(AuditLog.created_at.desc()).all() if exception_ids else []
+
+    closure_notes = {}
+    for event in audit_events:
+        exception_id = str(event.entity_id)
+        if exception_id in closure_notes:
+            continue
+        metadata = event.event_metadata or {}
+        reason = metadata.get("reason")
+        if isinstance(reason, str) and reason.strip():
+            closure_notes[exception_id] = reason.strip()
+
+    for exception_item in exceptions_list:
+        exception_item["closure_note"] = closure_notes.get(exception_item["id"])
     
     # Get verifications
     verifications = db.query(Verification).filter(
@@ -242,6 +288,14 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
     }
 
 
+def _ensure_export_role(case: Case, role: str) -> None:
+    if not can_generate_export(case_status=case.status, role=role):
+        raise HTTPException(
+            status_code=403,
+            detail="Exports require an Approver role and a case in Approved, Rejected, or Closed status.",
+        )
+
+
 def _existing_pending_or_running_export(
     db: Session, org_id: uuid.UUID, case_id: uuid.UUID, export_type: str
 ) -> Optional[Export]:
@@ -289,7 +343,15 @@ def _store_export(
     db.commit()
     db.refresh(export)
 
-    url = get_presigned_get_url(minio_key, DOWNLOAD_EXPIRES_SECONDS)
+    url = create_download_url(
+        object_key=minio_key,
+        org_id=org_id,
+        user_id=user_id,
+        case_id=case_id,
+        filename=filename,
+        content_type=content_type,
+        expires_seconds=DOWNLOAD_EXPIRES_SECONDS,
+    )
     return export, url
 
 
@@ -302,10 +364,14 @@ async def generate_discrepancy_letter_draft(
     request: Request,
     case_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Generate a discrepancy letter DOCX (tenant-scoped)."""
+    case = db.query(Case).filter(Case.id == case_id, Case.org_id == org_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    _ensure_export_role(case, current_user.role)
     data = _load_case_data(db, case_id, org_id)
     
     # Generate DOCX
@@ -390,10 +456,14 @@ async def generate_undertaking_indemnity_draft(
     request: Request,
     case_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Generate an undertaking and indemnity DOCX (tenant-scoped)."""
+    case = db.query(Case).filter(Case.id == case_id, Case.org_id == org_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    _ensure_export_role(case, current_user.role)
     data = _load_case_data(db, case_id, org_id)
     
     # Generate DOCX
@@ -468,10 +538,14 @@ async def generate_internal_opinion_draft(
     request: Request,
     case_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Generate an internal legal opinion skeleton DOCX (tenant-scoped)."""
+    case = db.query(Case).filter(Case.id == case_id, Case.org_id == org_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    _ensure_export_role(case, current_user.role)
     data = _load_case_data(db, case_id, org_id)
     
     # Generate DOCX
@@ -545,12 +619,25 @@ async def generate_internal_opinion_draft(
 # BANK PACK ENDPOINT
 # ============================================================
 
-def _export_response(export: Export, request_id: Optional[str] = None) -> ExportResponse:
+def _export_response(
+    export: Export,
+    *,
+    user_id: uuid.UUID,
+    request_id: Optional[str] = None,
+) -> ExportResponse:
     """Build ExportResponse from Export; include url only when status=succeeded."""
     url = None
     expires = None
     if export.status == EXPORT_STATUS_SUCCEEDED and export.minio_key:
-        url = get_presigned_get_url(export.minio_key, DOWNLOAD_EXPIRES_SECONDS)
+        url = create_download_url(
+            object_key=export.minio_key,
+            org_id=export.org_id,
+            user_id=user_id,
+            case_id=export.case_id,
+            filename=export.filename,
+            content_type=export.content_type,
+            expires_seconds=DOWNLOAD_EXPIRES_SECONDS,
+        )
         expires = DOWNLOAD_EXPIRES_SECONDS
     return ExportResponse(
         export_id=str(export.id),
@@ -570,15 +657,19 @@ async def generate_bank_pack(
     request: Request,
     case_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Generate a Bank Pack PDF (async). Idempotent: returns existing export if same case has pending/running."""
     request_id = getattr(request.state, "request_id", None) or str(uuid.uuid4())
+    case = db.query(Case).filter(Case.id == case_id, Case.org_id == org_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    _ensure_export_role(case, current_user.role)
 
     existing = _existing_pending_or_running_export(db, org_id, case_id, "bank_pack_pdf")
     if existing:
-        return _export_response(existing, request_id)
+        return _export_response(existing, user_id=current_user.user_id, request_id=request_id)
 
     from datetime import datetime
     filename = f"BANK_PACK__CASE_{case_id}__{datetime.utcnow().strftime('%Y%m%d')}__v1.pdf"
@@ -618,7 +709,7 @@ async def generate_bank_pack(
         request_id=request_id,
     )
 
-    return _export_response(export, request_id)
+    return _export_response(export, user_id=current_user.user_id, request_id=request_id)
 
 
 # ============================================================
@@ -630,7 +721,7 @@ async def list_exports(
     request: Request,
     case_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """List all exports for a case (tenant-scoped: 404 if case not in org)."""
@@ -689,7 +780,7 @@ async def download_export(
     request: Request,
     export_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get a fresh presigned URL for an export. Returns 409 if export not ready (pending/running/failed)."""
@@ -713,7 +804,20 @@ async def download_export(
     if not export.minio_key:
         raise HTTPException(status_code=409, detail={"message": "Export not ready. No file.", "status": export.status})
 
-    url = get_presigned_get_url(export.minio_key, DOWNLOAD_EXPIRES_SECONDS)
+    case = db.query(Case).filter(Case.id == export.case_id, Case.org_id == org_id).first()
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    _ensure_export_role(case, current_user.role)
+
+    url = create_download_url(
+        object_key=export.minio_key,
+        org_id=current_user.org_id,
+        user_id=current_user.user_id,
+        case_id=export.case_id,
+        filename=export.filename,
+        content_type=export.content_type,
+        expires_seconds=DOWNLOAD_EXPIRES_SECONDS,
+    )
     
     # Audit log
     request_id = uuid.uuid4()

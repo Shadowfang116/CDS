@@ -1,0 +1,276 @@
+{
+  "TITLE_CHAIN_GAP": {
+    "required_evidence": [
+      "Registered sale deed chain",
+      "Allotment / transfer chain",
+      "Latest fard or ownership extract"
+    ],
+    "acceptable_substitutes": [
+      "Certified registry extract",
+      "Mutation entries",
+      "Society ownership verification"
+    ],
+    "closure_guidance": "Obtain a complete ownership chain from the last admitted owner to the proposed mortgagor and reconcile names, plot particulars, and dates across title documents and revenue or society record.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide a complete and continuous title chain, supported by registered or authority-issued transfer documents and current ownership record, satisfactory to the Bank."
+  },
+  "SELLER_OR_ALLOTTEE_MISMATCH": {
+    "required_evidence": [
+      "Allotment letter or ownership record",
+      "Transfer / assignment letter",
+      "Seller CNIC copy"
+    ],
+    "acceptable_substitutes": [
+      "Society membership verification",
+      "Authority-issued ownership confirmation"
+    ],
+    "closure_guidance": "Reconcile the seller or transferor name with the allottee or recorded owner and obtain authority confirmation where the transfer history is not self-evident.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide documentary evidence reconciling the seller or transferor with the recorded allottee or owner, in form and substance satisfactory to the Bank."
+  },
+  "CNIC_MISMATCH": {
+    "required_evidence": [
+      "CNIC copies of transferor and transferee",
+      "Execution-page CNIC details",
+      "Recent identity verification record"
+    ],
+    "acceptable_substitutes": [
+      "Attested CNIC copies",
+      "Biometric or bank KYC confirmation"
+    ],
+    "closure_guidance": "Match CNIC numbers and names across the deed, application, and ownership record. Unresolved identity mismatch should remain open or move to waiver only with approver rationale.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide documentary evidence reconciling all CNIC and identity particulars across title, transfer, and financing documents, satisfactory to the Bank."
+  },
+  "MISSING_REGISTERED_SALE_DEED": {
+    "required_evidence": [
+      "Registered sale deed",
+      "Registry receipt or certified copy",
+      "Stamp and registration particulars"
+    ],
+    "acceptable_substitutes": [
+      "Certified registry extract",
+      "Sub-registrar certified copy"
+    ],
+    "closure_guidance": "Obtain the registered conveyance or certified registry evidence before treating title as mortgageable. Photocopies without registry support are insufficient.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide the registered sale deed or certified registry evidence for the subject property, satisfactory to the Bank."
+  },
+  "MISSING_ALLOTMENT_OR_TRANSFER_LETTER": {
+    "required_evidence": [
+      "Allotment letter",
+      "Transfer letter or transfer order",
+      "Membership or owner record"
+    ],
+    "acceptable_substitutes": [
+      "Society transfer ledger",
+      "Authority-issued ownership confirmation"
+    ],
+    "closure_guidance": "For society plot or file-based title, obtain the allotment or transfer instrument that bridges the borrower to the society record.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide the allotment letter and all relevant transfer instruments linking the property to the borrower, satisfactory to the Bank."
+  },
+  "SOCIETY_NOC_MISSING": {
+    "required_evidence": [
+      "Society NOC",
+      "Permission to mortgage / create charge",
+      "Member dues clearance"
+    ],
+    "acceptable_substitutes": [
+      "Builder or management NOC",
+      "Society verification letter"
+    ],
+    "closure_guidance": "Obtain a current society NOC confirming no objection to mortgage, transfer status, and dues position before approval.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide a current society no-objection certificate and mortgage permission, together with dues clearance, satisfactory to the Bank."
+  },
+  "LAYOUT_APPROVAL_MISSING": {
+    "required_evidence": [
+      "LDA / RUDA / RDA approval",
+      "Approved layout plan",
+      "Scheme approval notification"
+    ],
+    "acceptable_substitutes": [
+      "Authority verification letter",
+      "Approved master plan extract"
+    ],
+    "closure_guidance": "Confirm that the scheme, block, and plot fall within approved layout and regulatory permissions. Unresolved approval gaps should block readiness.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide evidence of competent authority approval for the scheme, block, and layout plan, satisfactory to the Bank."
+  },
+  "DUES_POSSESSION_TRANSFER_CHARGES_ISSUE": {
+    "required_evidence": [
+      "Dues clearance certificate",
+      "Possession letter",
+      "Transfer charges receipt"
+    ],
+    "acceptable_substitutes": [
+      "Society account statement",
+      "Builder handover or possession memo"
+    ],
+    "closure_guidance": "Obtain proof that dues, transfer charges, and possession formalities are cleared, or specifically quantify the unpaid liability and keep the issue open until regularized.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide satisfactory evidence that dues, possession, and transfer charge formalities for the subject property have been cleared."
+  },
+  "MUTATION_OR_FARD_INCONSISTENCY": {
+    "required_evidence": [
+      "Latest fard",
+      "Mutation entry",
+      "Revenue ownership record"
+    ],
+    "acceptable_substitutes": [
+      "Jamabandi or ownership extract",
+      "Patwari or revenue office verification"
+    ],
+    "closure_guidance": "Refresh and reconcile the latest revenue record with the deed and the physical property identifiers. Outdated or inconsistent revenue record should not be treated as cured.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide current and consistent revenue record, including fard and mutation evidence, satisfactory to the Bank."
+  },
+  "COMPETING_CHARGE_OR_NON_ENCUMBRANCE_ISSUE": {
+    "required_evidence": [
+      "Non-encumbrance search",
+      "Registry office search result",
+      "Charge release or no-dues evidence"
+    ],
+    "acceptable_substitutes": [
+      "Bank release letter",
+      "Authority litigation or encumbrance verification"
+    ],
+    "closure_guidance": "Clear any prior mortgage, attachment, lis pendens, or adverse charge through documentary release or official negative search before closure.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide satisfactory evidence that the property is free from prior charge, attachment, or adverse encumbrance."
+  },
+  "CORPORATE_AUTHORITY_MISSING": {
+    "required_evidence": [
+      "Board resolution",
+      "SECP company documents",
+      "Authorized signatory evidence"
+    ],
+    "acceptable_substitutes": [
+      "Power of attorney from company",
+      "Secretary certificate with constitutional documents"
+    ],
+    "closure_guidance": "Confirm the corporate seller or mortgagor has valid internal authority to dispose of or mortgage the property and that signatories are duly empowered.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide valid corporate authority documents, including board approval and signatory authorization, satisfactory to the Bank."
+  },
+  "GUARDIAN_MINOR_PERMISSION_TO_SELL": {
+    "required_evidence": [
+      "Guardianship certificate",
+      "Court permission to sell or mortgage",
+      "Minor interest disclosure"
+    ],
+    "acceptable_substitutes": [
+      "Succession or family court order",
+      "Guardian appointment order"
+    ],
+    "closure_guidance": "Where a minor or represented person holds an interest, obtain the competent court or guardian authorization before treating the transfer or mortgage as valid.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide court-approved guardian authority or other competent authorization for any minor or represented interest in the property."
+  },
+  "POWER_OF_ATTORNEY_VALIDATION_ISSUE": {
+    "required_evidence": [
+      "Registered power of attorney",
+      "Principal identity record",
+      "Authority to sell or mortgage clause"
+    ],
+    "acceptable_substitutes": [
+      "Consular attestation and registration proof",
+      "Principal ratification deed"
+    ],
+    "closure_guidance": "Verify that the power of attorney is valid, subsisting, properly attested or registered where required, and expressly covers the property and transaction.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide a valid and subsisting power of attorney, duly attested or registered where required and expressly authorizing the transaction."
+  },
+  "AUTHORITY_APPROVAL_DEPENDENCY": {
+    "required_evidence": [
+      "Authority NOC or approval",
+      "Scheme or plot status verification",
+      "Plot-specific compliance record"
+    ],
+    "acceptable_substitutes": [
+      "LDA / RUDA / RDA portal verification",
+      "Authority-issued confirmation letter"
+    ],
+    "closure_guidance": "Obtain the relevant authority clearance for the scheme, block, or plot and confirm there is no demolition, acquisition, or regularization risk outstanding.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide relevant authority clearance and status verification for the scheme, block, and plot, satisfactory to the Bank."
+  },
+  "BORROWER_IDENTITY_MISMATCH": {
+    "required_evidence": [
+      "Borrower CNIC",
+      "Loan application KYC",
+      "Title document identity details"
+    ],
+    "acceptable_substitutes": [
+      "Bank onboarding KYC",
+      "Biometric verification record"
+    ],
+    "closure_guidance": "The borrower or mortgagor identity must match the ownership and transaction record. Mismatches require corrected documents or satisfactory legal explanation.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide documentary evidence reconciling borrower identity particulars across title, KYC, and financing records."
+  },
+  "OUTDATED_REVENUE_EXTRACT": {
+    "required_evidence": [
+      "Recent fard",
+      "Recent mutation extract",
+      "Current tax or revenue record"
+    ],
+    "acceptable_substitutes": [
+      "Fresh land record portal extract",
+      "Recent patwari certification"
+    ],
+    "closure_guidance": "Replace stale revenue extracts with a recent record before relying on ownership, mutation, or encumbrance status.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide updated revenue record for the subject property, including a recent fard or equivalent land record extract."
+  },
+  "MAP_OR_SITE_PLAN_INCONSISTENCY": {
+    "required_evidence": [
+      "Approved site plan",
+      "Sanctioned building plan",
+      "Plot map or layout extract"
+    ],
+    "acceptable_substitutes": [
+      "Authority plan verification",
+      "Surveyor site identification report"
+    ],
+    "closure_guidance": "Reconcile the site plan, block, plot number, dimensions, and actual property identification. Mismatched plans should remain open until cured.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide approved site plan and property identification evidence consistent with the title and authority record."
+  },
+  "POSSESSION_EVIDENCE_MISSING": {
+    "required_evidence": [
+      "Possession letter",
+      "Handover memo",
+      "Site possession acknowledgment"
+    ],
+    "acceptable_substitutes": [
+      "Utility activation record",
+      "Possession affidavit with supporting evidence"
+    ],
+    "closure_guidance": "Where possession status is relevant to credit or security perfection, obtain possession evidence or clearly document why constructive possession is acceptable.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide satisfactory evidence of possession or handover of the mortgaged property, if applicable."
+  },
+  "CAPACITY_OR_AUTHORITY_ISSUE": {
+    "required_evidence": [
+      "CNIC or identity record",
+      "Authority document",
+      "Transaction execution authority"
+    ],
+    "acceptable_substitutes": [
+      "Succession certificate",
+      "Guardianship or representation order"
+    ],
+    "closure_guidance": "Confirm the transferor or mortgagor has legal capacity and execution authority. Unresolved capacity gaps should not be closed without documentary support or approver waiver.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide documentary evidence of legal capacity and execution authority for the transferor or mortgagor, satisfactory to the Bank."
+  },
+  "SOCIETY_TRANSFER_MEMBERSHIP_ISSUE": {
+    "required_evidence": [
+      "Membership confirmation",
+      "Transfer approval",
+      "Transfer fee receipt"
+    ],
+    "acceptable_substitutes": [
+      "Society ledger extract",
+      "Management confirmation letter"
+    ],
+    "closure_guidance": "Confirm the member or owner record has been updated in the society books and that transfer formalities and charges stand completed.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide society membership confirmation and completed transfer record for the subject property, satisfactory to the Bank."
+  },
+  "CANTONMENT_NOC_MISSING": {
+    "required_evidence": [
+      "Cantonment Board NOC",
+      "Property tax clearance",
+      "Transfer or construction compliance letter"
+    ],
+    "acceptable_substitutes": [
+      "Board verification letter",
+      "Cantonment portal confirmation"
+    ],
+    "closure_guidance": "Where the property falls in cantonment limits, obtain board clearance and confirm no transfer or construction restriction impairs enforceability.",
+    "cp_recommended_text": "Prior to approval / disbursement, the borrower shall provide the relevant Cantonment Board no-objection certificate and compliance record, satisfactory to the Bank."
+  }
+}

@@ -10,14 +10,16 @@ import yaml
 
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
+from app.core.regimes import Regime, normalize_regime
 from app.models.document import Document, DocumentPage, CaseDossierField
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun
 from app.models.verification import Verification
 
 logger = logging.getLogger(__name__)
 
-# Path to rulepack YAML - mounted from docs folder
-RULEPACK_PATH = os.environ.get("RULEPACK_PATH", "/app/docs/05_rulepack_v1.yaml")
+# Path to rulepack YAML
+RULEPACK_PATH = os.environ.get("RULEPACK_PATH", settings.RULEPACK_PATH)
 
 
 @dataclass
@@ -60,7 +62,14 @@ def load_rulepack() -> Dict[str, Any]:
     """Load rulepack YAML. Reloads on each call in dev mode."""
     try:
         with open(RULEPACK_PATH, "r", encoding="utf-8") as f:
-            return yaml.safe_load(f)
+            parsed = yaml.safe_load(f) or {}
+        if not isinstance(parsed, dict):
+            logger.error("Rulepack root must be a mapping with a 'rules' list.")
+            return {"rules": []}
+        if not isinstance(parsed.get("rules", []), list):
+            logger.error("Rulepack 'rules' must be a list.")
+            return {"rules": []}
+        return parsed
     except FileNotFoundError:
         logger.error(f"Rulepack not found at {RULEPACK_PATH}")
         return {"rules": []}
@@ -106,8 +115,9 @@ def build_case_context(db: Session, org_id: uuid.UUID, case_id: uuid.UUID) -> Ca
             DocumentPage.ocr_status == "Done",
         ).all()
         for page in doc_pages:
-            if page.ocr_text:
-                pages.append((doc.id, page.page_number, page.ocr_text))
+            page_text = page.corrected_text or page.ocr_text
+            if page_text:
+                pages.append((doc.id, page.page_number, page_text))
     
     # Get verifications
     verifications_data = db.query(Verification).filter(
@@ -535,6 +545,51 @@ EVALUATORS = {
     "constructed_gate": evaluate_constructed_gate,
 }
 
+_REGIME_EQ_CONDITIONAL_RE = re.compile(
+    r"if\s+regime\s*==\s*([A-Za-z0-9_]+)",
+    re.IGNORECASE,
+)
+
+
+def _case_regime_from_context(ctx: CaseContext) -> Optional[Regime]:
+    """First canonical non-UNKNOWN regime from dossier property.regime."""
+    values = ctx.dossier.get("property.regime") or []
+    for raw in values:
+        if not raw or not str(raw).strip():
+            continue
+        r = normalize_regime(str(raw).strip())
+        if r is None or r == Regime.UNKNOWN:
+            continue
+        return r
+    return None
+
+
+def _rule_required_regimes(rule: Dict) -> List[str]:
+    """
+    Regime codes this rule applies to; empty list means no regime restriction.
+    Structured logic.regimes wins when non-empty; else legacy logic.conditional.
+    """
+    logic = rule.get("logic") or {}
+    structured = logic.get("regimes")
+    if isinstance(structured, list) and len(structured) > 0:
+        return [str(x).strip().upper() for x in structured if str(x).strip()]
+
+    cond = logic.get("conditional")
+    if isinstance(cond, str):
+        m = _REGIME_EQ_CONDITIONAL_RE.search(cond)
+        if m:
+            return [m.group(1).upper()]
+    return []
+
+
+def _rule_should_run(case_regime: Optional[Regime], rule: Dict) -> bool:
+    required = _rule_required_regimes(rule)
+    if not required:
+        return True
+    if case_regime is None:
+        return False
+    return case_regime.value in required
+
 
 def evaluate_rule(rule: Dict, ctx: CaseContext) -> RuleResult:
     """Evaluate a single rule against case context."""
@@ -596,9 +651,13 @@ def run_rules(
         ConditionPrecedent.status == "Open",
     ).delete(synchronize_session=False)
     
+    case_regime = _case_regime_from_context(ctx)
+
     # Evaluate rules
     results: List[RuleResult] = []
     for rule in rules:
+        if not _rule_should_run(case_regime, rule):
+            continue
         try:
             result = evaluate_rule(rule, ctx)
             results.append(result)
@@ -606,7 +665,7 @@ def run_rules(
             logger.error(f"Rule {rule.get('id', 'unknown')} evaluation failed: {e}")
     
     # Create exceptions and CPs for triggered rules
-    counts = {"high": 0, "medium": 0, "low": 0, "total": 0, "cps_total": 0}
+    counts = {"critical": 0, "high": 0, "medium": 0, "low": 0, "total": 0, "cps_total": 0}
     
     for result in results:
         if result.triggered:
@@ -619,6 +678,14 @@ def run_rules(
                 severity=result.severity,
                 title=result.title,
                 description=result.description,
+                evidence_refs=[
+                    {
+                        "document_id": str(ref.document_id) if ref.document_id else None,
+                        "page_number": ref.page_number,
+                        "note": ref.note,
+                    }
+                    for ref in result.evidence_refs
+                ],
                 cp_text=result.cp_text,
                 resolution_conditions=result.resolution_conditions,
                 status="Open",

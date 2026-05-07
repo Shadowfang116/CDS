@@ -1,16 +1,16 @@
-import uuid
 import os
 import sys
+import uuid
 
 CURRENT_DIR = os.path.dirname(__file__)
 BACKEND_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if BACKEND_ROOT not in sys.path:
     sys.path.insert(0, BACKEND_ROOT)
 
-from app.models.document import Document, get_document_type, ClassificationStatus, DocumentClassificationLog, DocumentType
+from app.models.document import Document, DocumentClassificationLog, DocumentType
 
 
-def test_corrected_overrides_predicted():
+def test_corrected_doc_type_is_stored_separately_from_prediction():
     d = Document(
         id=uuid.uuid4(),
         org_id=uuid.uuid4(),
@@ -22,9 +22,10 @@ def test_corrected_overrides_predicted():
         minio_key_original="k",
         predicted_doc_type=DocumentType.SALE_DEED.value,
         corrected_doc_type=DocumentType.REGISTRY_DEED.value,
-        classification_status=ClassificationStatus.CORRECTED.value,
+        classification_status="corrected",
     )
-    assert get_document_type(d) == DocumentType.REGISTRY_DEED.value
+    assert d.predicted_doc_type == DocumentType.SALE_DEED.value
+    assert d.corrected_doc_type == DocumentType.REGISTRY_DEED.value
 
 
 def test_verified_status_persists_flag():
@@ -38,9 +39,9 @@ def test_verified_status_persists_flag():
         size_bytes=10,
         minio_key_original="k",
         predicted_doc_type=DocumentType.UNKNOWN.value,
-        classification_status=ClassificationStatus.VERIFIED.value,
+        classification_status="verified",
     )
-    assert d.classification_status == ClassificationStatus.VERIFIED.value
+    assert d.classification_status == "verified"
 
 
 def test_confidence_field_available():

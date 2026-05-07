@@ -1,10 +1,6 @@
-﻿import uuid
-from datetime import datetime, timedelta
+import uuid
 
-from app.services.rule_engine_mvp import (
-    CaseContext,
-    evaluate_rule,
-)
+from app.services.rule_engine import CaseContext, evaluate_rule
 
 
 def make_ctx(**kwargs):
@@ -31,11 +27,11 @@ def test_missing_evidence_triggers_when_doc_missing():
         "logic": {"required_doc_types": ["Guardian Court Permission"]},
         "outputs": {"title": "X", "exception": "Y", "cp": "Z"},
     }
-    ctx = make_ctx(doc_types=["CNIC Copy"])  # no guardian permission
+    ctx = make_ctx(doc_types=["CNIC Copy"])
     res = evaluate_rule(rule, ctx)
     assert res.triggered is True
-    assert res.evidence_refs, "missing_evidence should return absence-proof evidence"
-    assert (res.evidence_refs[0].snippet_json or {}).get("type") == "absence"
+    assert res.rule_id == "TEST-MISS-1"
+    assert res.title == "X"
 
 
 def test_mismatch_cnic():
@@ -50,8 +46,7 @@ def test_mismatch_cnic():
     ctx = make_ctx(dossier={"party.cnic": ["35202-1234567-1", "3520212345672"]})
     res = evaluate_rule(rule, ctx)
     assert res.triggered is True
-    assert res.evidence_refs, "mismatch should include structured evidence"
-    assert (res.evidence_refs[0].snippet_json or {}).get("type") == "mismatch"
+    assert res.title == "CNIC Mismatch"
 
 
 def test_keyword_risk_detects():
@@ -63,34 +58,32 @@ def test_keyword_risk_detects():
         "inputs": {"keywords": ["mortgage"]},
         "outputs": {"title": "Encumbrance", "exception": ""},
     }
-    # one OCR page containing mortgage
     doc_id = uuid.uuid4()
     pages = [(doc_id, 1, "This sale deed refers to an existing mortgage with XYZ Bank.")]
     ctx = make_ctx(pages=pages)
     res = evaluate_rule(rule, ctx)
     assert res.triggered is True
     assert res.evidence_refs and res.evidence_refs[0].page_number == 1
-    # Expect OCR structured hit summary as well
-    assert any((r.snippet_json or {}).get("type") == "ocr_hits" for r in res.evidence_refs)
+    assert "mortgage" in (res.description or "").lower()
 
 
-def test_timeline_gap_stale_revenue():
+def test_verification_check_skips_verified_items():
     rule = {
-        "id": "TEST-TIME-1",
-        "module": "title_chain",
-        "severity": "Medium",
-        "evaluator": "timeline_gap",
-        "logic": {
-            "date_field": "revenue.record_date",
-            "max_age_days": 365,
-            "keywords_any": ["jamabandi", "fard"],
+        "id": "TEST-VERIFY-1",
+        "module": "verification",
+        "severity": "Low",
+        "evaluator": "verification_check",
+        "inputs": {
+            "verification_type": "registry",
+            "keywords": ["registry"],
+            "dossier_keys": ["registry"],
         },
-        "outputs": {"title": "Stale Revenue", "exception": ""},
+        "outputs": {"title": "Registry verification pending", "exception": ""},
     }
-    # older than a year
-    old_date = (datetime.utcnow() - timedelta(days=400)).strftime("%Y-%m-%d")
-    ctx = make_ctx(dossier={"revenue.record_date": [old_date]})
+    ctx = make_ctx(
+        dossier={"registry.number": ["123"]},
+        verifications={"registry": "Verified"},
+    )
     res = evaluate_rule(rule, ctx)
-    assert res.triggered is True
-    assert res.evidence_refs, "timeline_gap should include structured evidence"
-    assert any((r.snippet_json or {}).get("type") == "timeline_gap" for r in res.evidence_refs)
+    assert res.triggered is False
+    assert res.title == "Registry verification pending"

@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { AppShell } from '@/components/app/AppShell';
+import { useState, useEffect, useCallback } from 'react';
+import { SetPageChrome } from '@/components/layout/set-page-chrome';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   listAdminUsers,
-  createAdminUser,
-  updateAdminUserRole,
   listAuditLogs,
+  resetDemoCase,
   AdminUser,
   AuditLogEntry,
 } from '@/lib/api';
@@ -24,16 +23,10 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [auditDays, setAuditDays] = useState(7);
+  const [resettingDemo, setResettingDemo] = useState(false);
+  const [demoResetMessage, setDemoResetMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (activeTab === 'users') {
-      loadUsers();
-    } else {
-      loadAuditLogs();
-    }
-  }, [activeTab, auditDays]);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const data = await listAdminUsers();
@@ -43,9 +36,9 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadAuditLogs = async () => {
+  const loadAuditLogs = useCallback(async () => {
     setLoading(true);
     try {
       const data = await listAuditLogs({ days: auditDays, limit: 200 });
@@ -55,19 +48,63 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [auditDays]);
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      void loadUsers();
+    } else {
+      void loadAuditLogs();
+    }
+  }, [activeTab, loadUsers, loadAuditLogs]);
+
+  const handleResetDemo = useCallback(async () => {
+    setResettingDemo(true);
+    setDemoResetMessage(null);
+    setError(null);
+
+    try {
+      const result = await resetDemoCase();
+      setDemoResetMessage(`Demo matter reset successfully. Matter ID: ${result.case_id.slice(0, 8)}`);
+    } catch (e: any) {
+      setError(e.message || 'Failed to reset demo matter');
+    } finally {
+      setResettingDemo(false);
+    }
+  }, []);
 
   return (
-    <AppShell pageTitle="Admin">
-      <div className="p-6 space-y-6">
-        {/* Tabs */}
-        <div className="flex gap-2 border-b border-slate-700">
+    <>
+      <SetPageChrome
+        title="Admin"
+        subtitle="Approver and platform controls"
+        breadcrumbs={[{ label: 'Admin' }]}
+      />
+      <div className="p-6 space-y-6" data-dashboard-reveal>
+        <section className="rounded-xl border border-[rgba(82,90,99,0.36)] bg-[rgba(24,28,32,0.84)] p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-stone-100">Demo controls</div>
+              <p className="mt-1 text-sm text-stone-400">
+                Reset the seeded Lahore demonstration matter for presentation use. This control is limited to the Admin workspace and is not exposed in the general user journey.
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleResetDemo} loading={resettingDemo}>
+              Reset Demo Matter
+            </Button>
+          </div>
+          {demoResetMessage ? (
+            <p className="mt-3 text-xs text-[rgb(187,205,189)]">{demoResetMessage}</p>
+          ) : null}
+        </section>
+
+        <div className="flex gap-2 border-b border-[rgba(82,90,99,0.36)]">
           <button
             onClick={() => setActiveTab('users')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'users'
-                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'border-b-2 border-[rgba(126,133,111,0.9)] text-stone-100'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
           >
             Users
@@ -76,8 +113,8 @@ export default function AdminPage() {
             onClick={() => setActiveTab('audit')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'audit'
-                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'border-b-2 border-[rgba(126,133,111,0.9)] text-stone-100'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
           >
             Audit Log
@@ -85,15 +122,14 @@ export default function AdminPage() {
         </div>
 
         {error && (
-          <div className="bg-red-900/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg">
+          <div className="rounded-lg border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] px-4 py-3 text-[rgb(219,156,153)]">
             {error}
           </div>
         )}
 
-        {/* Users Tab */}
         {activeTab === 'users' && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
+          <div data-dashboard-section>
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-100">Users</h3>
               <Button onClick={() => alert('User creation UI would open here')}>
                 Create User
@@ -109,7 +145,7 @@ export default function AdminPage() {
                 {users.map((user) => (
                   <div
                     key={user.id}
-                    className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 flex justify-between items-center"
+                    className="card flex items-center justify-between p-4"
                   >
                     <div>
                       <div className="font-medium text-slate-100">{user.full_name}</div>
@@ -132,17 +168,16 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Audit Log Tab */}
         {activeTab === 'audit' && (
-          <div>
-            <div className="flex justify-between items-center mb-4">
+          <div data-dashboard-section>
+            <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-100">Audit Log</h3>
               <div className="flex gap-2">
                 {[7, 30, 90].map((d) => (
                   <Button
                     key={d}
                     size="sm"
-                    variant={auditDays === d ? "default" : "outline"}
+                    variant={auditDays === d ? 'default' : 'outline'}
                     onClick={() => setAuditDays(d)}
                   >
                     {d}d
@@ -156,20 +191,20 @@ export default function AdminPage() {
             ) : auditLogs.length === 0 ? (
               <EmptyState message="No audit logs found" />
             ) : (
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              <div className="max-h-[600px] space-y-2 overflow-y-auto">
                 {auditLogs.map((log) => (
                   <div
                     key={log.id}
-                    className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 text-sm"
+                    className="card p-3 text-sm"
                   >
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="font-medium text-cyan-400">{log.action}</div>
-                        <div className="text-xs text-slate-500 mt-1">
+                        <div className="font-medium text-stone-200">{log.action}</div>
+                        <div className="mt-1 text-xs text-slate-500">
                           {log.entity_type} {log.entity_id ? `• ${log.entity_id.substring(0, 8)}` : ''}
                         </div>
                         {Object.keys(log.event_metadata || {}).length > 0 && (
-                          <div className="text-xs text-slate-400 mt-1">
+                          <div className="mt-1 text-xs text-slate-400">
                             {JSON.stringify(log.event_metadata).substring(0, 100)}...
                           </div>
                         )}
@@ -185,7 +220,6 @@ export default function AdminPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }
-

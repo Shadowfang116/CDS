@@ -18,8 +18,9 @@ from app.models.verification import Verification
 from app.models.export import Export
 from app.models.digest import DigestSchedule, DigestRun
 from app.models.org import Org
-from app.services.storage import put_object_bytes, get_presigned_get_url
 from app.services.audit import write_audit_event
+from app.services.download_tokens import create_download_url
+from app.services.storage import put_object_bytes
 
 
 def generate_digest_for_run(db: Session, run_id: uuid.UUID, actor_user_id: uuid.UUID) -> Optional[str]:
@@ -165,7 +166,7 @@ def generate_digest_for_run(db: Session, run_id: uuid.UUID, actor_user_id: uuid.
         # Store in MinIO
         timestamp_str = now.strftime("%Y%m%d_%H%M%S")
         filename = f"digest_{schedule.name.replace(' ', '_')}_{timestamp_str}.pdf"
-        object_key = f"case-files/org/{org_id}/exports/digests/{filename}"
+        object_key = f"org/{org_id}/exports/digests/{filename}"
         
         put_object_bytes(object_key, pdf_bytes, "application/pdf")
         
@@ -204,7 +205,15 @@ def generate_digest_for_run(db: Session, run_id: uuid.UUID, actor_user_id: uuid.
             },
         )
         
-        return get_presigned_get_url(object_key, expires_seconds=3600)
+        return create_download_url(
+            object_key=object_key,
+            org_id=org_id,
+            user_id=actor_user_id,
+            case_id=None,
+            filename=filename,
+            content_type="application/pdf",
+            expires_seconds=3600,
+        )
     
     except Exception as e:
         run.status = "failed"

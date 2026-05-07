@@ -7,12 +7,13 @@ from datetime import datetime, timedelta, date
 from typing import Dict, List, Any
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, cast, Date
+from sqlalchemy import func, and_, or_, cast, Date, String
 
 from app.db.session import get_db
 from app.api.deps import get_current_user, CurrentUser
 from app.services.audit import write_audit_event
-from app.services.storage import put_object_bytes, get_presigned_get_url
+from app.services.download_tokens import create_download_url
+from app.services.storage import put_object_bytes
 from app.models.case import Case
 from app.models.rules import Exception_, ConditionPrecedent
 from app.models.verification import Verification
@@ -50,6 +51,18 @@ KNOWN_STATUSES = [
     "Rejected",
     "Closed",
 ]
+
+
+def normalize_owner_filter(owner: str | None) -> str | None:
+    if owner in {"mine", "unassigned"}:
+        return owner
+    return None
+
+
+def normalize_escalation_filter(escalation: str | None) -> str | None:
+    if escalation in {"stale_unassigned"}:
+        return escalation
+    return None
 
 
 def generate_date_range(start_date: date, end_date: date) -> List[date]:
@@ -123,6 +136,17 @@ async def get_dashboard(
 
     verification_total = verified_count + pending_count
     verification_completion_pct = (verified_count / verification_total * 100) if verification_total > 0 else 100.0
+
+    processing_query = db.query(
+        func.count(Case.id).label("count"),
+        func.min(Case.updated_at).label("oldest"),
+    ).filter(
+        Case.org_id == org_id,
+        Case.status == "Processing",
+    ).first()
+
+    processing_cases_count = processing_query.count if processing_query else 0
+    oldest_processing_case_updated_at = processing_query.oldest if processing_query else None
 
     # 5. Cases by status
     status_counts = db.query(
@@ -260,6 +284,9 @@ async def get_dashboard(
         Case.title,
         Case.status,
         Case.updated_at,
+        Case.assigned_to_user_id,
+        User.email.label("assigned_to_email"),
+        User.full_name.label("assigned_to_name"),
         func.coalesce(cases_with_high.c.high_count, 0).label("open_high"),
         func.coalesce(cases_with_medium.c.medium_count, 0).label("open_medium"),
         func.coalesce(cases_with_low.c.low_count, 0).label("open_low"),
@@ -272,6 +299,8 @@ async def get_dashboard(
         cases_with_low, Case.id == cases_with_low.c.case_id
     ).outerjoin(
         cases_with_pending_verifications, Case.id == cases_with_pending_verifications.c.case_id
+    ).outerjoin(
+        User, Case.assigned_to_user_id == User.id
     ).filter(
         Case.org_id == org_id,
         Case.created_at >= cutoff_date,
@@ -295,6 +324,9 @@ async def get_dashboard(
             open_low=row.open_low,
             pending_verifications=row.pending_verifications,
             updated_at=row.updated_at,
+            assigned_to_user_id=row.assigned_to_user_id,
+            assigned_to_email=row.assigned_to_email,
+            assigned_to_name=row.assigned_to_name,
         )
         for row in needs_attention_query
     ]
@@ -307,8 +339,15 @@ async def get_dashboard(
         AuditLog.entity_id,
         AuditLog.actor_user_id,
         User.email,
+        Case.id.label("case_id"),
+        Case.title.label("case_title"),
     ).outerjoin(
         User, AuditLog.actor_user_id == User.id
+    ).outerjoin(
+        Case, and_(
+            AuditLog.entity_type == "case",
+            AuditLog.case_id == Case.id,
+        )
     ).filter(
         AuditLog.org_id == org_id,
         AuditLog.created_at >= cutoff_date,
@@ -323,6 +362,8 @@ async def get_dashboard(
             action=row.action,
             entity_type=row.entity_type,
             entity_id=row.entity_id,
+            case_id=row.case_id if row.entity_type == "case" else None,
+            case_title=row.case_title if row.entity_type == "case" else None,
         )
         for row in activity_query
     ]
@@ -340,15 +381,31 @@ async def get_dashboard(
 
     # Get case titles for preview
     approval_case_ids = [a.case_id for a in approvals_pending_query]
-    approval_cases = {c.id: c.title for c in db.query(Case).filter(Case.id.in_(approval_case_ids)).all()}
+    approval_cases = {
+        row.id: row
+        for row in db.query(
+            Case.id,
+            Case.title,
+            Case.assigned_to_user_id,
+            User.email.label("assigned_to_email"),
+            User.full_name.label("assigned_to_name"),
+        )
+        .outerjoin(User, Case.assigned_to_user_id == User.id)
+        .filter(Case.id.in_(approval_case_ids))
+        .all()
+    }
 
     approvals_pending_preview = [
         ApprovalPreviewItem(
             id=a.id,
+            case_id=a.case_id,
             request_type=a.request_type,
             request_type_label=APPROVAL_REQUEST_TYPES.get(a.request_type, a.request_type),
-            case_title=approval_cases.get(a.case_id, "Unknown"),
+            case_title=approval_cases.get(a.case_id).title if approval_cases.get(a.case_id) else "Unknown",
             created_at=a.created_at,
+            assigned_to_user_id=approval_cases.get(a.case_id).assigned_to_user_id if approval_cases.get(a.case_id) else None,
+            assigned_to_email=approval_cases.get(a.case_id).assigned_to_email if approval_cases.get(a.case_id) else None,
+            assigned_to_name=approval_cases.get(a.case_id).assigned_to_name if approval_cases.get(a.case_id) else None,
         )
         for a in approvals_pending_query
     ]
@@ -360,12 +417,17 @@ async def get_dashboard(
         Case.title,
         Case.status,
         Case.updated_at,
+        Case.assigned_to_user_id,
+        User.email.label("assigned_to_email"),
+        User.full_name.label("assigned_to_name"),
         func.coalesce(cases_with_high.c.high_count, 0).label("open_high"),
         func.coalesce(cases_with_pending_verifications.c.pending_count, 0).label("pending_verifs"),
     ).outerjoin(
         cases_with_high, Case.id == cases_with_high.c.case_id
     ).outerjoin(
         cases_with_pending_verifications, Case.id == cases_with_pending_verifications.c.case_id
+    ).outerjoin(
+        User, Case.assigned_to_user_id == User.id
     ).filter(
         Case.org_id == org_id,
         Case.status.in_(["Review", "Ready for Approval"]),
@@ -376,6 +438,7 @@ async def get_dashboard(
         func.coalesce(cases_with_pending_verifications.c.pending_count, 0) == 0
     ).group_by(
         Case.id, Case.title, Case.status, Case.updated_at,
+        Case.assigned_to_user_id, User.email, User.full_name,
         cases_with_high.c.high_count, cases_with_pending_verifications.c.pending_count
     ).order_by(Case.updated_at.desc()).limit(10).all()
 
@@ -386,6 +449,9 @@ async def get_dashboard(
             status=row.status,
             cp_completion_pct=100.0,  # Simplified; already filtered
             updated_at=row.updated_at,
+            assigned_to_user_id=row.assigned_to_user_id,
+            assigned_to_email=row.assigned_to_email,
+            assigned_to_name=row.assigned_to_name,
         )
         for row in ready_cases_query
     ]
@@ -411,6 +477,8 @@ async def get_dashboard(
             verification_completion_pct=round(verification_completion_pct, 1),
             pending_verifications=pending_count,
         ),
+        processing_cases_count=processing_cases_count,
+        oldest_processing_case_updated_at=oldest_processing_case_updated_at,
         cases_by_status=cases_by_status,
         exceptions_by_severity=exceptions_by_severity,
         timeseries=timeseries,
@@ -430,6 +498,8 @@ async def get_dashboard_cohort(
     severity: str = Query(default=None, description="Filter by severity: High, Medium, Low"),
     status: str = Query(default=None, description="Filter by case status"),
     date: str = Query(default=None, description="Filter by date: YYYY-MM-DD"),
+    owner: str = Query(default=None, description="Filter by owner: mine, unassigned"),
+    escalation: str = Query(default=None, description="Filter by escalation preset: stale_unassigned"),
     limit: int = Query(default=50, ge=10, le=200, description="Max items to return"),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -442,11 +512,14 @@ async def get_dashboard_cohort(
     org_id = current_user.org_id
     now = datetime.utcnow()
     cutoff_date = now - timedelta(days=days)
+    stale_cutoff = now - timedelta(days=3)
 
     # Validate severity
     valid_severities = ["High", "Medium", "Low"]
     if severity and severity not in valid_severities:
         severity = None
+    owner = normalize_owner_filter(owner)
+    escalation = normalize_escalation_filter(escalation)
 
     # Parse date filter
     filter_date = None
@@ -498,6 +571,9 @@ async def get_dashboard_cohort(
         Case.title,
         Case.status,
         Case.updated_at,
+        Case.assigned_to_user_id,
+        User.email.label("assigned_to_email"),
+        User.full_name.label("assigned_to_name"),
         func.coalesce(cases_with_high.c.high_count, 0).label("open_high"),
         func.coalesce(cases_with_medium.c.medium_count, 0).label("open_medium"),
         func.coalesce(cases_with_low.c.low_count, 0).label("open_low"),
@@ -510,6 +586,8 @@ async def get_dashboard_cohort(
         cases_with_low, Case.id == cases_with_low.c.case_id
     ).outerjoin(
         cases_with_pending_verifications, Case.id == cases_with_pending_verifications.c.case_id
+    ).outerjoin(
+        User, Case.assigned_to_user_id == User.id
     ).filter(
         Case.org_id == org_id,
         Case.created_at >= cutoff_date,
@@ -518,6 +596,21 @@ async def get_dashboard_cohort(
     # Apply status filter
     if status:
         case_query = case_query.filter(Case.status == status)
+
+    if owner == "mine":
+        case_query = case_query.filter(Case.assigned_to_user_id == current_user.user_id)
+    elif owner == "unassigned":
+        case_query = case_query.filter(Case.assigned_to_user_id.is_(None))
+
+    if escalation == "stale_unassigned":
+        case_query = case_query.filter(
+            Case.assigned_to_user_id.is_(None),
+            Case.updated_at <= stale_cutoff,
+            or_(
+                func.coalesce(cases_with_high.c.high_count, 0) > 0,
+                func.coalesce(cases_with_pending_verifications.c.pending_count, 0) > 0,
+            ),
+        )
 
     # Apply date filter (on updated_at)
     if filter_date:
@@ -551,6 +644,9 @@ async def get_dashboard_cohort(
             open_medium=row.open_medium,
             open_low=row.open_low,
             pending_verifications=row.pending_verifications,
+            assigned_to_user_id=row.assigned_to_user_id,
+            assigned_to_email=row.assigned_to_email,
+            assigned_to_name=row.assigned_to_name,
         )
         for row in case_results
     ]
@@ -570,7 +666,7 @@ async def get_dashboard_cohort(
     ).outerjoin(
         Case, and_(
             AuditLog.entity_type == "case",
-            AuditLog.entity_id == Case.id,
+            AuditLog.case_id == Case.id,
         )
     ).filter(
         AuditLog.org_id == org_id,
@@ -587,6 +683,30 @@ async def get_dashboard_cohort(
             or_(
                 AuditLog.entity_type != "case",
                 Case.status == status,
+            )
+        )
+
+    if owner == "mine":
+        activity_query = activity_query.filter(
+            and_(
+                AuditLog.entity_type == "case",
+                Case.assigned_to_user_id == current_user.user_id,
+            )
+        )
+    elif owner == "unassigned":
+        activity_query = activity_query.filter(
+            and_(
+                AuditLog.entity_type == "case",
+                Case.assigned_to_user_id.is_(None),
+            )
+        )
+
+    if escalation == "stale_unassigned":
+        activity_query = activity_query.filter(
+            and_(
+                AuditLog.entity_type == "case",
+                Case.assigned_to_user_id.is_(None),
+                Case.updated_at <= stale_cutoff,
             )
         )
 
@@ -623,6 +743,8 @@ async def get_dashboard_cohort(
                 "severity": severity,
                 "status": status,
                 "date": date,
+                "owner": owner,
+                "escalation": escalation,
             },
             "limit": limit,
         },
@@ -634,6 +756,8 @@ async def get_dashboard_cohort(
             severity=severity,
             status=status,
             date=date,
+            owner=owner,
+            escalation=escalation,
         ),
         cases=cohort_cases,
         activity=cohort_activity,
@@ -651,6 +775,8 @@ async def export_cohort_csv(
     severity: str = Query(default=None, description="Filter by severity: High, Medium, Low"),
     status: str = Query(default=None, description="Filter by case status"),
     date: str = Query(default=None, description="Filter by date: YYYY-MM-DD"),
+    owner: str = Query(default=None, description="Filter by owner: mine, unassigned"),
+    escalation: str = Query(default=None, description="Filter by escalation preset: stale_unassigned"),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -661,11 +787,14 @@ async def export_cohort_csv(
     org_id = current_user.org_id
     now = datetime.utcnow()
     cutoff_date = now - timedelta(days=days)
+    stale_cutoff = now - timedelta(days=3)
 
     # Validate severity
     valid_severities = ["High", "Medium", "Low"]
     if severity and severity not in valid_severities:
         severity = None
+    owner = normalize_owner_filter(owner)
+    escalation = normalize_escalation_filter(escalation)
 
     # Parse date filter
     filter_date = None
@@ -737,6 +866,19 @@ async def export_cohort_csv(
     # Apply filters
     if status:
         case_query = case_query.filter(Case.status == status)
+    if owner == "mine":
+        case_query = case_query.filter(Case.assigned_to_user_id == current_user.user_id)
+    elif owner == "unassigned":
+        case_query = case_query.filter(Case.assigned_to_user_id.is_(None))
+    if escalation == "stale_unassigned":
+        case_query = case_query.filter(
+            Case.assigned_to_user_id.is_(None),
+            Case.updated_at <= stale_cutoff,
+            or_(
+                func.coalesce(cases_with_high.c.high_count, 0) > 0,
+                func.coalesce(cases_with_pending.c.pending_count, 0) > 0,
+            ),
+        )
     if filter_date:
         case_query = case_query.filter(cast(Case.updated_at, Date) == filter_date)
     if severity == "High":
@@ -778,7 +920,7 @@ async def export_cohort_csv(
     timestamp = now.strftime("%Y%m%d_%H%M%S")
     content_hash = hashlib.md5(csv_bytes).hexdigest()[:8]
     filename = f"cohort_{timestamp}_{content_hash}.csv"
-    object_key = f"case-files/org/{org_id}/exports/dashboard/{filename}"
+    object_key = f"org/{org_id}/exports/dashboard/{filename}"
 
     # Upload to MinIO
     put_object_bytes(object_key, csv_bytes, "text/csv")
@@ -798,7 +940,15 @@ async def export_cohort_csv(
     
     # Since case_id is not nullable, we need to skip the Export model for now
     # and just return the presigned URL directly
-    presigned_url = get_presigned_get_url(object_key, expires_seconds=3600)
+    presigned_url = create_download_url(
+        object_key=object_key,
+        org_id=org_id,
+        user_id=current_user.user_id,
+        case_id=None,
+        filename=filename,
+        content_type="text/csv",
+        expires_seconds=3600,
+    )
 
     # Audit log
     write_audit_event(
@@ -809,7 +959,7 @@ async def export_cohort_csv(
         entity_type="export",
         event_metadata={
             "range_days": days,
-            "filters": {"severity": severity, "status": status, "date": date},
+            "filters": {"severity": severity, "status": status, "date": date, "owner": owner, "escalation": escalation},
             "row_count": len(case_results),
             "format": "csv",
             "filename": filename,
@@ -833,6 +983,8 @@ async def export_cohort_pdf(
     severity: str = Query(default=None, description="Filter by severity: High, Medium, Low"),
     status: str = Query(default=None, description="Filter by case status"),
     date: str = Query(default=None, description="Filter by date: YYYY-MM-DD"),
+    owner: str = Query(default=None, description="Filter by owner: mine, unassigned"),
+    escalation: str = Query(default=None, description="Filter by escalation preset: stale_unassigned"),
     current_user: CurrentUser = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -846,6 +998,7 @@ async def export_cohort_pdf(
     org_id = current_user.org_id
     now = datetime.utcnow()
     cutoff_date = now - timedelta(days=days)
+    stale_cutoff = now - timedelta(days=3)
 
     # Get org name
     org = db.query(Org).filter(Org.id == org_id).first()
@@ -855,6 +1008,8 @@ async def export_cohort_pdf(
     valid_severities = ["High", "Medium", "Low"]
     if severity and severity not in valid_severities:
         severity = None
+    owner = normalize_owner_filter(owner)
+    escalation = normalize_escalation_filter(escalation)
 
     # Parse date filter
     filter_date = None
@@ -991,6 +1146,19 @@ async def export_cohort_pdf(
     # Apply filters
     if status:
         case_query = case_query.filter(Case.status == status)
+    if owner == "mine":
+        case_query = case_query.filter(Case.assigned_to_user_id == current_user.user_id)
+    elif owner == "unassigned":
+        case_query = case_query.filter(Case.assigned_to_user_id.is_(None))
+    if escalation == "stale_unassigned":
+        case_query = case_query.filter(
+            Case.assigned_to_user_id.is_(None),
+            Case.updated_at <= stale_cutoff,
+            or_(
+                func.coalesce(cases_with_high.c.high_count, 0) > 0,
+                func.coalesce(cases_with_pending.c.pending_count, 0) > 0,
+            ),
+        )
     if filter_date:
         case_query = case_query.filter(cast(Case.updated_at, Date) == filter_date)
     if severity == "High":
@@ -1025,7 +1193,7 @@ async def export_cohort_pdf(
     # Generate PDF
     pdf_bytes = create_cohort_pdf(
         org_name=org_name,
-        filters={"severity": severity, "status": status, "date": date},
+        filters={"severity": severity, "status": status, "date": date, "owner": owner, "escalation": escalation},
         days=days,
         timestamp=now,
         kpis={
@@ -1043,10 +1211,18 @@ async def export_cohort_pdf(
     timestamp_str = now.strftime("%Y%m%d_%H%M%S")
     content_hash = hashlib.md5(pdf_bytes).hexdigest()[:8]
     filename = f"cohort_report_{timestamp_str}_{content_hash}.pdf"
-    object_key = f"case-files/org/{org_id}/exports/dashboard/{filename}"
+    object_key = f"org/{org_id}/exports/dashboard/{filename}"
 
     put_object_bytes(object_key, pdf_bytes, "application/pdf")
-    presigned_url = get_presigned_get_url(object_key, expires_seconds=3600)
+    presigned_url = create_download_url(
+        object_key=object_key,
+        org_id=org_id,
+        user_id=current_user.user_id,
+        case_id=None,
+        filename=filename,
+        content_type="application/pdf",
+        expires_seconds=3600,
+    )
 
     # Audit log
     write_audit_event(
@@ -1057,7 +1233,7 @@ async def export_cohort_pdf(
         entity_type="export",
         event_metadata={
             "range_days": days,
-            "filters": {"severity": severity, "status": status, "date": date},
+            "filters": {"severity": severity, "status": status, "date": date, "owner": owner, "escalation": escalation},
             "row_count": len(case_results),
             "format": "pdf",
             "filename": filename,

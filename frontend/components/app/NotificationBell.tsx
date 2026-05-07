@@ -9,8 +9,7 @@ import {
   getUnreadNotificationCount,
   Notification,
 } from '@/lib/api';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { getCaseDetailPath } from '@/lib/routes';
 
 // Format relative time
 function formatRelativeTime(dateString: string): string {
@@ -41,7 +40,7 @@ export function NotificationBell() {
     try {
       const result = await getUnreadNotificationCount();
       setUnreadCount(result.unread_count);
-    } catch (e) {
+    } catch {
       // Silently fail
     }
   }, []);
@@ -53,7 +52,7 @@ export function NotificationBell() {
       const result = await listNotifications(false, 20);
       setNotifications(result.notifications);
       setUnreadCount(result.unread_count);
-    } catch (e) {
+    } catch {
       // Silently fail
     } finally {
       setLoading(false);
@@ -92,7 +91,7 @@ export function NotificationBell() {
         prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
-    } catch (e) {
+    } catch {
       // Silently fail
     }
   };
@@ -102,7 +101,7 @@ export function NotificationBell() {
       await markAllNotificationsRead();
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    } catch (e) {
+    } catch {
       // Silently fail
     }
   };
@@ -115,40 +114,40 @@ export function NotificationBell() {
     if (notification.entity_type === 'approval' && notification.entity_id) {
       router.push('/approvals');
     } else if (notification.case_id) {
-      router.push(`/cases/${notification.case_id}`);
+      router.push(getCaseDetailPath(notification.case_id));
     }
   };
 
   const severityColors: Record<string, string> = {
-    info: 'bg-cyan-500/20 text-cyan-400',
-    warning: 'bg-amber-500/20 text-amber-400',
-    critical: 'bg-rose-500/20 text-rose-400',
+    info: 'bg-[rgba(126,133,111,0.16)] text-[rgb(194,200,185)]',
+    warning: 'bg-[rgba(184,151,95,0.16)] text-[rgb(219,194,137)]',
+    critical: 'bg-[rgba(189,90,86,0.16)] text-[rgb(219,156,153)]',
   };
 
   return (
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+        className="relative rounded-md border border-transparent p-2 transition-colors hover:border-[rgba(82,90,99,0.35)] hover:bg-[rgba(34,39,45,0.9)]"
         aria-label="Notifications"
       >
-        <BellIcon className="w-5 h-5 text-slate-400" />
+        <BellIcon className="h-5 w-5 text-stone-400" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[rgba(151,70,67,0.98)] text-[10px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-lg border border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] shadow-[0_18px_48px_rgba(0,0,0,0.35)] sm:w-96">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
-            <h3 className="text-sm font-medium text-slate-100">Notifications</h3>
+          <div className="flex items-center justify-between border-b border-[rgba(82,90,99,0.38)] bg-[rgba(24,28,32,0.96)] px-4 py-3">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.08em] text-stone-200">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs text-cyan-400 hover:text-cyan-300"
+                className="text-xs font-medium text-stone-400 hover:text-stone-200"
               >
                 Mark all read
               </button>
@@ -158,46 +157,46 @@ export function NotificationBell() {
           {/* Notification list */}
           <div className="max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="p-4 text-center text-sm text-slate-500">Loading...</div>
+              <div className="p-4 text-center text-sm text-stone-500">Loading...</div>
             ) : notifications.length === 0 ? (
               <div className="p-8 text-center">
-                <BellIcon className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                <p className="text-sm text-slate-500">No notifications yet</p>
+                <BellIcon className="mx-auto mb-2 h-8 w-8 text-stone-600" />
+                <p className="text-sm text-stone-500">No notifications yet</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-700/50">
+              <div className="divide-y divide-[rgba(82,90,99,0.3)]">
                 {notifications.map((notification) => (
                   <button
                     key={notification.id}
                     onClick={() => handleNotificationClick(notification)}
-                    className={`w-full text-left px-4 py-3 hover:bg-slate-800/50 transition-colors ${
-                      !notification.is_read ? 'bg-slate-800/30' : ''
+                    className={`w-full px-4 py-3 text-left transition-colors hover:bg-[rgba(34,39,45,0.9)] ${
+                      !notification.is_read ? 'bg-[rgba(34,39,45,0.65)]' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <div
-                        className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                          notification.is_read ? 'bg-slate-600' : 'bg-cyan-400'
+                        className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${
+                          notification.is_read ? 'bg-stone-700' : 'bg-[rgba(126,133,111,0.92)]'
                         }`}
                       />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-0.5">
                           <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded ${
+                            className={`rounded px-1.5 py-0.5 text-[10px] uppercase tracking-[0.08em] ${
                               severityColors[notification.severity] || severityColors.info
                             }`}
                           >
                             {notification.severity}
                           </span>
-                          <span className="text-[10px] text-slate-500">
+                          <span className="text-[10px] text-stone-500">
                             {formatRelativeTime(notification.created_at)}
                           </span>
                         </div>
-                        <p className="text-sm font-medium text-slate-200 truncate">
+                        <p className="truncate text-sm font-medium text-stone-200">
                           {notification.title}
                         </p>
                         {notification.body && (
-                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                          <p className="mt-0.5 line-clamp-2 text-xs text-stone-500">
                             {notification.body}
                           </p>
                         )}
@@ -210,15 +209,15 @@ export function NotificationBell() {
           </div>
 
           {/* Footer */}
-          <div className="px-4 py-2 border-t border-slate-700 bg-slate-800/50">
+          <div className="border-t border-[rgba(82,90,99,0.3)] bg-[rgba(24,28,32,0.96)] px-4 py-2">
             <button
               onClick={() => {
                 setIsOpen(false);
                 router.push('/approvals');
               }}
-              className="text-xs text-cyan-400 hover:text-cyan-300"
+              className="text-xs font-medium text-stone-400 hover:text-stone-200"
             >
-              View all activity →
+              View all activity
             </button>
           </div>
         </div>

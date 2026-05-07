@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.db.session import get_db
-from app.api.deps import get_current_user, CurrentUser, require_tenant_scope, require_role
+from app.api.deps import CurrentUser, get_current_user, require_approver, require_reviewer, require_tenant_scope
 from app.services.audit import write_audit_event
 from app.models.approval import ApprovalRequest, APPROVAL_REQUEST_TYPES
 from app.models.case import Case
@@ -140,12 +140,12 @@ async def create_approval(
     request: Request,
     payload: ApprovalRequestCreate,
     org_id: UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Reviewer", "Admin")),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """
     Create a new approval request (Maker action).
-    Only Reviewer or Admin can create requests. Tenant-scoped: 404 if case not in org.
+    Only reviewers can create approval requests. Tenant-scoped: 404 if case not in org.
     """
     approval = create_approval_request(
         db=db,
@@ -220,15 +220,13 @@ async def approve_request(
     request: Request,
     approval_id: UUID,
     decision: ApprovalDecision,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_approver),
     db: Session = Depends(get_db),
 ):
     """
     Approve an approval request (Checker action).
-    Only Approver or Admin can approve. Cannot approve own request.
+    Only approvers can approve. Cannot approve own request.
     """
-    if current_user.role not in ["Approver", "Admin"]:
-        raise HTTPException(status_code=403, detail="Only Approver or Admin can approve requests")
     
     approval = decide_approval_request(
         db=db,
@@ -283,15 +281,13 @@ async def reject_request(
     request: Request,
     approval_id: UUID,
     decision: ApprovalDecision,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_approver),
     db: Session = Depends(get_db),
 ):
     """
     Reject an approval request (Checker action).
-    Only Approver or Admin can reject.
+    Only approvers can reject.
     """
-    if current_user.role not in ["Approver", "Admin"]:
-        raise HTTPException(status_code=403, detail="Only Approver or Admin can reject requests")
     
     approval = decide_approval_request(
         db=db,

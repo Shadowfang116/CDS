@@ -1,0 +1,10 @@
+Discrepancy Letter
+
+Borrower: {{ borrower_name }}
+Case: {{ case_title }}
+Date: {{ generated_at }}
+
+Exceptions:
+{% for item in exceptions %}
+- [{{ item.severity }}] {{ item.title }}: {{ item.description }}
+{% endfor %}

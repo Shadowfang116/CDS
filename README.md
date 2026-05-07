@@ -1,215 +1,166 @@
-# Bank Diligence Platform (CDS)
+# Covenant Diligence Systems
 
-CDS, the Case Diligence Suite, is a Pakistan-first legal diligence platform for property-backed finance. It ingests property documents, runs OCR and extraction workflows, assembles a structured dossier, surfaces Exceptions and Conditions Precedent (CPs), produces draft outputs, and packages the matter into a Bank Pack export for legal and credit review.
+Covenant Diligence Systems is an on-prem, bank-ready diligence platform for Pakistan property finance documentation. The platform ingests legal and title documents, runs OCR and extraction workflows, assembles a structured dossier, tracks Exceptions and Conditions Precedent, and exports a reviewable bank pack for legal, credit, and approval teams.
 
-## What The Platform Produces
+## MVP Scope
 
-- Dossier
-- Exceptions
-- Conditions Precedent (CPs)
-- Drafts
-- Bank Pack export
+- Case intake and document upload
+- OCR and document-page review
+- Dossier assembly and field autofill
+- Exceptions, Waivers, Evidence, and Annexures tracking
+- Conditions Precedent workflow and approval routing
+- Audit timeline and signed download links
+- DOCX and PDF export for bank pack preparation
 
-## Current Stack
+## Tech Stack
 
-Local Docker Compose runs the full application stack:
+- Frontend: Next.js App Router, TypeScript, Tailwind CSS
+- Backend: FastAPI, SQLAlchemy, Alembic, Celery
+- Database: PostgreSQL
+- Queue / cache: Redis
+- Object storage: MinIO
+- OCR: local OCR service, Tesseract, PaddleOCR, HF extractor
+- Packaging: Docker Compose, Caddy for pilot / production-style ingress
 
-- Next.js frontend
-- FastAPI backend
-- PostgreSQL
-- Redis
-- MinIO
-- Celery worker
-- Celery beat
-- OCR service
-- HF extractor service
-- MailHog for local email testing
+## Repo Layout
 
-`docker-compose.prod.yml` adds:
-
-- `migrate` one-shot migration container
-- `caddy` reverse proxy for production-style local or pilot deployment
-
-## Prerequisites
-
-Install these before cloning:
-
-- Git
-- Docker Desktop, or Docker Engine with the Compose v2 plugin
-- At least 8 GB RAM available to Docker
-- At least 10 GB free disk for images, Postgres, MinIO, and OCR artifacts
-
-Optional:
-
-- Node.js 20+ only if you want to run frontend lint/typecheck outside containers
-- Python 3.12+ only if you want to run backend scripts outside containers
-
-## Quick Start
-
-This is the canonical local dev/bootstrap flow for a fresh clone.
-
-### PowerShell
-
-```powershell
-git clone <repo-url>
-cd bank-diligence-platform
-Copy-Item .env.example .env
-docker compose up -d --build
-docker compose exec -T api alembic upgrade head
-docker compose exec -T api python scripts/dev/seed_demo_data.py
-```
-
-### Bash
-
-```bash
-git clone <repo-url>
-cd bank-diligence-platform
-cp .env.example .env
-docker compose up -d --build
-docker compose exec -T api alembic upgrade head
-docker compose exec -T api python scripts/dev/seed_demo_data.py
-```
-
-After that:
-
-- Frontend: `http://localhost:3000/dashboard`
-- API docs: `http://localhost:8000/docs`
-- Health: `http://localhost:8000/api/v1/health/deep`
-
-Demo credentials after seeding:
-
-- `admin@orga.com / ChangeMe123!`
-- `reviewer@orga.com / ChangeMe123!`
-- `admin@orgb.com / ChangeMe123!`
-
-Windows convenience helpers:
-
-- `.\start-services.ps1`
-- `.\scripts\dev\pilot_reset.ps1`
-
-`pilot_reset.ps1` is a heavier reset-and-seed helper. The explicit commands above are the canonical clone-to-run path.
+- `frontend/`: Next.js UI and proxy routes
+- `backend/`: FastAPI app, models, services, workers, migrations
+- `ocr_service/`: local OCR microservice
+- `docs/`: operational docs, security notes, walkthroughs, runbooks
+- `scripts/`: dev, backup, and ops helpers
+- `templates/`: export templates and document assets
 
 ## Environment Setup
 
-### Local Development
-
-Copy `.env.example` to `.env`.
+Copy the root example file before running Docker Compose:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-The checked-in local defaults are enough to boot the Docker stack on another machine. For normal local use you do not need to change anything before first startup.
+Service-specific reference files are also included:
 
-Important local variables:
+- `backend/.env.example`
+- `frontend/.env.example`
+- `.env.production.example`
 
-- `APP_ENV=development`
-- `POSTGRES_*` defaults match the Compose `db` service
-- `MINIO_*` defaults match the Compose `minio` service
-- `REDIS_URL=redis://redis:6379/0`
-- `API_INTERNAL_BASE_URL=http://api:8000`
-- `OCR_SERVICE_URL=http://ocr_service:8001`
-- `HF_EXTRACTOR_URL=http://hf-extractor:8090`
-- `EMAIL_ENABLED=false` and MailHog defaults keep local email non-delivery-safe
+Required secret-bearing values must stay local:
 
-You do not need to set `NEXT_PUBLIC_API_URL` or `NEXT_PUBLIC_API_BASE_URL` for local Docker use. Browser traffic goes through the frontend proxy routes and the server uses `API_INTERNAL_BASE_URL`.
+- `POSTGRES_PASSWORD`
+- `APP_SECRET_KEY`
+- `MINIO_ROOT_PASSWORD`
+- `SMTP_PASSWORD` when email is enabled
+- `INTEGRATIONS_ENCRYPTION_KEY` when external integrations are enabled
 
-### Production-Style Local / Pilot Deployment
-
-Copy `.env.production.example` to `.env.production`, then replace every placeholder secret and hostname before starting `docker-compose.prod.yml`.
+## Local Docker Compose Setup
 
 ```powershell
-Copy-Item .env.production.example .env.production
+Copy-Item .env.example .env
+docker compose up -d --build
+docker compose exec -T api alembic upgrade head
 ```
 
-Required before first prod-style start:
+Useful local endpoints:
 
-- `APP_ENV=production`
-- `APP_SECRET_KEY`
-- `POSTGRES_PASSWORD`
-- `MINIO_ROOT_PASSWORD`
-- `PUBLIC_HOSTNAME`
-- `PUBLIC_URL`
-- `CORS_ORIGINS`
+- Frontend: `http://localhost:3000`
+- Backend docs: `http://localhost:8000/docs`
+- Deep health: `http://localhost:8000/api/v1/health/deep`
+- MinIO console: `http://localhost:9001`
+- MailHog: `http://localhost:8025`
 
-Legacy note:
+To seed pilot-safe demo data:
 
-- `.env.prod.example` is deprecated. Use `.env.production.example`.
+```powershell
+docker compose exec -T api python scripts/dev/seed_demo_data.py
+```
+
+## Running Services Without Compose
+
+Backend:
+
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e .
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Frontend:
+
+```powershell
+cd frontend
+npm ci
+npm run dev
+```
+
+The frontend expects `API_INTERNAL_BASE_URL` for server-side proxying. For direct browser-side debugging you may also set `API_BASE_URL`.
 
 ## Database Migrations
 
-Local dev compose does not auto-run Alembic. Run this after `docker compose up -d --build`:
+Apply migrations in Docker:
 
 ```powershell
 docker compose exec -T api alembic upgrade head
 ```
 
-`docker-compose.prod.yml` includes a `migrate` service and runs migrations before the API starts. To re-run manually:
+Production-style compose includes a dedicated migration container:
 
 ```powershell
 docker compose -f docker-compose.prod.yml run --rm migrate
 ```
 
-## Default Local URLs
+## Tests And Quality Checks
 
-- Frontend dashboard: `http://localhost:3000/dashboard`
-- Backend API docs: `http://localhost:8000/docs`
-- Backend deep health: `http://localhost:8000/api/v1/health/deep`
-- MinIO console: `http://localhost:9001`
-- MailHog: `http://localhost:8025`
-
-The MinIO S3 API is also exposed locally at `http://localhost:9000`.
-
-## Demo / Seed Data
-
-The repository does not ship with a pre-populated database. A fresh machine needs the seed step if you want demo users, demo cases, and OCR/demo documents.
-
-Seed command:
+Backend:
 
 ```powershell
-docker compose exec -T api python scripts/dev/seed_demo_data.py
+cd backend
+python -m compileall app
+python -m pytest
 ```
 
-What the seed creates:
-
-- OrgA and OrgB
-- Demo users with fixed passwords
-- Multiple cases including `PILOT DEMO CASE`
-- Demo documents and OCR page text
-- Demo OCR extraction candidate(s)
-
-Reset-and-seed convenience flow on Windows:
+Frontend:
 
 ```powershell
-.\scripts\dev\pilot_reset.ps1
+cd frontend
+npm ci
+npm run lint
+npm run build
 ```
 
-That script:
+Compose validation:
 
-- destroys containers and volumes unless `-KeepVolumes` is used
-- rebuilds the stack
-- runs migrations
-- seeds demo data
+```powershell
+docker compose config
+docker compose -f docker-compose.prod.yml config
+```
 
-## Fresh-Machine Bootstrap Notes
+## Security Notes
 
-From a clean clone, the only required files you must create before startup are:
+- Do not commit `.env`, `.env.local`, `.env.production`, or any real credentials.
+- Do not commit real bank documents, CNICs, title records, customer files, generated bank packs, OCR output, or support logs.
+- RBAC, audit logging, signed download links, and retention controls are part of the baseline design.
+- Backups, restore validation, and pilot release checks are documented under [docs/ops](docs/ops).
+- `docs/pilot_samples_real/` is intentionally gitignored for confidential UAT material.
 
-- `.env` for local dev, copied from `.env.example`
-- `.env.production` only if you intend to use `docker-compose.prod.yml`
+## Case Lifecycle
 
-Required local startup steps:
+`New -> Processing -> Review -> Pending Docs -> Ready for Approval -> Approved / Rejected -> Closed`
 
-1. Copy `.env.example` to `.env`
-2. `docker compose up -d --build`
-3. `docker compose exec -T api alembic upgrade head`
-4. optional but recommended for a usable demo: `docker compose exec -T api python scripts/dev/seed_demo_data.py`
+Bank-facing review language used across the platform:
 
-There are no additional hidden manual setup steps after those commands.
+- Exceptions
+- Conditions Precedent
+- Waiver
+- Evidence
+- Annexures
+- Approver
 
-## Production-Style Local Startup
+## Pilot / On-Prem Deployment
 
-Use this only when you want the reverse proxy and production-style env separation locally or in a pilot environment.
+This repository is designed for pilot and on-prem deployment with Docker Compose.
 
 ```powershell
 Copy-Item .env.production.example .env.production
@@ -217,109 +168,11 @@ Copy-Item .env.production.example .env.production
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-Notes:
+Use `docker-compose.prod.yml` for production-style runs with:
 
-- `caddy` publishes `80` and `443`
-- `migrate` runs before `api`
-- you must replace placeholder secrets first
-- `PUBLIC_HOSTNAME` and `PUBLIC_URL` must match your host/domain plan
+- Caddy ingress
+- migration gating
+- internal-only service networking
+- persistent Postgres, Redis, and MinIO volumes
 
-For the full production runbook, see [docs/ops/DEPLOYMENT_PROD.md](docs/ops/DEPLOYMENT_PROD.md).
-
-## Common Troubleshooting
-
-### OCR Service Uses Too Much CPU
-
-- Lower `OCR_SERVICE_CPUS` in `.env`
-- Keep `OCR_MAX_WORKERS=1`
-- Keep `CELERY_WORKER_CONCURRENCY=1`
-- Recreate the OCR and worker services:
-
-```powershell
-docker compose up -d --build ocr_service worker beat
-```
-
-### Missing Migrations / Blank Data / Backend 500s After Update
-
-Run:
-
-```powershell
-docker compose exec -T api alembic upgrade head
-```
-
-If the database was created from a mismatched older checkout, reset local volumes:
-
-```powershell
-docker compose down -v
-docker compose up -d --build
-docker compose exec -T api alembic upgrade head
-```
-
-### Worker Or Beat Unhealthy
-
-Inspect container status and logs:
-
-```powershell
-docker compose ps
-docker compose logs --tail=200 worker beat
-```
-
-If Redis or Postgres came up late, recreate the background services:
-
-```powershell
-docker compose up -d --build worker beat
-```
-
-### Demo Case Is Missing
-
-Run the seed again:
-
-```powershell
-docker compose exec -T api python scripts/dev/seed_demo_data.py
-```
-
-### OCR Panel Is Blank Or OCR Extractions Look Empty After An Update
-
-First make sure migrations are current:
-
-```powershell
-docker compose exec -T api alembic upgrade head
-```
-
-Then rebuild the frontend if the running image is stale:
-
-```powershell
-docker compose up -d --build frontend
-```
-
-### Frontend Route Crash After Pulling New Changes
-
-Rebuild the frontend container:
-
-```powershell
-docker compose up -d --build frontend
-```
-
-If the backend schema also changed, rerun migrations before reloading the app.
-
-## Verification Checklist
-
-After startup, these checks are enough to confirm the stack is usable:
-
-```powershell
-docker compose ps
-Invoke-WebRequest http://localhost:8000/api/v1/health/deep -UseBasicParsing
-Invoke-WebRequest http://localhost:3000/login -UseBasicParsing
-docker compose exec -T api alembic current
-```
-
-Optional login smoke check:
-
-```powershell
-$body = @{ email = "admin@orga.com"; password = "ChangeMe123!" } | ConvertTo-Json
-Invoke-WebRequest -Uri http://localhost:8000/api/v1/auth/login -Method POST -ContentType "application/json" -Body $body -UseBasicParsing
-```
-
-## Production Note
-
-For development and pilot-style local work, Docker Compose is the recommended path. Public deployment should use `docker-compose.prod.yml`, `.env.production`, and the reverse-proxy configuration in this repo rather than the dev compose stack.
+See [docs/ops/DEPLOYMENT_PROD.md](docs/ops/DEPLOYMENT_PROD.md) and [docs/ops/RELEASE_CHECKLIST.md](docs/ops/RELEASE_CHECKLIST.md) for the operational runbook.

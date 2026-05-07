@@ -1,7 +1,7 @@
 """OCR Extraction Candidates model for editable OCR extractions."""
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Index, Integer, Numeric, ForeignKey, Text, Boolean
+from sqlalchemy import Column, String, DateTime, Float, Index, Integer, Numeric, ForeignKey, Text, Boolean, text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from app.db.base import Base
 
@@ -20,15 +20,21 @@ class OCRExtractionCandidate(Base):
     edited_value = Column(Text, nullable=True)  # Reviewer edits
     final_value = Column(Text, nullable=True)  # Value at confirm-time (computed = edited_value ?? proposed_value)
     status = Column(String, nullable=False, default="Pending")  # Pending | Confirmed | Rejected
+    review_status = Column(String, nullable=False, default="extracted", server_default="extracted")  # extracted | needs_review | reviewed | verified
+    needs_review = Column(Boolean, nullable=False, default=False, server_default=text("false"))
     confidence = Column(Numeric, nullable=True)
     snippet = Column(Text, nullable=True)  # Short OCR snippet context
     confirmed_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     confirmed_at = Column(DateTime, nullable=True)
     rejected_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     rejected_at = Column(DateTime, nullable=True)
+    verified_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    verified_at = Column(DateTime, nullable=True)
     rejection_reason = Column(Text, nullable=True)
     amendment_of = Column(UUID(as_uuid=True), ForeignKey("ocr_extraction_candidates.id"), nullable=True)  # If this is an amendment
     # P10: Quality gate fields
+    quality_score = Column(Float, nullable=True)
+    quality_level = Column(String, nullable=True)  # good | fair | poor | unusable | unavailable
     quality_level_at_create = Column(String, nullable=True)  # "Good" | "Low" | "Critical"
     is_low_quality = Column(Boolean, nullable=False, default=False)
     warning_reason = Column(Text, nullable=True)  # Reason for low quality flag

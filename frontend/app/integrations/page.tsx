@@ -1,21 +1,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { AppShell } from '@/components/app/AppShell';
+import { SetPageChrome } from '@/components/layout/set-page-chrome';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   listWebhooks,
-  createWebhook,
   updateWebhook,
   deleteWebhook,
   listWebhookDeliveries,
   testWebhook,
   listEmailTemplates,
-  createEmailTemplate,
-  updateEmailTemplate,
   listEmailDeliveries,
   testEmail,
   getMe,
@@ -28,7 +25,6 @@ import {
 
 type TabValue = 'webhooks' | 'email';
 
-const VALID_EVENTS = ['approval.pending', 'approval.decided', 'case.decided', 'export.generated'];
 const TEMPLATE_KEYS = ['approval.pending', 'approval.decided', 'case.decided', 'export.generated'];
 
 export default function IntegrationsPage() {
@@ -37,9 +33,9 @@ export default function IntegrationsPage() {
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [createModal, setCreateModal] = useState<{ type: 'webhook' | 'email'; show: boolean }>({ type: 'webhook', show: false });
-  const [selectedEndpoint, setSelectedEndpoint] = useState<string | null>(null);
-  const [deliveries, setDeliveries] = useState<WebhookDelivery[] | EmailDelivery[]>([]);
+  const [, setCreateModal] = useState<{ type: 'webhook' | 'email'; show: boolean }>({ type: 'webhook', show: false });
+  const [, setSelectedEndpoint] = useState<string | null>(null);
+  const [, setDeliveries] = useState<WebhookDelivery[] | EmailDelivery[]>([]);
   const [secretModal, setSecretModal] = useState<{ show: boolean; secret: string }>({ show: false, secret: '' });
 
   const fetchWebhooks = useCallback(async () => {
@@ -64,17 +60,6 @@ export default function IntegrationsPage() {
     setLoading(true);
     Promise.all([fetchWebhooks(), fetchEmailTemplates()]).finally(() => setLoading(false));
   }, [fetchWebhooks, fetchEmailTemplates]);
-
-  const handleCreateWebhook = async (name: string, url: string, events: string[]) => {
-    try {
-      const result = await createWebhook({ name, url, subscribed_events: events });
-      setSecretModal({ show: true, secret: result.secret });
-      await fetchWebhooks();
-      setCreateModal({ type: 'webhook', show: false });
-    } catch (e: any) {
-      setError(e.message || 'Failed to create webhook');
-    }
-  };
 
   const handleDeleteWebhook = async (id: string) => {
     if (!confirm('Delete this webhook endpoint?')) return;
@@ -114,16 +99,20 @@ export default function IntegrationsPage() {
   };
 
   return (
-    <AppShell pageTitle="Integrations">
-      <div className="p-6 space-y-6">
+    <>
+      <SetPageChrome
+        title="Integrations"
+        breadcrumbs={[{ label: 'Integrations' }]}
+      />
+      <div className="p-6 space-y-6" data-dashboard-reveal>
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-slate-700">
+        <div className="flex gap-2 border-b border-[rgba(82,90,99,0.36)]">
           <button
             onClick={() => setActiveTab('webhooks')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'webhooks'
-                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'border-b-2 border-[rgba(126,133,111,0.9)] text-stone-100'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
           >
             Webhooks
@@ -132,8 +121,8 @@ export default function IntegrationsPage() {
             onClick={() => setActiveTab('email')}
             className={`px-4 py-2 font-medium ${
               activeTab === 'email'
-                ? 'text-cyan-400 border-b-2 border-cyan-400'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'border-b-2 border-[rgba(126,133,111,0.9)] text-stone-100'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
           >
             Email Templates
@@ -141,14 +130,14 @@ export default function IntegrationsPage() {
         </div>
 
         {error && (
-          <div className="bg-red-900/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg">
+          <div className="rounded-lg border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] px-4 py-3 text-[rgb(219,156,153)]">
             {error}
           </div>
         )}
 
         {/* Webhooks Tab */}
         {activeTab === 'webhooks' && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-dashboard-section>
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-slate-100">Webhook Endpoints</h3>
               <Button onClick={() => setCreateModal({ type: 'webhook', show: true })}>
@@ -165,7 +154,7 @@ export default function IntegrationsPage() {
                 {webhooks.map((webhook) => (
                   <div
                     key={webhook.id}
-                    className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2"
+                    className="card p-4 space-y-2"
                   >
                     <div className="flex justify-between items-start">
                       <div>
@@ -226,7 +215,7 @@ export default function IntegrationsPage() {
 
         {/* Email Tab */}
         {activeTab === 'email' && (
-          <div className="space-y-4">
+          <div className="space-y-4" data-dashboard-section>
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-slate-100">Email Templates</h3>
               <Button onClick={handleTestEmail}>Send Test Email</Button>
@@ -241,7 +230,7 @@ export default function IntegrationsPage() {
                   return (
                     <div
                       key={key}
-                      className="bg-slate-800/50 border border-slate-700 rounded-lg p-4 space-y-2"
+                      className="card p-4 space-y-2"
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -293,13 +282,13 @@ export default function IntegrationsPage() {
         {/* Secret Modal */}
         {secretModal.show && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-            <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-semibold text-slate-100 mb-2">Webhook Secret</h3>
+            <div className="mx-4 w-full max-w-md rounded-lg border border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] p-6">
+              <h3 className="mb-2 text-lg font-semibold text-stone-100">Webhook Secret</h3>
               <p className="text-sm text-slate-400 mb-4">
                 Save this secret now. It will not be shown again.
               </p>
-              <div className="bg-slate-900 p-3 rounded border border-slate-700 mb-4">
-                <code className="text-sm text-cyan-400 break-all">{secretModal.secret}</code>
+              <div className="mb-4 rounded border border-[rgba(82,90,99,0.45)] bg-[rgba(22,26,30,0.9)] p-3">
+                <code className="break-all text-sm text-stone-200">{secretModal.secret}</code>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -323,7 +312,7 @@ export default function IntegrationsPage() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }
 
@@ -331,14 +320,12 @@ function EmailDeliveriesList() {
   const [deliveries, setDeliveries] = useState<EmailDelivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
   const [checkingRole, setCheckingRole] = useState(true);
 
   // Check user role first (Admin only)
   useEffect(() => {
     getMe()
       .then((user) => {
-        setUserRole(user.role || null);
         setCheckingRole(false);
         
         // Only fetch deliveries if user is Admin
@@ -377,7 +364,7 @@ function EmailDeliveriesList() {
   // Show error message (including "Admin only" message) instead of crashing
   if (error) {
     return (
-      <div className="bg-slate-800/30 border border-slate-700 rounded p-4 text-center">
+      <div className="card p-4 text-center">
         <p className="text-slate-300">{error}</p>
       </div>
     );
@@ -388,7 +375,7 @@ function EmailDeliveriesList() {
   return (
     <div className="space-y-2">
       {deliveries.slice(0, 10).map((d) => (
-        <div key={d.id} className="bg-slate-800/30 border border-slate-700 rounded p-3 text-sm">
+        <div key={d.id} className="card p-3 text-sm">
           <div className="flex justify-between">
             <span className="text-slate-300">{d.to_email}</span>
             <Badge variant={d.status === 'Success' ? 'success' : 'destructive'}>{d.status}</Badge>

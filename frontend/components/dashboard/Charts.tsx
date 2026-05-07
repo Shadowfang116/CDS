@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import {
@@ -22,29 +22,29 @@ import { TimeseriesEntry, ExceptionsBySeverity } from '@/lib/api';
 
 // Centralized color palette for dark theme
 export const chartPalette = {
-  primary: '#22d3ee',      // Cyan - cases
-  secondary: '#a78bfa',    // Purple - exports
-  tertiary: '#f97316',     // Orange - high exceptions
-  high: '#f43f5e',         // Rose - high severity
-  medium: '#f59e0b',       // Amber - medium severity
-  low: '#22c55e',          // Green - low severity
-  muted: '#475569',        // Slate - grid lines
-  background: '#1e293b',   // Slate-800 - tooltip bg
-  text: '#f1f5f9',         // Slate-100 - text
-  textMuted: '#94a3b8',    // Slate-400 - muted text
-  selected: '#ffffff',     // White - selection highlight
+  primary: '#7a856f',
+  secondary: '#948167',
+  tertiary: '#ab764d',
+  high: '#bd5a56',
+  medium: '#b8975f',
+  low: '#6f8c73',
+  muted: '#4a525b',
+  background: '#1d2227',
+  text: '#eceff2',
+  textMuted: '#a7afb7',
+  selected: '#f5f1e8',
 };
 
 // Status colors for bar chart
 const statusColors: Record<string, string> = {
-  New: '#22d3ee',
-  Processing: '#3b82f6',
-  Review: '#f59e0b',
-  'Pending Docs': '#f97316',
-  'Ready for Approval': '#a78bfa',
-  Approved: '#22c55e',
-  Rejected: '#f43f5e',
-  Closed: '#64748b',
+  New: '#7a856f',
+  Processing: '#6e7a65',
+  Review: '#b8975f',
+  'Pending Docs': '#ab764d',
+  'Ready for Approval': '#6f8c73',
+  Approved: '#6f8c73',
+  Rejected: '#bd5a56',
+  Closed: '#6a737d',
 };
 
 // Severity type
@@ -55,15 +55,15 @@ function CustomTooltip({ active, payload, label, clickHint }: any) {
   if (!active || !payload?.length) return null;
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-xl">
-      <p className="text-xs text-slate-400 mb-1">{label}</p>
+    <div className="rounded-lg border border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] px-3 py-2 shadow-[0_12px_32px_rgba(0,0,0,0.28)]">
+      <p className="mb-1 text-xs text-stone-500">{label}</p>
       {payload.map((entry: any, i: number) => (
         <p key={i} className="text-sm" style={{ color: entry.color }}>
           {entry.name}: <span className="font-semibold">{entry.value}</span>
         </p>
       ))}
       {clickHint && (
-        <p className="text-xs text-cyan-400 mt-1.5 pt-1.5 border-t border-slate-700">
+        <p className="mt-1.5 border-t border-[rgba(82,90,99,0.38)] pt-1.5 text-xs text-stone-400">
           Click to filter
         </p>
       )}
@@ -76,12 +76,12 @@ function ChartEmptyState({ message }: { message: string }) {
   return (
     <div className="flex items-center justify-center h-full">
       <div className="text-center">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-700/50 flex items-center justify-center">
-          <svg className="w-6 h-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md border border-[rgba(82,90,99,0.38)] bg-[rgba(34,39,45,0.9)]">
+          <svg className="h-5 w-5 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0116.5 19.875V4.125z" />
           </svg>
         </div>
-        <p className="text-sm text-slate-500">{message}</p>
+        <p className="text-sm text-stone-500">{message}</p>
       </div>
     </div>
   );
@@ -95,17 +95,21 @@ interface TrendLineChartProps {
 }
 
 export function TrendLineChart({ data, loading, selectedDate, onSelectDate }: TrendLineChartProps) {
-  const hasData = useMemo(() => {
-    return data.some(d => d.cases_created > 0 || d.exports_generated > 0);
+  const displayData = useMemo(() => {
+    return data.length > 14 ? data.slice(-14) : data;
   }, [data]);
+
+  const hasData = useMemo(() => {
+    return displayData.some(d => d.cases_created > 0 || d.exports_generated > 0);
+  }, [displayData]);
 
   // Format date for display
   const formattedData = useMemo(() => {
-    return data.map(d => ({
+    return displayData.map(d => ({
       ...d,
       displayDate: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     }));
-  }, [data]);
+  }, [displayData]);
 
   const handleClick = (e: any) => {
     if (e?.activePayload?.[0]?.payload?.date && onSelectDate) {
@@ -115,22 +119,40 @@ export function TrendLineChart({ data, loading, selectedDate, onSelectDate }: Tr
 
   if (loading) {
     return (
-      <div className="h-64 flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">Loading chart...</div>
+      <div className="h-64 min-w-0 w-full rounded-md border border-[rgba(82,90,99,0.24)] bg-[rgba(18,22,26,0.44)] px-4 py-4">
+        <div className="flex h-full animate-pulse flex-col justify-between">
+          <div className="flex gap-2">
+            <div className="h-3 w-20 rounded bg-[rgba(82,90,99,0.35)]" />
+            <div className="h-3 w-16 rounded bg-[rgba(82,90,99,0.24)]" />
+          </div>
+          <div className="grid h-40 grid-cols-7 items-end gap-2">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <div
+                key={index}
+                className="rounded-sm bg-[rgba(82,90,99,0.22)]"
+                style={{ height: `${35 + ((index % 4) + 1) * 16}px` }}
+              />
+            ))}
+          </div>
+          <div className="flex gap-3">
+            <div className="h-3 w-24 rounded bg-[rgba(82,90,99,0.28)]" />
+            <div className="h-3 w-24 rounded bg-[rgba(82,90,99,0.18)]" />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!hasData) {
     return (
-      <div className="h-64">
+      <div className="h-64 min-w-0 w-full">
         <ChartEmptyState message="No activity in this range" />
       </div>
     );
   }
 
   return (
-    <div className="h-64">
+    <div className="h-64 min-w-0 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart 
           data={formattedData} 
@@ -217,14 +239,14 @@ export function SeverityDonut({ data, loading, selectedSeverity, onSelectSeverit
 
   if (total === 0) {
     return (
-      <div className="h-48">
+      <div className="h-48 min-w-0 w-full">
         <ChartEmptyState message="No open exceptions" />
       </div>
     );
   }
 
   return (
-    <div className="h-48">
+    <div className="h-48 min-w-0 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -257,12 +279,12 @@ export function SeverityDonut({ data, loading, selectedSeverity, onSelectSeverit
               if (!active || !payload?.length) return null;
               const entry = payload[0].payload;
               return (
-                <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-xl">
+                <div className="rounded-lg border border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] px-3 py-2 shadow-[0_12px_32px_rgba(0,0,0,0.28)]">
                   <p className="text-sm" style={{ color: entry.color }}>
                     {entry.name}: <span className="font-semibold">{entry.value}</span>
                   </p>
                   {onSelectSeverity && (
-                    <p className="text-xs text-cyan-400 mt-1.5 pt-1.5 border-t border-slate-700">
+                    <p className="mt-1.5 border-t border-[rgba(82,90,99,0.38)] pt-1.5 text-xs text-stone-400">
                       Click to filter
                     </p>
                   )}
@@ -288,7 +310,7 @@ export function SeverityDonut({ data, loading, selectedSeverity, onSelectSeverit
                 className={`w-2.5 h-2.5 rounded-full ${isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-slate-800' : ''}`}
                 style={{ backgroundColor: entry.color }} 
               />
-              <span className="text-xs text-slate-400">{entry.name}: {entry.value}</span>
+              <span className="text-xs text-stone-400">{entry.name}: {entry.value}</span>
             </button>
           );
         })}
@@ -307,7 +329,7 @@ interface StatusBarChartProps {
 export function StatusBarChart({ data, loading, selectedStatus, onSelectStatus }: StatusBarChartProps) {
   const chartData = useMemo(() => {
     return Object.entries(data)
-      .filter(([_, count]) => count > 0)
+      .filter(([, count]) => count > 0)
       .map(([status, count]) => ({
         status,
         count,
@@ -326,21 +348,21 @@ export function StatusBarChart({ data, loading, selectedStatus, onSelectStatus }
   if (loading) {
     return (
       <div className="h-48 flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">Loading...</div>
+        <div className="animate-pulse text-stone-500">Loading...</div>
       </div>
     );
   }
 
   if (!hasData) {
     return (
-      <div className="h-48">
+      <div className="h-48 min-w-0 w-full">
         <ChartEmptyState message="No cases in this range" />
       </div>
     );
   }
 
   return (
-    <div className="h-48">
+    <div className="h-48 min-w-0 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart 
           data={chartData} 
@@ -370,12 +392,12 @@ export function StatusBarChart({ data, loading, selectedStatus, onSelectStatus }
               if (!active || !payload?.length) return null;
               const entry = payload[0].payload;
               return (
-                <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-xl">
+                <div className="rounded-lg border border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] px-3 py-2 shadow-[0_12px_32px_rgba(0,0,0,0.28)]">
                   <p className="text-sm" style={{ color: entry.color }}>
                     {entry.status}: <span className="font-semibold">{entry.count}</span>
                   </p>
                   {onSelectStatus && (
-                    <p className="text-xs text-cyan-400 mt-1.5 pt-1.5 border-t border-slate-700">
+                    <p className="mt-1.5 border-t border-[rgba(82,90,99,0.38)] pt-1.5 text-xs text-stone-400">
                       Click to filter
                     </p>
                   )}
@@ -419,13 +441,13 @@ export function RadialMeter({ value, label, color = chartPalette.primary, loadin
   if (loading) {
     return (
       <div className="h-32 flex items-center justify-center">
-        <div className="animate-pulse text-slate-500">...</div>
+        <div className="animate-pulse text-stone-500">...</div>
       </div>
     );
   }
 
   return (
-    <div className="h-32 relative">
+    <div className="h-32 relative min-w-0 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <RadialBarChart
           cx="50%"
@@ -451,3 +473,4 @@ export function RadialMeter({ value, label, color = chartPalette.primary, loadin
     </div>
   );
 }
+

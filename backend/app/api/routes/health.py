@@ -41,14 +41,18 @@ async def deep_health_check():
     try:
         import os
         import redis
-        redis_host = os.getenv("REDIS_HOST", "redis")
-        redis_port = int(os.getenv("REDIS_PORT", "6379"))
-        r = redis.Redis(
-            host=redis_host,
-            port=redis_port,
-            db=0,
-            socket_connect_timeout=2,
-        )
+        redis_url = os.getenv("REDIS_URL")
+        if redis_url:
+            r = redis.from_url(redis_url, socket_connect_timeout=2)
+        else:
+            redis_host = os.getenv("REDIS_HOST", "redis")
+            redis_port = int(os.getenv("REDIS_PORT", "6379"))
+            r = redis.Redis(
+                host=redis_host,
+                port=redis_port,
+                db=0,
+                socket_connect_timeout=2,
+            )
         r.ping()
         checks["checks"]["redis"] = {"status": "ok"}
     except Exception as e:

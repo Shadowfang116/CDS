@@ -1,8 +1,10 @@
 """D4: Rule engine models - Exceptions, CPs, Evidence Refs, Rule Runs."""
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Index, Integer, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.db.base import Base
 
 
@@ -13,13 +15,17 @@ class Exception_(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     org_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=False)
-    rule_id = Column(String, nullable=False)
+    rule_id = Column(String, nullable=True)
     module = Column(String, nullable=False)
-    severity = Column(String, nullable=False)  # Low, Medium, High
+    severity = Column(String, nullable=False)  # Critical, High, Medium, Low
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
+    evidence_refs = Column(JSONB, nullable=True)
     cp_text = Column(Text, nullable=True)  # Condition Precedent text
     resolution_conditions = Column(Text, nullable=True)
+    is_manual = Column(Boolean, nullable=False, default=False)
+    source_document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id"), nullable=True)
+    source_page = Column(Integer, nullable=True)
     status = Column(String, nullable=False, default="Open")  # Open, Resolved, Waived
     waiver_reason = Column(Text, nullable=True)
     resolved_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
@@ -42,14 +48,18 @@ class ConditionPrecedent(Base):
     org_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=False)
     rule_id = Column(String, nullable=False)
-    severity = Column(String, nullable=False)  # Low, Medium, High
+    severity = Column(String, nullable=False)  # Critical, High, Medium, Low
     text = Column(Text, nullable=False)
     evidence_required = Column(Text, nullable=True)
+    due_date = Column(DateTime, nullable=True)
     status = Column(String, nullable=False, default="Open")  # Open, Satisfied, Waived
     # Verification satisfaction linkage
     satisfied_by_verification_type = Column(String, nullable=True)  # e_stamp, registry_rod
     satisfied_at = Column(DateTime, nullable=True)
     satisfied_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    waiver_reason = Column(Text, nullable=True)
+    waived_at = Column(DateTime, nullable=True)
+    waived_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     

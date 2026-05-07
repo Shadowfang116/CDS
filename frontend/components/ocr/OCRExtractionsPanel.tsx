@@ -1,28 +1,206 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Drawer } from '@/components/ui/drawer';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   listOCRExtractions,
   editOCRExtraction,
   confirmOCRExtraction,
   rejectOCRExtraction,
   overrideOCRExtraction,
-  getMe,
   OCRExtractionItem,
   OCRExtractionsResponse,
   enqueueOcr,
   autofillDossier,
 } from '@/lib/api';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getCaseDocumentFocusPath } from '@/lib/routes';
+import { getFieldLabelMeta } from '@/lib/field-labels';
 
 interface OCRExtractionsPanelProps {
   caseId: string;
   documents?: Array<{ id: string; original_filename?: string; filename?: string }>;
   onViewDocument?: (documentId: string, pageNumber: number) => void;
+}
+
+const EMPTY_EXTRACTION_COUNTS = {
+  pending: 0,
+  confirmed: 0,
+  rejected: 0,
+} as const;
+
+const WARNING_REASON_LABELS: Record<string, string> = {
+  junk_token_pattern: 'Junk OCR token',
+  short_cnic_candidate: 'CNIC too short',
+  invalid_cnic_format: 'Invalid CNIC format',
+  malformed_amount: 'Invalid amount',
+  invalid_date_format: 'Invalid date',
+  name_high_digit_ratio: 'Name contains digits',
+  short_name_candidate: 'Short name',
+  low_quality_page: 'Low quality page',
+};
+
+function normalizeConfidencePercentage(confidence: number | null): number | null {
+  if (confidence === null) {
+    return null;
+  }
+
+  let normalized = confidence;
+  if (normalized > 1.5 && normalized <= 100) {
+    normalized = normalized / 100;
+  } else if (normalized > 100 && normalized <= 10000) {
+    normalized = normalized / 100;
+    if (normalized > 1.0) {
+      normalized = 1.0;
+    }
+  }
+
+  normalized = Math.max(0.0, Math.min(1.0, normalized));
+  return Math.max(0, Math.min(100, Math.round(normalized * 100)));
+}
+
+function getWarningReasonLabel(reason?: string | null): string | null {
+  if (!reason) {
+    return null;
+  }
+
+  return WARNING_REASON_LABELS[reason] ?? reason;
+}
+
+function isNeedsReviewCandidate(item: OCRExtractionItem): boolean {
+  if (item.review_status === 'needs_review' || item.needs_review === true) {
+    return true;
+  }
+
+  return Boolean(item.is_low_quality && item.status === 'Pending');
+}
+
+type ConfidenceState = 'GOOD' | 'LOW' | 'REVIEW_REQUIRED';
+
+const FIELD_KEY_ALIASES: Record<string, string> = {
+  'property.plot_number': 'property.plot_no',
+  'party.name.seller': 'party.name.raw',
+  'party.seller.names': 'party.name.raw',
+};
+
+const FIELD_GUIDANCE: Record<string, string> = {
+  'party.name.raw': 'Verify name matches sale deed exactly',
+  'property.scheme_name': 'Must match approved society name (e.g. DHA, Bahria Town)',
+  'property.plot_no': 'Cross-check with registry records',
+};
+
+const PROPERTY_DETAIL_FIELDS = new Set([
+  'property.scheme_name',
+  'property.phase',
+  'property.block',
+  'property.plot_no',
+  'property.plot_number',
+]);
+
+const OWNERSHIP_FIELDS = new Set([
+  'party.name.raw',
+  'party.name.seller',
+  'party.seller.names',
+  'party.name.borrower',
+  'party.name.buyer',
+  'party.buyer.names',
+]);
+
+function normalizeFieldKey(fieldKey: string): string {
+  return FIELD_KEY_ALIASES[fieldKey] ?? fieldKey;
+}
+
+function getConfidenceState(item: OCRExtractionItem): ConfidenceState {
+  const quality = (item.quality_level || '').toUpperCase();
+  if (item.review_status === 'needs_review' || item.needs_review || quality === 'REVIEW_REQUIRED') {
+    return 'REVIEW_REQUIRED';
+  }
+
+  if (item.is_low_quality || quality === 'LOW' || quality === 'LOW_CONFIDENCE') {
+    return 'LOW';
+  }
+
+  return 'GOOD';
+}
+
+function getConfidencePriority(item: OCRExtractionItem): number {
+  const state = getConfidenceState(item);
+  if (state === 'REVIEW_REQUIRED') {
+    return 0;
+  }
+
+  if (state === 'LOW') {
+    return 1;
+  }
+
+  return 2;
+}
+
+function getSectionName(fieldKey: string): 'Property Details' | 'Ownership' | 'Other Fields' {
+  const normalized = normalizeFieldKey(fieldKey);
+  if (PROPERTY_DETAIL_FIELDS.has(normalized)) {
+    return 'Property Details';
+  }
+
+  if (OWNERSHIP_FIELDS.has(normalized)) {
+    return 'Ownership';
+  }
+
+  return 'Other Fields';
+}
+
+function getFieldPresentation(fieldKey: string): { label: string; subtitle: string; guidance?: string } {
+  const normalized = normalizeFieldKey(fieldKey);
+  const meta = getFieldLabelMeta(normalized);
+  return {
+    ...meta,
+    guidance: FIELD_GUIDANCE[normalized],
+  };
+}
+
+function getConfidenceBadgeClass(state: ConfidenceState): string {
+  if (state === 'REVIEW_REQUIRED') {
+    return 'bg-red-100 text-red-800';
+  }
+
+  if (state === 'LOW') {
+    return 'bg-yellow-100 text-yellow-800';
+  }
+
+  return 'bg-green-100 text-green-800';
+}
+
+function getConfidenceMessage(state: ConfidenceState): string | null {
+  if (state === 'LOW') {
+    return 'Low confidence — please verify before confirming';
+  }
+
+  if (state === 'REVIEW_REQUIRED') {
+    return 'This field likely requires manual review (handwritten or unclear source)';
+  }
+
+  return null;
+}
+
+function normalizeExtractionsResponse(
+  response: OCRExtractionsResponse | null | undefined
+): OCRExtractionsResponse | null {
+  if (!response) {
+    return null;
+  }
+
+  return {
+    ...response,
+    counts: {
+      ...EMPTY_EXTRACTION_COUNTS,
+      ...(response.counts ?? {}),
+    },
+    items: Array.isArray(response.items) ? response.items : [],
+  };
 }
 
 export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: OCRExtractionsPanelProps) {
@@ -46,30 +224,33 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
   const [abortControllers, setAbortControllers] = useState<Map<string, AbortController>>(new Map());
   const [forceConfirmingId, setForceConfirmingId] = useState<string | null>(null);
   const [forceConfirmReason, setForceConfirmReason] = useState<string>('');
-  const [forceFormattingId, setForceFormattingId] = useState<string | null>(null);
-  const [forceFormatNote, setForceFormatNote] = useState<string>('');
-  const [forceFormatAccepted, setForceFormatAccepted] = useState(false);
-  const [userRole, setUserRole] = useState<string>('Reviewer');
   const [overridingId, setOverridingId] = useState<string | null>(null);
   const [overrideValue, setOverrideValue] = useState<string>('');
   const [overrideNote, setOverrideNote] = useState<string>('');
   const [viewingEvidenceId, setViewingEvidenceId] = useState<string | null>(null);
+  const [panelError, setPanelError] = useState<string | null>(null);
 
   const loadExtractions = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await listOCRExtractions(caseId, statusFilter === 'all' ? undefined : statusFilter);
+      const result = normalizeExtractionsResponse(
+        await listOCRExtractions(caseId, statusFilter === 'all' ? undefined : statusFilter)
+      );
+      if (!result) {
+        throw new Error('Failed to load OCR extractions');
+      }
       setData(result);
+      setPanelError(null);
       
       // Always fetch full counts (without filter) to get accurate totals
       if (statusFilter !== 'all') {
-        const fullResult = await listOCRExtractions(caseId, undefined);
-        setFullCounts(fullResult.counts);
+        const fullResult = normalizeExtractionsResponse(await listOCRExtractions(caseId, undefined));
+        setFullCounts(fullResult?.counts ?? EMPTY_EXTRACTION_COUNTS);
       } else {
         setFullCounts(result.counts);
       }
     } catch (e: any) {
-      console.error('Failed to load OCR extractions:', e);
+      setPanelError(e.message || 'Failed to load OCR extractions');
     } finally {
       setLoading(false);
     }
@@ -81,16 +262,36 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
     if (urlFilter !== statusFilter) {
       setStatusFilter(urlFilter);
     }
-  }, [searchParams]);
+  }, [searchParams, statusFilter]);
 
   useEffect(() => {
-    loadExtractions();
-    getMe().then(data => {
-      if (data?.role) {
-        setUserRole(data.role);
-      }
-    }).catch(() => {});
+    void loadExtractions();
   }, [loadExtractions]);
+
+  const counts = data?.counts ?? EMPTY_EXTRACTION_COUNTS;
+  const items = useMemo(() => {
+    const sourceItems = Array.isArray(data?.items) ? data.items : [];
+
+    const groupedOrder: Record<'Property Details' | 'Ownership' | 'Other Fields', number> = {
+      'Property Details': 0,
+      Ownership: 1,
+      'Other Fields': 2,
+    };
+
+    return [...sourceItems].sort((left, right) => {
+      const confidenceDelta = getConfidencePriority(left) - getConfidencePriority(right);
+      if (confidenceDelta !== 0) {
+        return confidenceDelta;
+      }
+
+      const sectionDelta = groupedOrder[getSectionName(left.field_key)] - groupedOrder[getSectionName(right.field_key)];
+      if (sectionDelta !== 0) {
+        return sectionDelta;
+      }
+
+      return left.field_key.localeCompare(right.field_key);
+    });
+  }, [data?.items]);
 
   const handleEditChange = (item: OCRExtractionItem, value: string) => {
     // Update local edit value immediately
@@ -128,7 +329,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
         await loadExtractions();
       } catch (e: any) {
         if (e.name !== 'AbortError') {
-          console.error('Failed to save edit:', e);
+          setPanelError(e.message || 'Failed to save extraction edit');
           alert(`Failed to save edit: ${e.message || 'Unknown error'}`);
         }
       } finally {
@@ -195,20 +396,14 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
         setForceConfirmReason('');
       }
     } catch (error: any) {
-      console.error('Failed to confirm extraction:', error);
+      setPanelError(error.message || 'Failed to confirm extraction');
       
       // Revert optimistic update on error by reloading
       await loadExtractions();
       
       // P14: Check for format validation error
       if (error.message && error.message.includes('format') && error.message.includes('force_format')) {
-        if (userRole === 'Admin') {
-          setForceFormattingId(item.id);
-          setForceFormatNote('');
-          setForceFormatAccepted(false);
-        } else {
-          alert(`Format invalid - please edit value to match required format: ${error.message}`);
-        }
+        alert(`Format invalid - please edit value to match required format: ${error.message}`);
         return;
       }
       
@@ -247,7 +442,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
       setOverrideValue('');
       setOverrideNote('');
     } catch (error: any) {
-      console.error('Failed to override extraction:', error);
+      setPanelError(error.message || 'Failed to override extraction');
       alert(`Failed to override: ${error.message || 'Unknown error'}`);
     }
   };
@@ -293,7 +488,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
       setRejectingId(null);
       setRejectReason('');
     } catch (error: any) {
-      console.error('Failed to reject extraction:', error);
+      setPanelError(error.message || 'Failed to reject extraction');
       
       // Revert optimistic update on error
       await loadExtractions();
@@ -319,28 +514,43 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
   }
 
   if (!data) {
-    return <div className="text-slate-400">No extractions found</div>;
+    return (
+      <EmptyState
+        title="OCR Extractions unavailable."
+        description={panelError ?? 'No OCR extractions are available for this case yet.'}
+        className="min-h-[220px]"
+      />
+    );
   }
 
-  const items = data.items;
   const isEdited = (item: OCRExtractionItem) => item.edited_value !== null && item.edited_value !== item.proposed_value;
+  const totalExtractions =
+    (fullCounts?.pending ?? counts.pending) +
+    (fullCounts?.confirmed ?? counts.confirmed) +
+    (fullCounts?.rejected ?? counts.rejected);
 
   return (
     <div className="space-y-4">
+      {panelError ? (
+        <div className="rounded-lg border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] px-4 py-3 text-sm text-[rgb(219,156,153)]">
+          {panelError}
+        </div>
+      ) : null}
+
       {/* Header with counts and filters */}
       <div className="flex justify-between items-center">
         <div className="flex gap-4 items-center">
           <div>
             <span className="text-slate-400">Confirmed: </span>
-            <span className="font-semibold text-green-400">{fullCounts?.confirmed ?? data.counts.confirmed}</span>
+            <span className="font-semibold text-green-400">{fullCounts?.confirmed ?? counts.confirmed}</span>
           </div>
           <div>
             <span className="text-slate-400">Pending: </span>
-            <span className="font-semibold text-yellow-400">{fullCounts?.pending ?? data.counts.pending}</span>
+            <span className="font-semibold text-yellow-400">{fullCounts?.pending ?? counts.pending}</span>
           </div>
           <div>
             <span className="text-slate-400">Rejected: </span>
-            <span className="font-semibold text-red-400">{fullCounts?.rejected ?? data.counts.rejected}</span>
+            <span className="font-semibold text-red-400">{fullCounts?.rejected ?? counts.rejected}</span>
           </div>
         </div>
         <div className="flex gap-2">
@@ -406,12 +616,12 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
           {statusFilter === 'pending' ? (
             <div className="space-y-4">
               {/* Improved empty state for pending=0 but confirmed>0 */}
-              {(fullCounts?.confirmed ?? data.counts.confirmed) > 0 || (fullCounts?.rejected ?? data.counts.rejected) > 0 ? (
+              {(fullCounts?.confirmed ?? counts.confirmed) > 0 || (fullCounts?.rejected ?? counts.rejected) > 0 ? (
                 <div className="space-y-3">
                   <div className="space-y-2">
                     <p className="text-slate-300 font-medium">No pending OCR extractions found.</p>
                     <p className="text-sm text-slate-500">
-                      Confirmed: {fullCounts?.confirmed ?? data.counts.confirmed}. {(fullCounts?.rejected ?? data.counts.rejected) > 0 ? `Rejected: ${fullCounts?.rejected ?? data.counts.rejected}. ` : ''}
+                      Confirmed: {fullCounts?.confirmed ?? counts.confirmed}. {(fullCounts?.rejected ?? counts.rejected) > 0 ? `Rejected: ${fullCounts?.rejected ?? counts.rejected}. ` : ''}
                       Use 'All' or 'Confirmed' to review.
                     </p>
                   </div>
@@ -452,7 +662,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                     </p>
                   </div>
                   {/* Empty state CTAs */}
-                  {(fullCounts?.confirmed ?? data.counts.confirmed) === 0 && (fullCounts?.rejected ?? data.counts.rejected) === 0 && (
+                  {(fullCounts?.confirmed ?? counts.confirmed) === 0 && (fullCounts?.rejected ?? counts.rejected) === 0 && (
                     <div className="flex flex-col gap-3 items-center pt-4">
                       {documents && documents.length > 0 ? (
                         <>
@@ -464,8 +674,8 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                                 for (const doc of documents) {
                                   try {
                                     await enqueueOcr(doc.id, false);
-                                  } catch (e: any) {
-                                    console.error(`Failed to run OCR for ${doc.id}:`, e);
+                                  } catch {
+                                    setPanelError(`Failed to queue OCR for document ${doc.id}.`);
                                   }
                                 }
                                 alert('OCR processing started for all documents. This may take a few moments.');
@@ -507,77 +717,108 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
               )}
             </div>
           ) : (
-            <p>No {statusFilter === 'all' ? '' : statusFilter} extractions found</p>
+            totalExtractions === 0 ? (
+              <EmptyState
+                title="No OCR extractions yet"
+                description={
+                  documents.length > 0
+                    ? 'Run OCR and autofill to generate extraction candidates for this case.'
+                    : 'Upload documents first, then run OCR and autofill to generate extraction candidates.'
+                }
+                className="min-h-[220px]"
+              />
+            ) : (
+              <p>No {statusFilter === 'all' ? '' : statusFilter} extractions found</p>
+            )
           )}
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="bg-slate-800 border border-slate-700 rounded-lg p-4"
-              onClick={(e) => e.stopPropagation()}
-            >
+                    {items.map((item, index) => {
+            const confidencePercent = normalizeConfidencePercentage(item.confidence);
+            const warningLabel = getWarningReasonLabel(item.warning_reason);
+            const needsReview = isNeedsReviewCandidate(item);
+            const autofillBlocked = item.review_status === 'needs_review' || (needsReview && item.status === 'Pending');
+            const fieldPresentation = getFieldPresentation(item.field_key);
+            const confidenceState = getConfidenceState(item);
+            const confidenceMessage = getConfidenceMessage(confidenceState);
+            const sectionName = getSectionName(item.field_key);
+            const previousSection = index > 0 ? getSectionName(items[index - 1].field_key) : null;
+            const showSectionHeader = sectionName !== previousSection;
+
+            return (
+              <div key={item.id} className="space-y-2">
+                {showSectionHeader ? (
+                  <div className="pt-2">
+                    <div className="text-sm font-semibold text-stone-200">{sectionName}</div>
+                    <div className="mt-1 h-px w-full bg-[rgba(82,90,99,0.35)]" />
+                  </div>
+                ) : null}
+                <div
+                  className="rounded-lg border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] p-4"
+                  onClick={(e) => e.stopPropagation()}
+                >
               <div className="flex gap-4 items-start">
                 {/* Left: Field key + metadata */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm font-medium text-cyan-400">{item.field_key}</span>
+                                    <div className="mb-2 flex flex-wrap items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-stone-100">{fieldPresentation.label}</span>
+                        <span
+                          className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full border border-[rgba(127,138,149,0.45)] text-[10px] text-stone-300"
+                          title={fieldPresentation.guidance || fieldPresentation.subtitle}
+                          aria-label={fieldPresentation.guidance || fieldPresentation.subtitle}
+                        >
+                          i
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-stone-500">{fieldPresentation.subtitle}</p>
+                      {fieldPresentation.guidance ? (
+                        <p className="mt-1 text-xs text-[rgb(194,200,185)]">i {fieldPresentation.guidance}</p>
+                      ) : null}
+                    </div>
+                    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${getConfidenceBadgeClass(confidenceState)}`}>
+                      {confidenceState}
+                    </span>
                     {isEdited(item) && (
                       <Badge variant="outline" className="text-xs">Edited</Badge>
                     )}
                     {item.is_overridden && (
-                      <Badge className="bg-purple-600" title={item.override_note || 'Manually overridden'}>
+                      <Badge variant="neutral" className="text-xs">
                         Manual Override
                       </Badge>
                     )}
                     {item.status === 'Confirmed' && (
-                      <Badge className="bg-green-600">Confirmed</Badge>
+                      <Badge variant="success">Confirmed</Badge>
                     )}
                     {item.status === 'Rejected' && (
-                      <Badge className="bg-red-600">Rejected</Badge>
+                      <Badge variant="error">Rejected</Badge>
                     )}
-                    {item.is_low_quality && item.status === 'Pending' && (
-                      <Badge variant="destructive" className="text-xs bg-amber-600/30 text-amber-200">
-                        Low Quality OCR
+                    {autofillBlocked ? (
+                      <Badge variant="error" className="text-xs">
+                        Autofill Blocked
                       </Badge>
-                    )}
-                    {item.quality_level && item.status === 'Pending' && (
-                      <Badge variant="outline" className="text-xs">
-                        Quality: {item.quality_level}
-                      </Badge>
-                    )}
+                    ) : null}
                     {item.extraction_method && (
-                      <Badge variant="outline" className="text-xs bg-blue-600/20 text-blue-300 border-blue-500/30">
+                      <Badge variant="outline" className="text-xs">
                         {item.extraction_method}
-                        {item.evidence_json?.label && ` • ${item.evidence_json.label}`}
+                        {item.evidence_json?.label && ` · ${item.evidence_json.label}`}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-xs text-slate-400 mb-2">
+                  {confidenceMessage && item.status === 'Pending' ? (
+                    <p className="mb-2 text-xs text-stone-300">{confidenceMessage}</p>
+                  ) : null}
+                  <p className="mb-2 text-xs text-stone-400">
                     {item.document_name} · p.{item.page_number}
-                    {item.confidence !== null && (() => {
-                      // Normalize confidence: if > 1.5, treat as percentage and divide by 100
-                      let normalized = item.confidence;
-                      if (normalized > 1.5 && normalized <= 100) {
-                        normalized = normalized / 100;
-                      } else if (normalized > 100 && normalized <= 10000) {
-                        normalized = (normalized / 100);
-                        if (normalized > 1.0) normalized = 1.0;
-                      }
-                      // Clamp to [0.0, 1.0]
-                      normalized = Math.max(0.0, Math.min(1.0, normalized));
-                      // Convert to percentage and clamp to 0-100
-                      const percent = Math.max(0, Math.min(100, Math.round(normalized * 100)));
-                      return ` · confidence ${percent}%`;
-                    })()}
+                    {confidencePercent !== null ? ` · confidence ${confidencePercent}%` : ''}
                   </p>
-                  {item.is_low_quality && item.status === 'Pending' && item.warning_reason && (
-                    <p className="text-xs text-amber-300 mb-2">
-                      Warning: {item.warning_reason}
+                  {warningLabel && item.status === 'Pending' ? (
+                    <p className="mb-2 text-xs text-stone-500">
+                      Warning: {warningLabel}
                     </p>
-                  )}
-                  
+                  ) : null}
                   {/* Middle: Editable input (for pending) or read-only (for confirmed/rejected) */}
                   {item.status === 'Pending' ? (
                     <input
@@ -596,11 +837,11 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                         }
                       }}
                       disabled={savingEdit.has(item.id)}
-                      className="w-full bg-slate-900 border border-slate-600 rounded px-3 py-2 text-slate-100 text-sm disabled:opacity-50"
+                      className="w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(14,18,22,0.72)] px-3 py-2 text-sm text-stone-100 disabled:opacity-50"
                       placeholder="Enter value..."
                     />
                   ) : (
-                    <div className="text-slate-100 font-medium">
+                    <div className="font-medium text-stone-100">
                       {item.final_value || item.proposed_value}
                     </div>
                   )}
@@ -608,7 +849,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                   {/* Evidence snippet preview (prefer evidence_json.snippet, fallback to snippet) */}
                   {(item.evidence_json?.snippet || item.snippet) && (
                     <div className="mt-2 space-y-1">
-                      <p className="text-xs text-slate-500 italic line-clamp-2">
+                      <p className="line-clamp-2 text-xs italic text-stone-500">
                         "{item.evidence_json?.snippet || item.snippet}"
                       </p>
                       {item.evidence_json && (
@@ -618,7 +859,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                             e.stopPropagation();
                             setViewingEvidenceId(item.id);
                           }}
-                          className="text-xs text-cyan-400 hover:text-cyan-300 underline"
+                          className="text-xs text-[rgb(194,200,185)] underline transition-colors hover:text-stone-100"
                         >
                           View evidence
                         </button>
@@ -636,15 +877,10 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                         variant="default"
                         onClick={(e) => handleConfirm(item, e)}
                         disabled={confirming.has(item.id) || savingEdit.has(item.id)}
-                        className={item.is_low_quality ? 'bg-amber-600 hover:bg-amber-700' : ''}
+                        className={confidenceState !== 'GOOD' ? 'border-[rgba(184,151,95,0.72)] bg-[rgba(184,151,95,0.22)] text-[rgb(219,194,137)] shadow-none hover:bg-[rgba(184,151,95,0.28)]' : ''}
                       >
-                        {confirming.has(item.id) ? 'Confirming...' : item.is_low_quality ? 'Force Confirm' : 'Confirm → Write to dossier'}
+                        {confirming.has(item.id) ? 'Confirming...' : confidenceState !== 'GOOD' ? 'Force Confirm' : 'Confirm -> Write to dossier'}
                       </Button>
-                      {item.is_low_quality && (
-                        <span className="text-xs text-amber-400 ml-1" title={item.warning_reason || 'Low OCR quality'}>
-                          ⚠️
-                        </span>
-                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -686,8 +922,10 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                   )}
                 </div>
               </div>
-            </div>
-          ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -701,7 +939,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
             </p>
             {data?.items.find(i => i.id === forceConfirmingId)?.warning_reason && (
               <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded text-sm text-amber-300">
-                {data.items.find(i => i.id === forceConfirmingId)?.warning_reason}
+                {getWarningReasonLabel(data.items.find(i => i.id === forceConfirmingId)?.warning_reason)}
               </div>
             )}
             <div className="mb-4">
@@ -735,7 +973,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                     handleConfirm(item, e, true);
                   }
                 }}
-                disabled={!forceConfirmReason.trim() || (forceConfirmingId && confirming.has(forceConfirmingId))}
+                disabled={!forceConfirmReason.trim() || Boolean(forceConfirmingId && confirming.has(forceConfirmingId))}
               >
                 {forceConfirmingId && confirming.has(forceConfirmingId) ? 'Confirming...' : 'Force Confirm'}
               </Button>
@@ -806,6 +1044,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
         const item = data?.items.find(i => i.id === viewingEvidenceId);
         if (!item || !item.evidence_json) return null;
         const evidence = item.evidence_json;
+        const evidenceFieldPresentation = getFieldPresentation(item.field_key);
         return (
           <Drawer
             open={true}
@@ -816,8 +1055,9 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
             <div className="p-6 space-y-4">
               <div className="space-y-2">
                 <div>
-                  <span className="text-sm font-medium text-slate-400">Field Key:</span>
-                  <p className="text-slate-100">{item.field_key}</p>
+                  <span className="text-sm font-medium text-slate-400">Field:</span>
+                  <p className="text-slate-100">{evidenceFieldPresentation.label}</p>
+                  <p className="text-xs text-slate-500">{evidenceFieldPresentation.subtitle}</p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-slate-400">Proposed Value:</span>
@@ -840,14 +1080,13 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        const params = new URLSearchParams();
-                        params.set('tab', 'documents');
-                        params.set('focusDocId', item.document_id);
-                        params.set('focusPage', String(item.page_number));
-                        if (item.id) {
-                          params.set('focusCandidateId', item.id);
+                        if (onViewDocument) {
+                          onViewDocument(item.document_id, item.page_number);
+                          return;
                         }
-                        router.push(`/cases/${caseId}?${params.toString()}`);
+                        router.push(
+                          getCaseDocumentFocusPath(caseId, item.document_id, item.page_number, item.id)
+                        );
                       }}
                       className="ml-4"
                     >
@@ -969,7 +1208,7 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
               <Button
                 variant="default"
                 onClick={(e) => handleReject(e)}
-                disabled={!rejectReason.trim() || (rejectingId && rejecting.has(rejectingId))}
+                disabled={!rejectReason.trim() || Boolean(rejectingId && rejecting.has(rejectingId))}
               >
                 {rejectingId && rejecting.has(rejectingId) ? 'Rejecting...' : 'Reject'}
               </Button>
@@ -980,4 +1219,17 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 

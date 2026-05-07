@@ -8,21 +8,20 @@ from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.core.config import settings
+from app.core.roles import validate_role_for_creation
+from app.core.security import get_password_hash
 from app.models.case import Case
 from app.models.document import Document, DocumentPage, CaseDossierField
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef, RuleRun
 from app.models.export import Export
 from app.models.user import User, UserOrgRole
 from app.models.audit_log import AuditLog
-from app.api.deps import get_current_user, CurrentUser, require_role, require_tenant_scope
+from app.api.deps import CurrentUser, require_admin, require_tenant_scope
 from app.services.audit import write_audit_event
+from app.services.demo_seed import seed_demo_data
 from app.services.storage import delete_object, delete_objects_by_prefix
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-
-
-# Admin-only routes use Depends(require_role("Admin")) instead of require_admin().
-
 
 # ============================================================
 # SCHEMAS
@@ -61,7 +60,7 @@ async def delete_case(
     request: Request,
     case_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """
@@ -196,7 +195,7 @@ async def delete_export(
     request: Request,
     export_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Delete an export and its MinIO object (Admin only, tenant-scoped)."""
@@ -256,7 +255,7 @@ async def delete_document(
     request: Request,
     document_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Delete a document, its pages, and MinIO objects (Admin only, tenant-scoped)."""
@@ -325,7 +324,7 @@ async def delete_document(
 async def run_retention_cleanup(
     request: Request,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """
@@ -463,6 +462,7 @@ class UserCreateRequest(BaseModel):
     email: str
     full_name: str
     role: str  # Admin, Reviewer, Approver, Viewer
+    temporary_password: str
 
 
 class UserUpdateRequest(BaseModel):
@@ -483,7 +483,7 @@ class AuditLogResponse(BaseModel):
 async def list_users(
     request: Request,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """List all users in the org (Admin only)."""
@@ -514,15 +514,14 @@ async def create_user(
     request: Request,
     body: UserCreateRequest,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
-    """Create a user in the org with a role (Admin only, dev mode)."""
-    
-    # Validate role
-    valid_roles = ["Admin", "Reviewer", "Approver", "Viewer"]
-    if body.role not in valid_roles:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
+    """Create a user in the org with a temporary password (Admin only)."""
+
+    canonical_role = validate_role_for_creation(body.role)
+    if not body.temporary_password.strip():
+        raise HTTPException(status_code=400, detail="temporary_password is required")
     
     # Check if user exists
     user = db.query(User).filter(User.email == body.email).first()
@@ -531,9 +530,17 @@ async def create_user(
         user = User(
             email=body.email,
             full_name=body.full_name,
+            password_hash=get_password_hash(body.temporary_password),
+            is_active=True,
+            must_change_password=True,
         )
         db.add(user)
         db.flush()
+    else:
+        user.full_name = body.full_name
+        user.password_hash = get_password_hash(body.temporary_password)
+        user.is_active = True
+        user.must_change_password = True
     
     existing_role = db.query(UserOrgRole).filter(
         UserOrgRole.user_id == user.id,
@@ -546,7 +553,7 @@ async def create_user(
     user_role = UserOrgRole(
         user_id=user.id,
         org_id=org_id,
-        role=body.role,
+        role=canonical_role,
     )
     db.add(user_role)
     db.commit()
@@ -557,12 +564,21 @@ async def create_user(
         db=db,
         org_id=current_user.org_id,
         actor_user_id=current_user.user_id,
-        action="admin.user_create",
+        action="auth.user_created",
         entity_type="user",
         entity_id=user.id,
+        case_id=None,
+        ip_address=request.client.host if request.client else None,
+        after_snapshot={
+            "email": body.email,
+            "role": canonical_role,
+            "is_active": user.is_active,
+            "must_change_password": user.must_change_password,
+        },
         event_metadata={
             "email": body.email,
-            "role": body.role,
+            "role": canonical_role,
+            "must_change_password": user.must_change_password,
         },
     )
     
@@ -570,7 +586,7 @@ async def create_user(
         id=str(user.id),
         email=user.email,
         full_name=user.full_name,
-        role=body.role,
+        role=canonical_role,
         created_at=user.created_at,
     )
 
@@ -581,13 +597,11 @@ async def update_user_role(
     user_id: uuid.UUID,
     body: UserUpdateRequest,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """Update a user's role in the org (Admin only)."""
-    valid_roles = ["Admin", "Reviewer", "Approver", "Viewer"]
-    if body.role not in valid_roles:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
+    canonical_role = validate_role_for_creation(body.role)
     
     user_role = db.query(UserOrgRole).filter(
         UserOrgRole.user_id == user_id,
@@ -598,7 +612,7 @@ async def update_user_role(
         raise HTTPException(status_code=404, detail="User not found in this org")
     
     old_role = user_role.role
-    user_role.role = body.role
+    user_role.role = canonical_role
     db.commit()
     
     # Get user
@@ -609,13 +623,13 @@ async def update_user_role(
         db=db,
         org_id=current_user.org_id,
         actor_user_id=current_user.user_id,
-        action="admin.user_update",
+        action="auth.role_change",
         entity_type="user",
         entity_id=user_id,
         event_metadata={
             "email": user.email if user else None,
             "old_role": old_role,
-            "new_role": body.role,
+            "new_role": canonical_role,
         },
     )
     
@@ -623,7 +637,7 @@ async def update_user_role(
         id=str(user_id),
         email=user.email if user else "",
         full_name=user.full_name if user else "",
-        role=body.role,
+        role=canonical_role,
         created_at=user.created_at if user else datetime.utcnow(),
     )
 
@@ -632,7 +646,7 @@ async def update_user_role(
 async def smoke_ping(
     request: Request,
     event: str,
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """
@@ -640,6 +654,9 @@ async def smoke_ping(
     Events: smoke.run_start, smoke.run_complete, smoke.ocr_done
     """
     
+    if settings.APP_ENV == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
     # Write audit event
     write_audit_event(
         db=db,
@@ -660,7 +677,7 @@ async def smoke_ping(
 @router.get("/migrations/status", response_model=MigrationsStatusResponse)
 async def migrations_status(
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """
@@ -696,7 +713,7 @@ async def migrations_status(
 @router.get("/build-info", response_model=BuildInfoResponse)
 async def build_info(
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
 ):
     """
     Admin-only. Returns app_env, optional build_sha/build_time (from env), and optional code head revisions.
@@ -738,7 +755,7 @@ async def list_audit_logs(
     limit: int = 200,
     action_prefix: Optional[str] = None,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(require_role("Admin")),
+    current_user: CurrentUser = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
     """List audit logs for the org (Admin only)."""
@@ -767,4 +784,29 @@ async def list_audit_logs(
         )
         for log in logs
     ]
+
+
+@router.post("/demo/reset")
+@router.get("/reset-demo")
+@router.post("/reset-demo-case")
+async def reset_demo(
+    request: Request,
+    current_user: CurrentUser = Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    if not settings.DEMO_MODE:
+        raise HTTPException(status_code=403, detail="DEMO_MODE must be enabled for this endpoint.")
+
+    result = seed_demo_data(db)
+    write_audit_event(
+        db=db,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.user_id,
+        action="admin.reset_demo",
+        entity_type="system",
+        entity_id="demo-seed",
+        event_metadata=result,
+        request_id=getattr(request.state, "request_id", None),
+    )
+    return {"message": "Pilot sample case reset", **result}
 

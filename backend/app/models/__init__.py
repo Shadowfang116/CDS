@@ -17,6 +17,7 @@ from app.models.email_template import EmailTemplate, EmailDelivery
 from app.models.ocr_extraction import OCRExtractionCandidate
 from app.models.dossier_field_history import DossierFieldHistory
 from app.models.ocr_text_correction import OCRTextCorrection
+from app.models.evaluation import GoldenCaseExpectation, EvaluationRun, EvaluationFinding
 
 __all__ = [
     "Org", "User", "UserOrgRole", "Case", "AuditLog", 
@@ -35,5 +36,6 @@ __all__ = [
     "OCRExtractionCandidate",
     "DossierFieldHistory",
     "OCRTextCorrection",
+    "GoldenCaseExpectation", "EvaluationRun", "EvaluationFinding",
 ]
 

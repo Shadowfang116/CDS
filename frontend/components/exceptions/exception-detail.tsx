@@ -52,12 +52,12 @@ export function ExceptionDetail(props: {
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <CardTitle className="text-sm">{ex.title}</CardTitle>
-            <div className="mt-1 text-xs text-muted-foreground">
-              ID: {ex.id} • Module: {ex.module}
+            <CardTitle>{ex.title}</CardTitle>
+            <div className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              {ex.module} · {ex.id}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -68,14 +68,14 @@ export function ExceptionDetail(props: {
       </CardHeader>
 
       <CardContent className="space-y-3">
-        <div className="text-sm">{ex.description}</div>
+        <div className="text-sm leading-6 text-stone-200">{ex.description}</div>
 
         {ex.cp_text ? (
           <>
             <Separator />
             <div>
               <div className="text-xs font-medium text-muted-foreground">Recommended CP</div>
-              <div className="mt-1 text-sm">{ex.cp_text}</div>
+              <div className="mt-1 text-sm leading-6 text-stone-200">{ex.cp_text}</div>
             </div>
           </>
         ) : null}
@@ -85,7 +85,7 @@ export function ExceptionDetail(props: {
             <Separator />
             <div>
               <div className="text-xs font-medium text-muted-foreground">Waiver Reason</div>
-              <div className="mt-1 text-sm">{ex.waiver_reason}</div>
+              <div className="mt-1 text-sm leading-6 text-stone-200">{ex.waiver_reason}</div>
             </div>
           </>
         ) : null}
@@ -143,7 +143,7 @@ export function ExceptionDetail(props: {
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Role: {role}. Next: enforce RBAC server-side + write audit log entries.
+          Active role: {role}. Final approval control and audit enforcement remain server-side.
         </div>
       </CardContent>
     </Card>

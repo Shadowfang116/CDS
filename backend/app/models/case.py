@@ -21,6 +21,10 @@ class Case(Base):
     decided_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     decision_notes = Column(JSONB, nullable=True)  # {rationale, conditions[], effective_date}
     
+    # Ownership (Phase 5)
+    assigned_to_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    dossier_json = Column(JSONB, nullable=True)
+    
     __table_args__ = (
         Index("idx_cases_org_created", "org_id", "created_at"),
         Index("idx_cases_org_status", "org_id", "status"),

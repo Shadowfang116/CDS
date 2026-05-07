@@ -9,12 +9,13 @@ from sqlalchemy import func
 
 from app.db.session import get_db
 from app.models.document import Document, DocumentPage
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import CurrentUser, require_reviewer, require_viewer
 from app.services.audit import write_audit_event
 from app.workers.tasks_ocr import process_document_ocr
 from app.core.config import settings
 
 router = APIRouter(tags=["ocr"])
+IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/tiff", "image/tif"}
 
 
 class OCREnqueueResponse(BaseModel):
@@ -72,34 +73,55 @@ async def enqueue_document_ocr(
     request: Request,
     document_id: uuid.UUID,
     force: bool = False,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """Enqueue OCR processing for a document's pages. Use force=true to re-process Done pages."""
-    # Validate document exists and belongs to org
     document = db.query(Document).filter(
         Document.id == document_id,
         Document.org_id == current_user.org_id,
     ).first()
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
-    
-    # Check document is in Split status
-    if document.status != "Split":
+
+    expected_status = "Uploaded" if document.content_type in IMAGE_CONTENT_TYPES else "Split"
+    if document.status != expected_status:
         raise HTTPException(
             status_code=400, 
-            detail=f"Document must be in 'Split' status to run OCR. Current status: {document.status}"
+            detail=f"Document must be in '{expected_status}' status to run OCR. Current status: {document.status}"
         )
-    
-    # Enqueue Celery task with force flag (pass as string in metadata, task reads from request.kwargs)
-    # Note: Celery validates kwargs against function signature, so we use request.kwargs in the task
+
+    page_count = (
+        db.query(func.count(DocumentPage.id))
+        .filter(
+            DocumentPage.document_id == document_id,
+            DocumentPage.org_id == current_user.org_id,
+        )
+        .scalar()
+        or 0
+    )
+    if page_count == 0:
+        raise HTTPException(status_code=400, detail="Document has no pages available for OCR")
+
+    document.status = "Queued"
+    db.query(DocumentPage).filter(
+        DocumentPage.document_id == document_id,
+        DocumentPage.org_id == current_user.org_id,
+    ).update(
+        {
+            DocumentPage.ocr_status: "Queued",
+            DocumentPage.ocr_error: None,
+        },
+        synchronize_session=False,
+    )
+    db.commit()
+    db.refresh(document)
+
     task = process_document_ocr.apply_async(
         args=[str(document_id), str(current_user.org_id), str(current_user.user_id)],
-        kwargs={"force": force},  # Task reads this from self.request.kwargs
+        kwargs={"force": force},
     )
-    
-    # Audit log
-    request_id = uuid.uuid4()
+
     write_audit_event(
         db=db,
         org_id=current_user.org_id,
@@ -107,15 +129,16 @@ async def enqueue_document_ocr(
         action="document.ocr_enqueued",
         entity_type="document",
         entity_id=document_id,
+        case_id=document.case_id,
+        ip_address=request.client.host if request.client else None,
         event_metadata={
-            "request_id": str(request_id),
-            "ip": request.client.host if request.client else None,
-            "user_agent": request.headers.get("user-agent"),
             "document_id": str(document_id),
             "case_id": str(document.case_id),
             "filename": document.original_filename,
             "task_id": task.id,
             "force": force,
+            "page_count": page_count,
+            "status": document.status,
         },
     )
     
@@ -130,7 +153,7 @@ async def enqueue_document_ocr(
 async def get_ocr_status(
     request: Request,
     document_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get OCR processing status for a document."""
@@ -293,7 +316,7 @@ async def update_doc_type(
     request: Request,
     document_id: uuid.UUID,
     body: DocTypeUpdateRequest,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """Manually set/override document type."""
@@ -337,4 +360,55 @@ async def update_doc_type(
         doc_type_source=document.doc_type_source,
         doc_type_updated_at=document.doc_type_updated_at,
     )
+
+
+@router.post("/documents/{document_id}/retry-ocr", response_model=OCREnqueueResponse)
+async def retry_document_ocr(
+    request: Request,
+    document_id: uuid.UUID,
+    current_user: CurrentUser = Depends(require_reviewer),
+    db: Session = Depends(get_db),
+):
+    document = db.query(Document).filter(
+        Document.id == document_id,
+        Document.org_id == current_user.org_id,
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    if document.status != "Failed":
+        raise HTTPException(status_code=422, detail="Retry is only available for failed documents.")
+
+    db.query(DocumentPage).filter(
+        DocumentPage.document_id == document_id,
+        DocumentPage.org_id == current_user.org_id,
+    ).update(
+        {
+            DocumentPage.ocr_status: "Queued",
+            DocumentPage.ocr_error: None,
+            DocumentPage.ocr_started_at: None,
+            DocumentPage.ocr_finished_at: None,
+        },
+        synchronize_session=False,
+    )
+    document.status = "Queued"
+    document.error_message = None
+    db.commit()
+
+    task = process_document_ocr.apply_async(
+        args=[str(document_id), str(current_user.org_id), str(current_user.user_id)],
+        kwargs={"force": True},
+    )
+    write_audit_event(
+        db=db,
+        org_id=current_user.org_id,
+        actor_user_id=current_user.user_id,
+        action="document.ocr_retry_enqueued",
+        entity_type="document",
+        entity_id=document_id,
+        case_id=document.case_id,
+        event_metadata={"task_id": task.id},
+        request_id=getattr(request.state, "request_id", None),
+    )
+    return OCREnqueueResponse(status="queued", document_id=str(document_id), task_id=task.id)
 

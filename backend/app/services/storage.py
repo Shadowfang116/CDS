@@ -1,8 +1,11 @@
+import logging
+import uuid
+
 import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
+
 from app.core.config import settings
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -54,10 +57,35 @@ def put_object_bytes(key: str, data: bytes, content_type: str) -> None:
     )
 
 
-def get_presigned_get_url(key: str, expires_seconds: int = 3600) -> str:
+def _get_public_minio_endpoint() -> str:
+    configured_endpoint = settings.MINIO_PUBLIC_ENDPOINT.strip()
+    if configured_endpoint:
+        if configured_endpoint.startswith("http://") or configured_endpoint.startswith("https://"):
+            return configured_endpoint.rstrip("/")
+        scheme = "https" if settings.MINIO_USE_SSL else "http"
+        return f"{scheme}://{configured_endpoint}:{settings.MINIO_PUBLIC_PORT}"
+
+    scheme = "https" if settings.MINIO_USE_SSL else "http"
+    return f"{scheme}://{settings.MINIO_ENDPOINT}:{settings.MINIO_PORT}"
+
+
+def _assert_org_key_scope(key: str, org_id: uuid.UUID | None) -> None:
+    if org_id is None:
+        return
+    expected_prefix = f"org/{org_id}/"
+    if not key.startswith(expected_prefix):
+        raise PermissionError("Object key is outside the caller org scope")
+
+
+def get_presigned_get_url(
+    key: str,
+    expires_seconds: int = 3600,
+    *,
+    org_id: uuid.UUID | None = None,
+) -> str:
     """Generate a presigned URL for downloading an object."""
-    # Use external endpoint for presigned URLs
-    external_endpoint = f"http{'s' if settings.MINIO_USE_SSL else ''}://{settings.MINIO_EXTERNAL_ENDPOINT}:{settings.MINIO_EXTERNAL_PORT}"
+    _assert_org_key_scope(key, org_id)
+    external_endpoint = _get_public_minio_endpoint()
     
     external_client = boto3.client(
         "s3",

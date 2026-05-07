@@ -1,0 +1,13 @@
+Legal Opinion
+
+Borrower: {{ borrower_name }}
+Case: {{ case_title }}
+Date: {{ generated_at }}
+
+Summary:
+{{ executive_summary }}
+
+Open Exceptions:
+{% for item in exceptions %}
+- [{{ item.severity }}] {{ item.title }}
+{% endfor %}

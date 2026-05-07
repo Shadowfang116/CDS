@@ -42,7 +42,9 @@ RUN pip install --no-cache-dir virtualenv \
         pyyaml \
         python-docx \
         cryptography \
-        httpx
+        httpx \
+        "passlib[bcrypt]" \
+        "bcrypt<4.0"
 
 # -----------------------------------------------------------------------------
 # Stage 2: runtime (slim + system deps only, no dev caches)

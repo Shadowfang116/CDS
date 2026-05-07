@@ -1,5 +1,5 @@
 /**
- * API client for Bank Diligence Platform
+ * API client for CDS Platform
  * 
  * Uses same-origin proxy (/api/v1) to avoid CORS issues.
  * The Next.js rewrite config proxies /api/v1/* to the API container.
@@ -25,17 +25,44 @@ export class ApiError extends Error {
   }
 }
 
-export async function getToken(): Promise<string | null> {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem('token');
-}
+function normalizeErrorDetail(value: unknown, fallback: string): string {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed || fallback;
+  }
 
-export async function setToken(token: string): Promise<void> {
-  localStorage.setItem('token', token);
-}
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => normalizeErrorDetail(item, ''))
+      .filter(Boolean);
+    return parts.length > 0 ? parts.join('; ') : fallback;
+  }
 
-export async function clearToken(): Promise<void> {
-  localStorage.removeItem('token');
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const preferred =
+      record.detail ??
+      record.message ??
+      record.msg ??
+      record.error ??
+      record.reason;
+
+    if (preferred !== undefined && preferred !== value) {
+      return normalizeErrorDetail(preferred, fallback);
+    }
+
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return fallback;
+    }
+  }
+
+  if (value == null) {
+    return fallback;
+  }
+
+  return String(value);
 }
 
 // Request de-duplication: prevent concurrent identical GET requests
@@ -50,12 +77,19 @@ interface CachedResponse {
 const responseCache = new Map<string, CachedResponse>();
 const CACHE_TTL_MS = 300; // 300ms cache to prevent rapid re-render storms
 
+interface ApiFetchOptions extends RequestInit {
+  cacheTtlMs?: number;
+  bypassCache?: boolean;
+}
+
 // Per-endpoint counters for dev instrumentation
 const requestCounters = new Map<string, number>();
 
-async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<any> {
+async function fetchApi(endpoint: string, options: ApiFetchOptions = {}): Promise<any> {
   const method = options.method || 'GET';
   const requestKey = `${method}:${endpoint}`;
+  const cacheTtlMs = options.cacheTtlMs ?? CACHE_TTL_MS;
+  const bypassCache = options.bypassCache === true;
   
   // DEV ONLY: Enhanced instrumentation to identify callers
   const isDev = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_DEBUG_API === '1';
@@ -70,12 +104,12 @@ async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<an
     
     // Show trace at specific thresholds to identify loops
     if (counter === 5 || counter === 20 || counter === 50 || (counter > 50 && counter % 50 === 0)) {
-      console.trace(`⚠️ REPEATED REQUEST #${counter}: ${method} ${endpoint}`);
+      console.trace(`âš ï¸ REPEATED REQUEST #${counter}: ${method} ${endpoint}`);
     }
   }
   
   // Check response cache for GET requests (short TTL to prevent rapid re-render storms)
-  if (method === 'GET') {
+  if (method === 'GET' && !bypassCache) {
     const cached = responseCache.get(requestKey);
     if (cached && Date.now() - cached.timestamp < cached.ttl) {
       if (isDev && endpoint.includes('/cases/')) {
@@ -86,7 +120,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<an
   }
   
   // Request de-duplication: for GET requests, reuse in-flight promise
-  if (method === 'GET' && inFlightRequests.has(requestKey)) {
+  if (method === 'GET' && !bypassCache && inFlightRequests.has(requestKey)) {
     if (isDev && endpoint.includes('/cases/')) {
       console.log(`[fetchApi] De-duplicating in-flight GET request: ${endpoint}`);
     }
@@ -95,15 +129,10 @@ async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<an
   
   // Create the fetch promise
   const fetchPromise = (async () => {
-    const token = await getToken();
     const headers: HeadersInit = {
       ...options.headers,
     };
-    
-    if (token) {
-      (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-    }
-    
+
     // Only set Content-Type for JSON requests (not for FormData)
     if (!(options.body instanceof FormData)) {
       (headers as Record<string, string>)['Content-Type'] = 'application/json';
@@ -121,30 +150,47 @@ async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<an
   
     if (!res.ok) {
       let errorDetail = res.statusText;
+      let errorBody: any = undefined;
       try {
-        const errorBody = await res.json();
-        errorDetail = errorBody.detail || errorBody.message || errorDetail;
+        errorBody = await res.json();
+        errorDetail = normalizeErrorDetail(
+          errorBody?.detail ?? errorBody?.message ?? errorBody,
+          errorDetail
+        );
       } catch {
         // If response is not JSON, use statusText
       }
       
-      // Handle 401 Unauthorized: clear token and redirect to login
+      // Handle 401 Unauthorized: redirect to login
       if (res.status === 401) {
-        // #region agent log
-        fetch('http://127.0.0.1:7245/ingest/f5d810ee-7b87-46b0-a99a-93189a1118fe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:132',message:'401 Unauthorized - redirecting',data:{endpoint},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-        await clearToken();
         if (typeof window !== 'undefined') {
-          // #region agent log
-          fetch('http://127.0.0.1:7245/ingest/f5d810ee-7b87-46b0-a99a-93189a1118fe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api.ts:135',message:'Hard redirect to /',data:{currentPath:window.location.pathname},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
-          window.location.href = '/';
+          const currentPath = window.location.pathname;
+          if (currentPath !== '/login') {
+            window.location.href = '/login';
+          }
         }
-        throw new ApiError(401, 'Session expired. Please log in again.');
+        throw new ApiError(
+          401,
+          normalizeErrorDetail(errorDetail, 'Authentication required.'),
+          errorBody
+        );
+      }
+
+      if (
+        res.status === 403
+        && errorDetail === 'Password change required'
+        && typeof window !== 'undefined'
+        && window.location.pathname !== '/change-password'
+      ) {
+        window.location.href = '/change-password';
       }
       
       // Throw structured ApiError with status and detail
-      throw new ApiError(res.status, errorDetail);
+      throw new ApiError(
+        res.status,
+        normalizeErrorDetail(errorDetail, res.statusText || 'Request failed'),
+        errorBody
+      );
     }
     
     const data = await res.json();
@@ -154,7 +200,7 @@ async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<an
       responseCache.set(requestKey, {
         data,
         timestamp: Date.now(),
-        ttl: CACHE_TTL_MS,
+        ttl: cacheTtlMs,
       });
       // Clean up old cache entries periodically
       if (responseCache.size > 100) {
@@ -184,23 +230,37 @@ async function fetchApi(endpoint: string, options: RequestInit = {}): Promise<an
         if (err.name === 'AbortError') {
           responseCache.delete(requestKey);
         }
-        throw err;
       });
   }
   
   return fetchPromise;
 }
 
-// Auth
-export async function devLogin(email: string, orgName: string, role: string): Promise<{ access_token: string }> {
-  return fetchApi('/auth/dev-login', {
+export async function login(email: string, password: string): Promise<any> {
+  return fetchApi('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email, org_name: orgName, role }),
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function logout(): Promise<{ message: string }> {
+  return fetchApi('/auth/logout', {
+    method: 'POST',
   });
 }
 
 export async function getMe(): Promise<any> {
   return fetchApi('/auth/me');
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<any> {
+  return fetchApi('/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
 }
 
 // Cases
@@ -216,6 +276,53 @@ export interface ListCasesParams {
   order?: 'asc' | 'desc';
 }
 
+function normalizeCasesListResponse(
+  raw: any,
+  params: ListCasesParams = {}
+): import('@/types/cases').CaseListResponse {
+  const fallbackPage = params.page ?? 1;
+  const fallbackPageSize = params.page_size ?? 20;
+
+  if (Array.isArray(raw)) {
+    const total = raw.length;
+    return {
+      items: raw,
+      page: fallbackPage,
+      page_size: fallbackPageSize,
+      total,
+      total_pages: total > 0 ? Math.ceil(total / fallbackPageSize) : 1,
+    };
+  }
+
+  const items = Array.isArray(raw?.items)
+    ? raw.items
+    : Array.isArray(raw?.value)
+      ? raw.value
+      : Array.isArray(raw?.data)
+        ? raw.data
+        : [];
+
+  return {
+    items,
+    page: typeof raw?.page === 'number' ? raw.page : fallbackPage,
+    page_size: typeof raw?.page_size === 'number' ? raw.page_size : fallbackPageSize,
+    total:
+      typeof raw?.total === 'number'
+        ? raw.total
+        : typeof raw?.count === 'number'
+          ? raw.count
+          : typeof raw?.Count === 'number'
+            ? raw.Count
+          : items.length,
+    total_pages:
+      typeof raw?.total_pages === 'number'
+        ? raw.total_pages
+        : typeof raw?.pages === 'number'
+          ? raw.pages
+          : 1,
+  };
+}
+
 /** Server-paginated cases list (GET /cases?q=&page=&page_size=&sort=&order=). */
 export async function listCasesPaginated(params: ListCasesParams = {}): Promise<import('@/types/cases').CaseListResponse> {
   const sp = new URLSearchParams();
@@ -225,7 +332,43 @@ export async function listCasesPaginated(params: ListCasesParams = {}): Promise<
   if (params.sort != null) sp.set('sort', params.sort);
   if (params.order != null) sp.set('order', params.order);
   const qs = sp.toString();
-  return fetchApi(`/cases${qs ? `?${qs}` : ''}`);
+  const endpoint = `/cases${qs ? `?${qs}` : ''}`;
+
+  try {
+    const raw = await fetchApi(endpoint);
+    return normalizeCasesListResponse(raw, params);
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function listAllCases(
+  params: Omit<ListCasesParams, 'page'> = {}
+): Promise<import('@/types/cases').CaseListItem[]> {
+  const pageSize = params.page_size ?? 100;
+  const firstPage = await listCasesPaginated({ ...params, page: 1, page_size: pageSize });
+  const items = [...firstPage.items];
+
+  for (let page = 2; page <= firstPage.total_pages; page += 1) {
+    const nextPage = await listCasesPaginated({ ...params, page, page_size: pageSize });
+    items.push(...nextPage.items);
+  }
+
+  return items;
+}
+
+export async function approveCase(caseId: string, payload: any): Promise<any> {
+  return fetchApi(`/cases/${caseId}/approve`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCaseAssignment(caseId: string, action: 'claim' | 'unassign'): Promise<any> {
+  return fetchApi(`/cases/${caseId}/assignment`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action }),
+  });
 }
 
 export async function createCase(title: string): Promise<any> {
@@ -240,7 +383,50 @@ export async function getCase(caseId: string): Promise<any> {
 }
 
 // Documents
-export async function listDocuments(caseId: string): Promise<any[]> {
+export interface CaseDocumentItem {
+  id: string;
+  original_filename: string;
+  page_count?: number | null;
+  status?: string | null;
+  error_message?: string | null;
+  doc_type?: string | null;
+  predicted_doc_type?: string | null;
+  classification_confidence?: number | null;
+  classification_status?: string | null;
+  corrected_doc_type?: string | null;
+  needs_review?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DocumentOcrStatusPage {
+  page_number: number;
+  status: string;
+  error?: string | null;
+  has_text: boolean;
+}
+
+export interface DocumentOcrStatus {
+  document_id: string;
+  total_pages: number;
+  queued_count: number;
+  processing_count: number;
+  done_count: number;
+  failed_count: number;
+  status_counts: Record<string, number>;
+  last_error?: string | null;
+  pages: DocumentOcrStatusPage[];
+  average_ocr_chars_per_page?: number | null;
+  failed_pages: Array<{ page_number: number; error?: string | null }>;
+  processing_seconds?: number | null;
+  quality_level?: string | null;
+  quality_reasons?: string[];
+  ocr_lang_used?: string | null;
+  dpi_used?: number | null;
+  preprocess_enabled?: boolean | null;
+}
+
+export async function listDocuments(caseId: string): Promise<CaseDocumentItem[]> {
   return fetchApi(`/cases/${caseId}/documents`);
 }
 
@@ -279,7 +465,7 @@ export async function enqueueOcr(documentId: string, force: boolean = false): Pr
   return fetchApi(`/documents/${documentId}/ocr?force=${force}`, { method: 'POST' });
 }
 
-export async function getOcrStatus(documentId: string): Promise<any> {
+export async function getOcrStatus(documentId: string): Promise<DocumentOcrStatus> {
   return fetchApi(`/documents/${documentId}/ocr-status`);
 }
 
@@ -344,21 +530,25 @@ export async function listCPs(caseId: string): Promise<any> {
   return fetchApi(`/cases/${caseId}/cps`);
 }
 
+export async function getCaseExceptions(caseId: string): Promise<any> {
+  return listExceptions(caseId);
+}
+
 export async function getException(exceptionId: string): Promise<any> {
   return fetchApi(`/exceptions/${exceptionId}`);
 }
 
-export async function resolveException(exceptionId: string): Promise<any> {
+export async function resolveException(exceptionId: string, reason?: string): Promise<any> {
   return fetchApi(`/exceptions/${exceptionId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ action: 'resolve' }),
+    body: JSON.stringify({ action: 'resolve', reason }),
   });
 }
 
 export async function waiveException(exceptionId: string, reason: string): Promise<any> {
   return fetchApi(`/exceptions/${exceptionId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ action: 'waive', reason }),
+    body: JSON.stringify({ action: 'waive', waiver_reason: reason }),
   });
 }
 
@@ -425,6 +615,7 @@ export async function markVerificationFailed(caseId: string, verificationType: s
 export interface DashboardKPIs {
   active_cases: number;
   open_high_exceptions: number;
+  pending_verifications: number;
   cp_completion_pct: number;
   verification_completion_pct: number;
 }
@@ -438,6 +629,9 @@ export interface NeedsAttentionItem {
   open_low: number;
   pending_verifications: number;
   updated_at: string;
+  assigned_to_user_id?: string | null;
+  assigned_to_email?: string | null;
+  assigned_to_name?: string | null;
 }
 
 export interface ActivityItem {
@@ -446,6 +640,8 @@ export interface ActivityItem {
   action: string;
   entity_type: string | null;
   entity_id: string | null;
+  case_id?: string | null;
+  case_title?: string | null;
 }
 
 export interface TimeseriesEntry {
@@ -463,10 +659,14 @@ export interface ExceptionsBySeverity {
 
 export interface ApprovalPreviewItem {
   id: string;
+  case_id: string;
   request_type: string;
   request_type_label: string;
   case_title: string;
   created_at: string;
+  assigned_to_user_id?: string | null;
+  assigned_to_email?: string | null;
+  assigned_to_name?: string | null;
 }
 
 export interface ReadyForApprovalItem {
@@ -475,11 +675,16 @@ export interface ReadyForApprovalItem {
   status: string;
   cp_completion_pct: number;
   updated_at: string;
+  assigned_to_user_id?: string | null;
+  assigned_to_email?: string | null;
+  assigned_to_name?: string | null;
 }
 
 export interface DashboardResponse {
   range_days: number;
   kpis: DashboardKPIs;
+  processing_cases_count: number;
+  oldest_processing_case_updated_at: string | null;
   cases_by_status: Record<string, number>;
   exceptions_by_severity: ExceptionsBySeverity;
   timeseries: TimeseriesEntry[];
@@ -492,8 +697,79 @@ export interface DashboardResponse {
   ready_for_approval_list: ReadyForApprovalItem[];
 }
 
-export async function getDashboard(days: number = 30): Promise<DashboardResponse> {
-  return fetchApi(`/dashboard?days=${days}`);
+export interface DashboardSummaryResponse {
+  range_days: number;
+  kpis: DashboardKPIs;
+  processing_cases_count: number;
+  oldest_processing_case_updated_at: string | null;
+  needs_attention: NeedsAttentionItem[];
+  recent_activity: ActivityItem[];
+  approvals_pending_count: number;
+  approvals_pending_preview: ApprovalPreviewItem[];
+  ready_for_approval_count: number;
+  ready_for_approval_list: ReadyForApprovalItem[];
+}
+
+export interface DashboardAnalyticsResponse {
+  range_days: number;
+  cases_by_status: Record<string, number>;
+  exceptions_by_severity: ExceptionsBySeverity;
+  timeseries: TimeseriesEntry[];
+}
+
+export async function getDashboard(days: number = 30, force = false): Promise<DashboardResponse> {
+  return fetchApi(`/dashboard?days=${days}`, {
+    cacheTtlMs: 5000,
+    bypassCache: force,
+  });
+}
+
+export async function getDashboardSummary(days: number = 30, force = false): Promise<DashboardSummaryResponse> {
+  try {
+    return await fetchApi(`/dashboard/summary?days=${days}`, {
+      cacheTtlMs: 10000,
+      bypassCache: force,
+    });
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 404) {
+      throw error;
+    }
+
+    const fallback = await getDashboard(days, force);
+    return {
+      range_days: fallback.range_days,
+      kpis: fallback.kpis,
+      processing_cases_count: fallback.processing_cases_count,
+      oldest_processing_case_updated_at: fallback.oldest_processing_case_updated_at,
+      needs_attention: fallback.needs_attention,
+      recent_activity: fallback.recent_activity,
+      approvals_pending_count: fallback.approvals_pending_count,
+      approvals_pending_preview: fallback.approvals_pending_preview,
+      ready_for_approval_count: fallback.ready_for_approval_count,
+      ready_for_approval_list: fallback.ready_for_approval_list,
+    };
+  }
+}
+
+export async function getDashboardAnalytics(days: number = 30, force = false): Promise<DashboardAnalyticsResponse> {
+  try {
+    return await fetchApi(`/dashboard/analytics?days=${days}`, {
+      cacheTtlMs: 20000,
+      bypassCache: force,
+    });
+  } catch (error) {
+    if (!(error instanceof ApiError) || error.status !== 404) {
+      throw error;
+    }
+
+    const fallback = await getDashboard(days, force);
+    return {
+      range_days: fallback.range_days,
+      cases_by_status: fallback.cases_by_status,
+      exceptions_by_severity: fallback.exceptions_by_severity,
+      timeseries: fallback.timeseries,
+    };
+  }
 }
 
 // Cohort (drilldown)
@@ -501,6 +777,13 @@ export interface CohortFilters {
   severity?: string | null;
   status?: string | null;
   date?: string | null;
+  owner?: string | null;
+  escalation?: string | null;
+}
+
+export interface CohortCounts {
+  cases: number;
+  activity: number;
 }
 
 export interface CohortCaseItem {
@@ -512,21 +795,19 @@ export interface CohortCaseItem {
   open_medium: number;
   open_low: number;
   pending_verifications: number;
+  assigned_to_user_id?: string | null;
+  assigned_to_email?: string | null;
+  assigned_to_name?: string | null;
 }
 
 export interface CohortActivityItem {
   created_at: string;
-  actor_email: string | null;
+  actor_email?: string | null;
   action: string;
-  entity_type: string | null;
-  entity_id: string | null;
-  case_id: string | null;
-  case_title: string | null;
-}
-
-export interface CohortCounts {
-  cases: number;
-  activity: number;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  case_id?: string | null;
+  case_title?: string | null;
 }
 
 export interface CohortResponse {
@@ -542,6 +823,8 @@ export interface GetCohortParams {
   severity?: string | null;
   status?: string | null;
   date?: string | null;
+  owner?: string | null;
+  escalation?: string | null;
   limit?: number;
 }
 
@@ -551,6 +834,8 @@ export async function getDashboardCohort(params: GetCohortParams = {}): Promise<
   if (params.severity) searchParams.set('severity', params.severity);
   if (params.status) searchParams.set('status', params.status);
   if (params.date) searchParams.set('date', params.date);
+  if (params.owner) searchParams.set('owner', params.owner);
+  if (params.escalation) searchParams.set('escalation', params.escalation);
   if (params.limit) searchParams.set('limit', String(params.limit));
   
   const queryString = searchParams.toString();
@@ -562,6 +847,7 @@ export interface SavedViewConfig {
   days: number;
   severity?: string | null;
   status?: string | null;
+  owner?: string | null;
 }
 
 export interface SavedView {
@@ -639,6 +925,8 @@ export async function exportCohortCsv(params: GetCohortParams = {}): Promise<Coh
   if (params.severity) searchParams.set('severity', params.severity);
   if (params.status) searchParams.set('status', params.status);
   if (params.date) searchParams.set('date', params.date);
+  if (params.owner) searchParams.set('owner', params.owner);
+  if (params.escalation) searchParams.set('escalation', params.escalation);
   
   const queryString = searchParams.toString();
   return fetchApi(`/dashboard/cohort/export${queryString ? `?${queryString}` : ''}`, {
@@ -687,6 +975,8 @@ export async function exportCohortPdf(params: GetCohortParams = {}): Promise<Coh
   if (params.severity) searchParams.set('severity', params.severity);
   if (params.status) searchParams.set('status', params.status);
   if (params.date) searchParams.set('date', params.date);
+  if (params.owner) searchParams.set('owner', params.owner);
+  if (params.escalation) searchParams.set('escalation', params.escalation);
   
   const queryString = searchParams.toString();
   return fetchApi(`/dashboard/cohort/export-pdf${queryString ? `?${queryString}` : ''}`, {
@@ -1047,11 +1337,13 @@ export interface AdminUser {
 
 export interface AuditLogEntry {
   id: string;
+  org_id?: string;
+  case_id?: string | null;
   actor_user_id: string;
   action: string;
   entity_type: string | null;
   entity_id: string | null;
-  event_metadata: Record<string, any>;
+  event_metadata: Record<string, any> | null;
   created_at: string;
 }
 
@@ -1059,7 +1351,7 @@ export async function listAdminUsers(): Promise<AdminUser[]> {
   return fetchApi('/admin/users');
 }
 
-export async function createAdminUser(payload: { email: string; full_name: string; role: string }): Promise<AdminUser> {
+export async function createAdminUser(payload: { email: string; full_name: string; role: string; temporary_password: string }): Promise<AdminUser> {
   return fetchApi('/admin/users', {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -1080,6 +1372,90 @@ export async function listAuditLogs(params: { days?: number; limit?: number; act
   if (params.action_prefix) searchParams.set('action_prefix', params.action_prefix);
   const qs = searchParams.toString();
   return fetchApi(`/admin/audit${qs ? `?${qs}` : ''}`);
+}
+
+export async function resetDemoCase(): Promise<{ message: string; org_id: string; admin_user_id: string; case_id: string }> {
+  return fetchApi('/admin/demo/reset', {
+    method: 'POST',
+  });
+}
+
+export async function deleteDocument(documentId: string): Promise<{ message: string }> {
+  return fetchApi(`/admin/documents/${documentId}`, {
+    method: 'DELETE',
+  });
+}
+
+
+export async function listGlobalAuditLogs(params: { limit?: number } = {}): Promise<AuditLogEntry[]> {
+  const searchParams = new URLSearchParams();
+  if (params.limit) searchParams.set('limit', String(params.limit));
+  const qs = searchParams.toString();
+  return fetchApi(`/audit${qs ? `?${qs}` : ''}`);
+}
+
+export interface CaseAuditEvent {
+  timestamp: string;
+  user_id: string;
+  user_name?: string | null;
+  action: string;
+  entity_type?: string | null;
+  entity_id?: string | null;
+  details: Record<string, any>;
+}
+
+export interface CaseAuditTimelineResponse {
+  case_id: string;
+  events: CaseAuditEvent[];
+}
+
+function normalizeCaseAuditFallback(raw: any): CaseAuditTimelineResponse {
+  const rows = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.events)
+      ? raw.events
+      : Array.isArray(raw?.items)
+        ? raw.items
+        : [];
+
+  return {
+    case_id: typeof raw?.case_id === 'string' ? raw.case_id : '',
+    events: rows.map((row: any) => ({
+      timestamp: row.timestamp ?? row.created_at ?? '',
+      user_id: row.user_id ?? row.actor_user_id ?? '',
+      user_name: row.user_name ?? row.actor_email ?? row.actor ?? null,
+      action: row.action ?? '',
+      entity_type: row.entity_type ?? row.module ?? null,
+      entity_id: row.entity_id ?? row.object_id ?? null,
+      details: {
+        ...(row.details ?? row.event_metadata ?? row.metadata ?? {}),
+        before_snapshot: row.before_snapshot ?? row.before_json ?? null,
+        after_snapshot: row.after_snapshot ?? row.after_json ?? null,
+      },
+    })),
+  };
+}
+
+function normalizeCaseAuditResponse(raw: any, caseId: string): CaseAuditTimelineResponse {
+  const normalized = normalizeCaseAuditFallback(raw);
+  return {
+    case_id: normalized.case_id || caseId,
+    events: normalized.events,
+  };
+}
+
+export async function getCaseAuditTimeline(caseId: string): Promise<CaseAuditTimelineResponse> {
+  try {
+    const primary = await fetchApi(`/cases/${caseId}/audit`);
+    return normalizeCaseAuditResponse(primary, caseId);
+  } catch (error: any) {
+    if (error instanceof ApiError && error.status !== 404) {
+      throw error;
+    }
+
+    const fallback = await fetchApi(`/audit-log?case_id=${caseId}`);
+    return normalizeCaseAuditResponse(fallback, caseId);
+  }
 }
 
 // ============ Evidence Attachment API (Phase 10) ============
@@ -1117,6 +1493,7 @@ export interface OCRExtractionItem {
   override_note?: string | null;
   status: string;
   confidence: number | null;
+  quality_score?: number | null;
   document_id: string;
   document_name: string;
   page_number: number;
@@ -1125,6 +1502,8 @@ export interface OCRExtractionItem {
   is_low_quality?: boolean;
   quality_level?: string;
   warning_reason?: string;
+  needs_review?: boolean;
+  review_status?: string | null;
   extraction_method?: string | null;
   evidence_json?: {
     extractor?: string;
@@ -1133,6 +1512,8 @@ export interface OCRExtractionItem {
     token_indices?: number[];
     bbox?: number[];
     bbox_norm_1000?: number[];
+    span_start?: number | null;
+    span_end?: number | null;
     snippet?: string;
     ocr_engine?: string;
     extractor_version?: string;
@@ -1383,5 +1764,204 @@ export async function deleteOcrTextCorrection(docId: string, page: number): Prom
   return fetchApi(`/documents/${docId}/pages/${page}/ocr-text/correction`, {
     method: 'DELETE',
   });
+}
+
+export interface OcrReviewOverride {
+  user_id: string;
+  updated_at: string | null;
+  reason?: string | null;
+}
+
+export interface OcrReviewResponse {
+  page_id: string;
+  page_number: number;
+  image_url: string;
+  ocr_quality_signal?: string;
+  ocr: {
+    text: string;
+    source: string;
+    confidence: number | null;
+    has_override: boolean;
+    override: OcrReviewOverride | null;
+  };
+  meta: Record<string, any>;
+}
+
+export interface OcrOverrideRequest {
+  override_text: string;
+  reason?: string;
+}
+
+export interface OcrRerunRequest {
+  force_profile?: 'basic' | 'enhanced';
+  force_detect?: boolean;
+  force_lang?: 'urd' | 'urd+eng' | 'eng';
+  force_layout?: boolean;
+  force_pdf_text_layer?: boolean;
+  engine_mode?: 'tesseract' | 'ensemble';
+}
+
+export interface OcrRerunResponse {
+  queued: boolean;
+  page_id: string;
+  page_number: number;
+  task: string;
+}
+
+export async function getPageOcrReview(
+  caseId: string,
+  documentId: string,
+  pageNumber: number
+): Promise<OcrReviewResponse> {
+  return fetchApi(`/cases/${caseId}/documents/${documentId}/pages/${pageNumber}/ocr`);
+}
+
+export async function setPageOcrOverride(
+  caseId: string,
+  documentId: string,
+  pageNumber: number,
+  payload: OcrOverrideRequest
+): Promise<{ message: string; page_id: string }> {
+  return fetchApi(`/cases/${caseId}/documents/${documentId}/pages/${pageNumber}/ocr`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function clearPageOcrOverride(
+  caseId: string,
+  documentId: string,
+  pageNumber: number
+): Promise<{ message: string; page_id: string }> {
+  return fetchApi(`/cases/${caseId}/documents/${documentId}/pages/${pageNumber}/ocr`, {
+    method: 'DELETE',
+  });
+}
+
+export async function rerunPageOcr(
+  caseId: string,
+  documentId: string,
+  pageNumber: number,
+  payload: OcrRerunRequest = {}
+): Promise<OcrRerunResponse> {
+  return fetchApi(`/cases/${caseId}/documents/${documentId}/pages/${pageNumber}/ocr/rerun`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Golden Case Evaluation
+// ---------------------------------------------------------------------------
+
+export interface EvaluationFinding {
+  id: string;
+  evaluation_run_id: string;
+  expectation_id: string | null;
+  finding_type: 'exception' | 'cp';
+  expected_rule_id: string | null;
+  actual_rule_id: string | null;
+  expected_title: string | null;
+  actual_title: string | null;
+  expected_text: string | null;
+  actual_text: string | null;
+  expected_severity: string | null;
+  actual_severity: string | null;
+  match_status: 'matched' | 'missed' | 'extra';
+  similarity_score: number | null;
+  notes: string | null;
+}
+
+export interface EvaluationRun {
+  id: string;
+  org_id: string;
+  case_id: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+  critical_recall: number | null;
+  overall_recall: number | null;
+  precision: number | null;
+  expected_count: number;
+  matched_count: number;
+  missed_count: number;
+  extra_count: number;
+  status: 'running' | 'completed' | 'failed';
+  created_by: string;
+  error_message: string | null;
+  findings: EvaluationFinding[];
+}
+
+export interface EvaluationRunListItem extends Omit<EvaluationRun, 'findings'> {}
+
+export interface Expectation {
+  id: string;
+  org_id: string;
+  case_id: string;
+  finding_type: 'exception' | 'cp';
+  expected_rule_id: string | null;
+  expected_title: string;
+  expected_severity: string | null;
+  expected_text: string | null;
+  is_critical: boolean;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpectationCreate {
+  finding_type: 'exception' | 'cp';
+  expected_rule_id?: string;
+  expected_title: string;
+  expected_severity?: string;
+  expected_text?: string;
+  is_critical?: boolean;
+  notes?: string;
+}
+
+export interface ExpectationUpdate {
+  finding_type?: 'exception' | 'cp';
+  expected_rule_id?: string;
+  expected_title?: string;
+  expected_severity?: string;
+  expected_text?: string;
+  is_critical?: boolean;
+  notes?: string;
+}
+
+export async function triggerEvaluationRun(caseId: string): Promise<EvaluationRun> {
+  return fetchApi(`/cases/${caseId}/evaluations/run`, { method: 'POST', bypassCache: true });
+}
+
+export async function getLatestEvaluationRun(caseId: string): Promise<EvaluationRun> {
+  return fetchApi(`/cases/${caseId}/evaluations/latest`, { bypassCache: true });
+}
+
+export async function listEvaluationHistory(caseId: string): Promise<EvaluationRunListItem[]> {
+  return fetchApi(`/cases/${caseId}/evaluations/history`);
+}
+
+export async function listExpectations(caseId: string): Promise<Expectation[]> {
+  return fetchApi(`/cases/${caseId}/expectations`);
+}
+
+export async function createExpectation(caseId: string, payload: ExpectationCreate): Promise<Expectation> {
+  return fetchApi(`/cases/${caseId}/expectations`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+    bypassCache: true,
+  });
+}
+
+export async function updateExpectation(expectationId: string, payload: ExpectationUpdate): Promise<Expectation> {
+  return fetchApi(`/expectations/${expectationId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+    bypassCache: true,
+  });
+}
+
+export async function deleteExpectation(expectationId: string): Promise<void> {
+  return fetchApi(`/expectations/${expectationId}`, { method: 'DELETE', bypassCache: true });
 }
 

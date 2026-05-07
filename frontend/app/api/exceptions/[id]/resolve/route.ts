@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8000";
+const API_INTERNAL_BASE_URL = (
+  process.env.API_INTERNAL_BASE_URL || process.env.API_BASE_URL || "http://localhost:8000"
+).replace(/\/+$/, "");
 
 export async function POST(
   req: Request,
@@ -8,20 +10,24 @@ export async function POST(
 ) {
   const { id } = await ctx.params;
   const body = await req.json().catch(() => ({}));
+  const cookie = req.headers.get("cookie");
 
-  const upstream = `${API_BASE_URL}/api/v1/exceptions/${id}/resolve`;
+  const upstream = `${API_INTERNAL_BASE_URL}/api/v1/exceptions/${id}/resolve`;
   const res = await fetch(upstream, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(cookie ? { cookie } : {}),
+    },
     body: JSON.stringify(body),
   });
 
   const text = await res.text();
   if (!res.ok) {
-    return NextResponse.json(
-      { error: "upstream_error", status: res.status, body: text },
-      { status: 502 }
-    );
+    return new NextResponse(text, {
+      status: res.status,
+      headers: { "content-type": res.headers.get("content-type") ?? "application/json" },
+    });
   }
 
   return new NextResponse(text, {

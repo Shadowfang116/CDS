@@ -315,9 +315,9 @@ Write-Host "  MinIO:        http://localhost:9001 (minioadmin / change_me)" -For
 Write-Host "  MailHog:      http://localhost:8025" -ForegroundColor White
 Write-Host ""
 Write-Host "Demo Credentials:" -ForegroundColor Yellow
-Write-Host "  OrgA Admin:    admin@orga.com (any password)" -ForegroundColor White
-Write-Host "  OrgA Reviewer: reviewer@orga.com" -ForegroundColor White
-Write-Host "  OrgB Admin:   admin@orgb.com" -ForegroundColor White
+Write-Host "  OrgA Admin:    admin@orga.com / ChangeMe123!" -ForegroundColor White
+Write-Host "  OrgA Reviewer: reviewer@orga.com / ChangeMe123!" -ForegroundColor White
+Write-Host "  OrgB Admin:    admin@orgb.com / ChangeMe123!" -ForegroundColor White
 Write-Host ""
 if ($demoCaseId) {
     Write-Host "Demo IDs (for smoke tests):" -ForegroundColor Yellow
@@ -329,7 +329,7 @@ if ($demoCaseId) {
 Write-Host ""
 Write-Host "Next Steps:" -ForegroundColor Yellow
 Write-Host "  1. Run smoke tests: ./scripts/dev/smoke_test.ps1" -ForegroundColor White
-Write-Host "  2. Open dashboard and login as admin@orga.com" -ForegroundColor White
+Write-Host "  2. Open dashboard and login as admin@orga.com / ChangeMe123!" -ForegroundColor White
 Write-Host "  3. Navigate through cases, documents, and exports" -ForegroundColor White
 Write-Host ""
 

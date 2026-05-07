@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.case import Case
 from app.models.document import Document, DocumentPage, DocumentClassificationLog
@@ -12,9 +13,10 @@ from app.schemas.document import (
     DocumentPageResponse,
     PresignedUrlResponse,
 )
-from app.api.deps import get_current_user, CurrentUser, require_tenant_scope
+from app.api.deps import CurrentUser, require_reviewer, require_tenant_scope, require_viewer
 from app.services.audit import write_audit_event
-from app.services.storage import put_object_bytes, get_presigned_get_url
+from app.services.download_tokens import create_download_url
+from app.services.storage import put_object_bytes
 from app.services.pdf_splitter import split_pdf, PDFSplitError
 from app.services.doc_convert import convert_docx_bytes_to_pdf, DocConvertError
 from app.core.middleware import sanitize_filename
@@ -27,9 +29,11 @@ ALLOWED_CONTENT_TYPES = {
     "image/png",
     "image/jpeg",
     "image/jpg",
+    "image/tiff",
+    "image/tif",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # DOCX
 }
-IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg"}
+IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/tiff", "image/tif"}
 DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 MAX_DOCX_SIZE_BYTES = 25 * 1024 * 1024  # 25 MB
 DOWNLOAD_URL_EXPIRES_SECONDS = 3600  # 1 hour
@@ -41,7 +45,7 @@ async def upload_document(
     case_id: uuid.UUID,
     file: UploadFile = File(...),
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """Upload a PDF document, DOCX file, or image to a case (tenant-scoped)."""
@@ -62,19 +66,30 @@ async def upload_document(
             content_type = DOCX_CONTENT_TYPE
         elif filename_lower.endswith(".pdf"):
             content_type = "application/pdf"
-        elif filename_lower.endswith((".png", ".jpg", ".jpeg")):
-            content_type = "image/png" if filename_lower.endswith(".png") else "image/jpeg"
+        elif filename_lower.endswith((".png", ".jpg", ".jpeg", ".tif", ".tiff")):
+            if filename_lower.endswith(".png"):
+                content_type = "image/png"
+            elif filename_lower.endswith((".tif", ".tiff")):
+                content_type = "image/tiff"
+            else:
+                content_type = "image/jpeg"
     
     # Validate content type
     if content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Only PDF, DOCX, and image files (PNG, JPG) are allowed. Received: {content_type}"
+            detail=f"Only PDF, DOCX, and image files (PNG, JPG, TIFF) are allowed. Received: {content_type}"
         )
     
     # Read file content
     file_content = await file.read()
     file_size = len(file_content)
+    max_size = settings.MAX_UPLOAD_SIZE_MB * 1024 * 1024
+    if file_size > max_size:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum allowed size is {settings.MAX_UPLOAD_SIZE_MB}MB.",
+        )
     
     # P13: Validate DOCX size limit
     is_docx = content_type == DOCX_CONTENT_TYPE
@@ -157,7 +172,12 @@ async def upload_document(
     # Determine file extension based on content type (after conversion, DOCX becomes PDF)
     is_image = content_type in IMAGE_CONTENT_TYPES
     if is_image:
-        ext = "png" if content_type == "image/png" else "jpg"
+        if content_type == "image/png":
+            ext = "png"
+        elif content_type in {"image/tiff", "image/tif"}:
+            ext = "tiff"
+        else:
+            ext = "jpg"
         original_key = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/original.{ext}"
     else:
         original_key = f"org/{current_user.org_id}/cases/{case_id}/docs/{document_id}/original.pdf"
@@ -328,7 +348,7 @@ async def list_documents(
     request: Request,
     case_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """List all documents for a case (tenant-scoped: 404 if case not in org)."""
@@ -368,7 +388,7 @@ async def get_document(
     request: Request,
     document_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get document details (tenant-scoped: 404 if not in org)."""
@@ -435,7 +455,7 @@ async def download_document(
     request: Request,
     document_id: uuid.UUID,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get a signed URL to download the original document (tenant-scoped)."""
@@ -446,7 +466,15 @@ async def download_document(
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     
-    url = get_presigned_get_url(document.minio_key_original, DOWNLOAD_URL_EXPIRES_SECONDS)
+    url = create_download_url(
+        object_key=document.minio_key_original,
+        org_id=current_user.org_id,
+        user_id=current_user.user_id,
+        case_id=document.case_id,
+        filename=document.original_filename,
+        content_type=document.content_type,
+        expires_seconds=DOWNLOAD_URL_EXPIRES_SECONDS,
+    )
     
     # Audit log
     request_id = uuid.uuid4()
@@ -475,7 +503,7 @@ async def download_page(
     document_id: uuid.UUID,
     page_number: int,
     org_id: uuid.UUID = Depends(require_tenant_scope),
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get a signed URL to download a specific page PDF (tenant-scoped)."""
@@ -494,7 +522,16 @@ async def download_page(
     if not page:
         raise HTTPException(status_code=404, detail="Page not found")
     
-    url = get_presigned_get_url(page.minio_key_page_pdf, DOWNLOAD_URL_EXPIRES_SECONDS)
+    filename_stem = document.original_filename.rsplit(".", 1)[0]
+    url = create_download_url(
+        object_key=page.minio_key_page_pdf,
+        org_id=current_user.org_id,
+        user_id=current_user.user_id,
+        case_id=document.case_id,
+        filename=f"{filename_stem}__page_{page_number}.pdf",
+        content_type="application/pdf",
+        expires_seconds=DOWNLOAD_URL_EXPIRES_SECONDS,
+    )
     
     # Audit log
     request_id = uuid.uuid4()

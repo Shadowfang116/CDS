@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.routes import auth, cases, documents, documents_phase10, ocr, ocr_text_corrections, dossier, dossier_autofill, dossier_fields, rules, rules_evidence, exports, admin, verification, dashboard, dashboard_views, case_insights, digests, notifications, approvals, integrations_webhooks, integrations_email, health, ocr_extractions, config, regime, case_controls, exceptions
+
+from app.api.routes import admin, approvals, audit_timeline, auth, case_controls, case_insights, cases, config, dashboard, dashboard_views, digests, documents, documents_phase10, dossier, dossier_autofill, dossier_fields, downloads, evaluations, exports, health, integrations_email, integrations_webhooks, notifications, ocr, ocr_extractions, ocr_text_corrections, pages_ocr, regime, rules, rules_evidence, verification
 
 api_router = APIRouter()
 
@@ -7,8 +8,10 @@ api_router.include_router(auth.router)
 api_router.include_router(cases.router)
 api_router.include_router(documents.router)
 api_router.include_router(documents_phase10.router)
+api_router.include_router(downloads.router)
 api_router.include_router(ocr.router)
 api_router.include_router(ocr_text_corrections.router)
+api_router.include_router(pages_ocr.router)
 api_router.include_router(dossier.router)
 api_router.include_router(dossier_autofill.router)
 api_router.include_router(dossier_fields.router)
@@ -30,5 +33,5 @@ api_router.include_router(ocr_extractions.router)
 api_router.include_router(config.router)
 api_router.include_router(regime.router)
 api_router.include_router(case_controls.router)
-api_router.include_router(exceptions.router)
-
+api_router.include_router(audit_timeline.router)
+api_router.include_router(evaluations.router)

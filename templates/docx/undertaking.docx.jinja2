@@ -1,0 +1,10 @@
+Undertaking
+
+Borrower: {{ borrower_name }}
+Case: {{ case_title }}
+Date: {{ generated_at }}
+
+Conditions Precedent:
+{% for item in cps %}
+- [{{ item.severity }}] {{ item.text }}
+{% endfor %}

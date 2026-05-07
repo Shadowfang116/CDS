@@ -10,8 +10,9 @@ from sqlalchemy import and_
 from app.db.session import get_db
 from app.models.case import Case
 from app.models.document import Document, DocumentPage, CaseDossierField
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import CurrentUser, require_reviewer, require_viewer
 from app.services.audit import write_audit_event
+from app.services.dossier_versions import upsert_dossier_field
 from app.services.extraction import extract_from_case_pages, deduplicate_fields
 
 router = APIRouter(tags=["dossier"])
@@ -64,7 +65,7 @@ class DossierFieldSourceRequest(BaseModel):
 async def extract_dossier_fields(
     request: Request,
     case_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """
@@ -106,6 +107,9 @@ async def extract_dossier_fields(
     updated_count = 0
     
     for ef in extracted_fields:
+        current_dossier_field = ((case.dossier_json or {}).get("fields") or {}).get(ef.field_key)
+        if current_dossier_field and current_dossier_field.get("locked") and current_dossier_field.get("source") == "manual":
+            continue
         # Check if field already exists
         existing = db.query(CaseDossierField).filter(
             CaseDossierField.case_id == case_id,
@@ -136,6 +140,16 @@ async def extract_dossier_fields(
             )
             db.add(new_field)
             new_count += 1
+
+        upsert_dossier_field(
+            case,
+            key=ef.field_key,
+            value=ef.field_value,
+            source="ocr",
+            locked=False,
+            actor_id=str(current_user.user_id),
+            summary="OCR extraction updated dossier field",
+        )
     
     db.commit()
     
@@ -171,7 +185,7 @@ async def extract_dossier_fields(
 async def get_dossier(
     request: Request,
     case_id: uuid.UUID,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
     """Get all dossier fields for a case."""
@@ -241,7 +255,7 @@ async def update_dossier_field(
     request: Request,
     case_id: uuid.UUID,
     body: DossierFieldUpdateRequest,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """
@@ -289,6 +303,16 @@ async def update_dossier_field(
         field.needs_confirmation = False
         field.confirmed_by_user_id = current_user.user_id
         field.confirmed_at = datetime.utcnow()
+
+    upsert_dossier_field(
+        case,
+        key=body.field_key,
+        value=field.field_value,
+        source="manual",
+        locked=True,
+        actor_id=str(current_user.user_id),
+        summary="Manual dossier update",
+    )
     
     db.commit()
     db.refresh(field)
@@ -331,7 +355,7 @@ async def set_dossier_field_source(
     request: Request,
     case_id: uuid.UUID,
     body: DossierFieldSourceRequest,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """Set source evidence (document+page) for a dossier field."""

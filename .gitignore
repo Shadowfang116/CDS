@@ -10,6 +10,21 @@ desktop.ini
 .vscode/
 .idea/
 .cursor/
+.claude/
+.codex/
+.agents/
+.augment/
+.continue/
+.cortex/
+.crush/
+.codebuddy/
+.commandcode/
+.openhands/
+.playwright-mcp/
+.cursorrules
+CLAUDE.md
+AGENTS.md
+.codex*
 *.swp
 *.swo
 *~
@@ -159,6 +174,8 @@ coverage/
 
 # Project-specific sensitive / local artifacts
 docs/pilot_samples_real/
+docs/PILOT_NEXT_STEPS_CODEX.md
+docs/PILOT_NEXT_STEPS_CURSOR.md
 diagnostics/
 models/
 scripts/training/data/

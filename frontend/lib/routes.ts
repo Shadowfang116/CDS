@@ -1,16 +1,16 @@
 type QueryValue = string | number | boolean | null | undefined;
 
 export const CASE_TABS = [
-  { key: "summary", label: "Executive Summary" },
+  { key: "summary", label: "Overview" },
   { key: "exceptions", label: "Exceptions" },
-  { key: "cps", label: "Conditions Precedent (CP)" },
+  { key: "cps", label: "Conditions" },
   { key: "documents", label: "Documents" },
   { key: "dossier", label: "Dossier" },
   { key: "audit", label: "Audit" },
-  { key: "ocr-extractions", label: "OCR Extractions" },
-  { key: "verification", label: "Verification" },
+  { key: "ocr-extractions", label: "OCR Review" },
+  { key: "verification", label: "Checks" },
   { key: "drafts", label: "Drafts" },
-  { key: "exports", label: "Export" },
+  { key: "exports", label: "Exports" },
 ] as const;
 
 export type CaseTabKey = (typeof CASE_TABS)[number]["key"];

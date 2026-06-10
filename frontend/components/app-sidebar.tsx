@@ -84,12 +84,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="px-3 py-3 group-data-[collapsible=icon]:h-auto group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:py-3">
-        <div className="flex w-full items-center justify-between group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:items-center group-data-[collapsible=icon]:justify-start group-data-[collapsible=icon]:gap-2">
-          <SidebarTrigger className="order-last h-8 w-8 shrink-0 rounded-md border border-zinc-700/80 bg-zinc-900/90 text-zinc-200 shadow-[0_6px_16px_rgba(0,0,0,0.28)] transition-colors hover:bg-zinc-800 hover:text-zinc-100 group-data-[collapsible=icon]:order-first group-data-[collapsible=icon]:mx-auto" />
-          <div className="flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:order-last group-data-[collapsible=icon]:gap-0">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[rgba(127,138,149,0.28)] bg-[linear-gradient(180deg,rgba(39,46,51,0.98),rgba(28,34,38,0.98))] text-[13px] font-semibold text-stone-100 shadow-[0_10px_24px_rgba(0,0,0,0.18)] transition-[border-radius,width,height] duration-200 ease-out group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:rounded-lg">
+        <div className="flex w-full items-center justify-between group-data-[collapsible=icon]:justify-center">
+          <div className="group/logo relative flex min-w-0 items-center gap-3 group-data-[collapsible=icon]:gap-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[rgba(127,138,149,0.28)] bg-[linear-gradient(180deg,rgba(39,46,51,0.98),rgba(28,34,38,0.98))] text-[13px] font-semibold text-stone-100 shadow-[0_10px_24px_rgba(0,0,0,0.18)] transition-[opacity,border-radius,width,height] duration-200 ease-out group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:group-hover/logo:opacity-25">
               {BRAND.short}
             </div>
+            <SidebarTrigger className="absolute inset-0 z-10 mx-auto my-auto h-8 w-8 rounded-md border border-zinc-700/80 bg-zinc-900/90 text-zinc-200 shadow-[0_6px_16px_rgba(0,0,0,0.28)] opacity-0 transition-[opacity,background-color,color] duration-150 hover:bg-zinc-800 hover:text-zinc-100 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:group-hover/logo:pointer-events-auto group-data-[collapsible=icon]:group-hover/logo:opacity-100 group-data-[collapsible=icon]:group-focus-within/logo:pointer-events-auto group-data-[collapsible=icon]:group-focus-within/logo:opacity-100 group-data-[state=expanded]:hidden" />
             <div className="min-w-0 overflow-hidden transition-[width,opacity,transform] duration-200 ease-out group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:-translate-x-2 group-data-[collapsible=icon]:opacity-0">
               <div className="font-display text-[15px] font-medium leading-tight tracking-[-0.03em] text-stone-100">
                 {BRAND.full}
@@ -97,6 +97,7 @@ export function AppSidebar() {
               <div className="mt-1 text-xs text-zinc-400">{BRAND.subtitle}</div>
             </div>
           </div>
+          <SidebarTrigger className="h-8 w-8 shrink-0 rounded-md border border-zinc-700/80 bg-zinc-900/90 text-zinc-200 shadow-[0_6px_16px_rgba(0,0,0,0.28)] transition-colors hover:bg-zinc-800 hover:text-zinc-100 group-data-[collapsible=icon]:hidden" />
         </div>
       </SidebarHeader>
 

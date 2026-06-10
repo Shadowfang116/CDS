@@ -173,6 +173,14 @@ coverage/
 !frontend/app/icon.png
 
 # Project-specific sensitive / local artifacts
+/CONFIDENCE_NORMALIZATION_REPORT.md
+/FIXES_PHASE*.md
+/IMPLEMENTATION_PLAN_*.md
+/PARTY_ROLE_EXTRACTION_REPORT.md
+/PHASE_*.md
+/PROMPT*_IMPLEMENTATION_SUMMARY.md
+/PROMPT*_VERIFICATION_REPORT.md
+/URDU_OCR_IMPLEMENTATION_REPORT.md
 docs/pilot_samples_real/
 docs/PILOT_NEXT_STEPS_CODEX.md
 docs/PILOT_NEXT_STEPS_CURSOR.md

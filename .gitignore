@@ -181,6 +181,10 @@ coverage/
 /PROMPT*_IMPLEMENTATION_SUMMARY.md
 /PROMPT*_VERIFICATION_REPORT.md
 /URDU_OCR_IMPLEMENTATION_REPORT.md
+/docs/ui/shadcn-dashboard-plan.md
+/frontend/components/layout/dashboard-cursor.tsx
+/scripts/dev/prompt*
+/scripts/dev/seed_prompt*_test_data.py
 docs/pilot_samples_real/
 docs/PILOT_NEXT_STEPS_CODEX.md
 docs/PILOT_NEXT_STEPS_CURSOR.md

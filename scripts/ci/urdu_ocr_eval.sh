@@ -10,16 +10,14 @@ SAMPLES_DIR="$PROJECT_ROOT/datasets/urdu_ocr/samples"
 
 # Check if manifest exists
 if [ ! -f "$MANIFEST_PATH" ]; then
-    echo "Manifest not found: $MANIFEST_PATH"
-    echo "Skipping Urdu OCR evaluation"
-    exit 0
+    echo "ERROR: Manifest not found: $MANIFEST_PATH"
+    exit 1
 fi
 
 # Check if any sample PDFs exist
 if [ ! -d "$SAMPLES_DIR" ] || [ -z "$(find "$SAMPLES_DIR" -name "*.pdf" -type f 2>/dev/null)" ]; then
-    echo "No sample PDFs found in $SAMPLES_DIR"
-    echo "Skipping Urdu OCR evaluation"
-    exit 0
+    echo "ERROR: No sample PDFs found in $SAMPLES_DIR"
+    exit 1
 fi
 
 # Determine mode based on URDU_OCR_GATE environment variable

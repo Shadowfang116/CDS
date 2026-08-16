@@ -1,4 +1,4 @@
-﻿"""Phase 5: Text normalization and repair for bank-grade OCR output."""
+"""Phase 5: Text normalization and repair for bank-grade OCR output."""
 import logging
 import re
 import unicodedata
@@ -20,8 +20,8 @@ URDU_DIGIT_MAP = {
 
 # Urdu punctuation normalization
 URDU_PUNCTUATION_MAP = {
-    'Û”': '.',  # Urdu full stop
-    'ØŒ': ',',  # Urdu comma
+    '۔': '.',  # Urdu full stop
+    '،': ',',  # Urdu comma
 }
 
 

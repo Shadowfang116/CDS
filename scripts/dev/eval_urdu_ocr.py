@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 backend_dir = Path(__file__).resolve().parent.parent.parent / "backend"
 sys.path.insert(0, str(backend_dir))
 
-from app.services.ocr_engine import ocr_page_pdf
+from app.services.ocr import ocr_page_pdf
 from app.services.ocr_eval import evaluate_ocr_result
 from app.core.config import settings
 

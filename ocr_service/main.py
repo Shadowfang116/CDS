@@ -21,6 +21,11 @@ logger = logging.getLogger("uvicorn.error")
 app = FastAPI(title="OCR Service", version="0.1.0")
 
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok", "service": "ocr_service", "default_engine": REQUESTED_DEFAULT_ENGINE}
+
+
 def _env_int(name: str, default: int) -> int:
     raw_value = os.getenv(name, str(default)).strip()
     try:
@@ -158,6 +163,15 @@ def _process_page_sync(page_num: int, source: str, engine_name: str) -> OcrPageR
         page_result.warning_reason = _join_warning_reasons(page_result.warning_reason, quality.warning_reason)
     else:
         page_result.quality_score = 0.0
+
+    if requested_engine != page_result.engine_used:
+        logger.warning(
+            "[OCR_FALLBACK_ALARM] Page %s requested engine '%s' but executed with '%s'. Reason: %s",
+            page_num,
+            requested_engine,
+            page_result.engine_used,
+            warning_reason or "engine fallback",
+        )
 
     page_result.page_num = page_num
     return page_result

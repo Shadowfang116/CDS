@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         case_sensitive=True,
+        extra="ignore",
     )
 
     # Environment
@@ -131,10 +132,10 @@ class Settings(BaseSettings):
     OCR_DPI_MAX: int = 400
     OCR_ENABLE_ORIENTATION_DETECTION: bool = True
     OCR_LANG: str = "urd+eng"
-    OCR_PSM: int = 6
+    OCR_PSM: int = 3
     OCR_OEM: int = 1
     OCR_MAX_PAGES_PER_DOC: int = 50
-    OCR_IMAGE_MAX_SIDE: int = 2200
+    OCR_IMAGE_MAX_SIDE: int = 3500
     OCR_TIMEOUT_SECONDS: int = 120
     OCR_LOW_CHAR_COUNT_THRESHOLD: int = 50
     OCR_LOW_AVG_CONFIDENCE_THRESHOLD: int = 40
@@ -145,6 +146,15 @@ class Settings(BaseSettings):
     OCR_ENABLE_PREPROCESS: bool = True
     OCR_ENABLE_ENHANCED_PREPROCESS: bool = True
     OCR_ENABLE_SCRIPT_DETECTION: bool = True
+
+    # Missing OCR settings (F6 / Unit 0.2)
+    OCR_PADDLE_LANG: str = "urd"
+    OCR_PADDLE_USE_ANGLE_CLS: bool = True
+    OCR_PADDLE_USE_GPU: bool = False
+    OCR_ENABLE_ENSEMBLE: bool = False
+    OCR_ENABLE_LAYOUT: bool = False
+    OCR_ENABLE_PDF_TEXT_LAYER: bool = False
+    OCR_PDF_TEXT_LAYER_ENGINE: str = "pypdf"
 
     def assert_production_safe(self) -> None:
         app_secret = self.APP_SECRET_KEY.get_secret_value()

@@ -1,4 +1,4 @@
-# Phase 6: CI pipeline — lint, typecheck, build, Docker build, API smoke
+# Phase 6: CI pipeline — lint, typecheck, build, Docker build, API & OCR smoke, Python tests
 name: CI
 
 on:
@@ -37,6 +37,26 @@ jobs:
         run: npm run build
         working-directory: frontend
 
+  backend-tests:
+    name: Backend Pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "./backend[dev]"
+
+      - name: Run Pytest
+        run: |
+          pytest backend/tests/
+
   docker-build:
     name: Docker build
     runs-on: ubuntu-latest
@@ -57,6 +77,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build OCR service image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./ocr_service
+          file: ./ocr_service/Dockerfile
+          push: false
+          load: true
+          tags: ocr_service:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build frontend image
         uses: docker/build-push-action@v6
         with:
@@ -69,7 +100,7 @@ jobs:
           cache-to: type=gha,mode=max
 
   smoke:
-    name: API smoke
+    name: API & OCR smoke
     runs-on: ubuntu-latest
     needs: [docker-build]
     steps:
@@ -83,14 +114,20 @@ jobs:
           echo "APP_SECRET_KEY=ci-secret-key" >> .env
 
       - name: Build and start services
-        run: docker compose up -d api db redis minio
+        run: docker compose up -d api db redis minio ocr_service
+
+      - name: Check OCR service health
+        run: |
+          curl -f http://localhost:8001/health || exit 1
 
       - name: Run API smoke script
         run: bash scripts/ci/api_smoke.sh
 
-      - name: Show API logs on failure
+      - name: Show logs on failure
         if: failure()
-        run: docker compose logs api
+        run: |
+          docker compose logs api
+          docker compose logs ocr_service
 
       - name: Tear down
         if: always()

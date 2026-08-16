@@ -17,7 +17,10 @@ from app.models.email_template import EmailTemplate, EmailDelivery
 from app.models.ocr_extraction import OCRExtractionCandidate
 from app.models.dossier_field_history import DossierFieldHistory
 from app.models.ocr_text_correction import OCRTextCorrection
-from app.models.evaluation import GoldenCaseExpectation, EvaluationRun, EvaluationFinding
+try:
+    from app.models.evaluation import GoldenCaseExpectation, EvaluationRun, EvaluationFinding
+except ImportError:
+    GoldenCaseExpectation = EvaluationRun = EvaluationFinding = None
 
 __all__ = [
     "Org", "User", "UserOrgRole", "Case", "AuditLog", 

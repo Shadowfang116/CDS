@@ -1,4 +1,4 @@
-﻿"""Phase 7: Urdu legal/property domain normalization for bank-grade OCR."""
+"""Phase 7: Urdu legal/property domain normalization for bank-grade OCR."""
 import logging
 import re
 from datetime import datetime
@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 # Urdu month names
 URDU_MONTHS = {
-    "Ø¬Ù†ÙˆØ±ÛŒ": 1, "ÙØ±ÙˆØ±ÛŒ": 2, "Ù…Ø§Ø±Ú†": 3, "Ø§Ù¾Ø±ÛŒÙ„": 4,
-    "Ù…Ø¦ÛŒ": 5, "Ø¬ÙˆÙ†": 6, "Ø¬ÙˆÙ„Ø§Ø¦ÛŒ": 7, "Ø§Ú¯Ø³Øª": 8,
-    "Ø³ØªÙ…Ø¨Ø±": 9, "Ø§Ú©ØªÙˆØ¨Ø±": 10, "Ù†ÙˆÙ…Ø¨Ø±": 11, "Ø¯Ø³Ù…Ø¨Ø±": 12,
+    "جنوری": 1, "فروری": 2, "مارچ": 3, "اپریل": 4,
+    "مئی": 5, "جون": 6, "جولائی": 7, "اگست": 8,
+    "ستمبر": 9, "اکتوبر": 10, "نومبر": 11, "دسمبر": 12,
 }
 
 # English month names (abbreviated and full)
@@ -40,7 +40,7 @@ def normalize_separators(text: str) -> str:
         return ""
     
     # Urdu full stop and comma normalization
-    text = text.replace('Û”', '.').replace('ØŒ', ',')
+    text = text.replace('۔', '.').replace('،', ',')
     
     return text
 
@@ -154,7 +154,7 @@ def normalize_dates(text: str, strict: bool = True, tz: str = "Asia/Karachi") ->
 
     - yyyy-mm-dd
 
-    - Urdu textual months: Ø¬Ù†ÙˆØ±ÛŒØŒ ÙØ±ÙˆØ±ÛŒØŒ etc.
+    - Urdu textual months: جنوری، فروری، etc.
 
     - English months: Jan, January, etc.
 
@@ -342,7 +342,7 @@ def normalize_dates(text: str, strict: bool = True, tz: str = "Asia/Karachi") ->
 
     # Pattern 3: Urdu textual months
 
-    # Match: "30 Ø¬Ù†ÙˆØ±ÛŒ 2024" or "30-Ø¬Ù†ÙˆØ±ÛŒ-2024" etc.
+    # Match: "30 جنوری 2024" or "30-جنوری-2024" etc.
 
     urdu_month_pattern = r'\b(\d{1,2})\s*[-.]?\s*(' + '|'.join(re.escape(m) for m in URDU_MONTHS.keys()) + r')\s*[-.]?\s*(\d{4})\b'
 
@@ -462,13 +462,13 @@ def normalize_property_refs(text: str, strict: bool = True) -> List[Dict[str, an
 
     
 
-    # Khewat / Ú©Ú¾Ø§ØªÛ / Ú©Ú¾Ø§ØªÛ Ù†Ù…Ø¨Ø±
+    # Khewat / کھاتہ / کھاتہ نمبر
 
     khewat_patterns = [
 
-        r'(?:Ú©Ú¾Ø§ØªÛ|Ú©Ú¾ÛŒÙˆÙ¹|Khewat|Khewat\s+No\.?|Ú©Ú¾Ø§ØªÛ\s+Ù†Ù…Ø¨Ø±)\s*[:\-]?\s*(\d+)',
+        r'(?:کھاتہ|کھیوٹ|Khewat|Khewat\s+No\.?|کھاتہ\s+نمبر)\s*[:\-]?\s*(\d+)',
 
-        r'(\d+)\s*(?:Ú©Ú¾Ø§ØªÛ|Ú©Ú¾ÛŒÙˆÙ¹|Khewat)',
+        r'(\d+)\s*(?:کھاتہ|کھیوٹ|Khewat)',
 
     ]
 
@@ -502,11 +502,11 @@ def normalize_property_refs(text: str, strict: bool = True) -> List[Dict[str, an
 
     
 
-    # Khatoni / Ú©Ú¾ØªÙˆÙ†ÛŒ / khatuni / Khatoni No
+    # Khatoni / کھتونی / khatuni / Khatoni No
 
     khatoni_patterns = [
 
-        r'(?:Ú©Ú¾ØªÙˆÙ†ÛŒ|Khatoni|Khatoni\s+No\.?|Ú©Ú¾ØªÙˆÙ†ÛŒ\s+Ù†Ù…Ø¨Ø±)\s*[:\-]?\s*(\d+)',
+        r'(?:کھتونی|Khatoni|Khatoni\s+No\.?|کھتونی\s+نمبر)\s*[:\-]?\s*(\d+)',
 
     ]
 
@@ -540,11 +540,11 @@ def normalize_property_refs(text: str, strict: bool = True) -> List[Dict[str, an
 
     
 
-    # Khatoni range: "1180 ØªØ§ 1190" or "1180 to 1190"
+    # Khatoni range: "1180 تا 1190" or "1180 to 1190"
 
     khatoni_range_patterns = [
 
-        r'(\d+)\s*(?:ØªØ§|to|-)\s*(\d+)\s*(?:Ú©Ú¾ØªÙˆÙ†ÛŒ|Khatoni)',
+        r'(\d+)\s*(?:تا|to|-)\s*(\d+)\s*(?:کھتونی|Khatoni)',
 
     ]
 
@@ -578,13 +578,13 @@ def normalize_property_refs(text: str, strict: bool = True) -> List[Dict[str, an
 
     
 
-    # Khasra / Ø®Ø³Ø±Û
+    # Khasra / خسرہ
 
     khasra_patterns = [
 
-        r'(?:Ø®Ø³Ø±Û|Khasra|Khasra\s+No\.?)\s*[:\-]?\s*([\d/]+)',
+        r'(?:خسرہ|Khasra|Khasra\s+No\.?)\s*[:\-]?\s*([\d/]+)',
 
-        r'([\d/]+)\s*(?:Ø®Ø³Ø±Û|Khasra)',
+        r'([\d/]+)\s*(?:خسرہ|Khasra)',
 
     ]
 
@@ -618,13 +618,13 @@ def normalize_property_refs(text: str, strict: bool = True) -> List[Dict[str, an
 
     
 
-    # Mutation / Ø§Ù†ØªÙ‚Ø§Ù„ / Intiqal / Mutation No
+    # Mutation / انتقال / Intiqal / Mutation No
 
     mutation_patterns = [
 
-        r'(?:Ø§Ù†ØªÙ‚Ø§Ù„|Mutation|Mutation\s+No\.?|Intiqal)\s*[:\-]?\s*(\d+)',
+        r'(?:انتقال|Mutation|Mutation\s+No\.?|Intiqal)\s*[:\-]?\s*(\d+)',
 
-        r'(\d+)\s*(?:Ø§Ù†ØªÙ‚Ø§Ù„|Mutation|Intiqal)',
+        r'(\d+)\s*(?:انتقال|Mutation|Intiqal)',
 
     ]
 
@@ -674,9 +674,9 @@ def normalize_area_units(text: str, strict: bool = True) -> List[Dict[str, any]]
 
     Formats:
 
-    - "4 kanal 2 marla" or "4 Ú©Ù†Ø§Ù„ 2 Ù…Ø±Ù„Û"
+    - "4 kanal 2 marla" or "4 کنال 2 مرلہ"
 
-    - "500 sqft" or "500 Ù…Ø±Ø¨Ø¹ ÙÙ¹"
+    - "500 sqft" or "500 مربع فٹ"
 
     
 
@@ -700,13 +700,13 @@ def normalize_area_units(text: str, strict: bool = True) -> List[Dict[str, any]]
 
     
 
-    # Pattern: "X kanal Y marla" or "X Ú©Ù†Ø§Ù„ Y Ù…Ø±Ù„Û"
+    # Pattern: "X kanal Y marla" or "X کنال Y مرلہ"
 
     kanal_marla_patterns = [
 
-        r'(\d+)\s*(?:Ú©Ù†Ø§Ù„|kanal)\s+(\d+)\s*(?:Ù…Ø±Ù„Û|marla)',
+        r'(\d+)\s*(?:کنال|kanal)\s+(\d+)\s*(?:مرلہ|marla)',
 
-        r'(\d+)\s*(?:kanal|Ú©Ù†Ø§Ù„)\s+(\d+)\s*(?:marla|Ù…Ø±Ù„Û)',
+        r'(\d+)\s*(?:kanal|کنال)\s+(\d+)\s*(?:marla|مرلہ)',
 
     ]
 
@@ -746,11 +746,11 @@ def normalize_area_units(text: str, strict: bool = True) -> List[Dict[str, any]]
 
     
 
-    # Pattern: "X sqft" or "X Ù…Ø±Ø¨Ø¹ ÙÙ¹" or "X sq. ft."
+    # Pattern: "X sqft" or "X مربع فٹ" or "X sq. ft."
 
     sqft_patterns = [
 
-        r'(\d+)\s*(?:Ù…Ø±Ø¨Ø¹\s*ÙÙ¹|sq\.?\s*ft\.?|sqft)',
+        r'(\d+)\s*(?:مربع\s*فٹ|sq\.?\s*ft\.?|sqft)',
 
     ]
 

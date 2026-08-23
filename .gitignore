@@ -189,7 +189,7 @@ docs/pilot_samples_real/
 docs/PILOT_NEXT_STEPS_CODEX.md
 docs/PILOT_NEXT_STEPS_CURSOR.md
 diagnostics/
-models/
+/models/
 scripts/training/data/
 scripts/training/datasets/*.jsonl
 scripts/training/labelstudio_exports/

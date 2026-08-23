@@ -1,11 +1,13 @@
 from fastapi import APIRouter
 
-from app.api.routes import admin, approvals, audit_timeline, auth, case_controls, case_insights, cases, config, dashboard, dashboard_views, digests, documents, documents_phase10, dossier, dossier_autofill, dossier_fields, downloads, evaluations, exports, health, integrations_email, integrations_webhooks, notifications, ocr, ocr_extractions, ocr_text_corrections, pages_ocr, regime, rules, rules_evidence, verification
+from app.api.routes import admin, approvals, audit_timeline, auth, case_controls, case_insights, cases, config, dashboard, dashboard_views, digests, documents, documents_phase10, dossier, dossier_autofill, dossier_fields, downloads, evaluations, exports, health, inbox, integrations_email, integrations_webhooks, notifications, ocr, ocr_extractions, ocr_text_corrections, pages_ocr, regime, rules, rules_evidence, verification, workbench
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router)
 api_router.include_router(cases.router)
+api_router.include_router(workbench.router)
+api_router.include_router(inbox.router)
 api_router.include_router(documents.router)
 api_router.include_router(documents_phase10.router)
 api_router.include_router(downloads.router)

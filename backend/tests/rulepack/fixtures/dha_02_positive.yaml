@@ -1,0 +1,9 @@
+name: dha_02_positive
+base: clean_urban
+regime: DHA
+doc_types_remove:
+- site_plan
+expect_triggered:
+- DHA-02
+expect_not_triggered: []
+expected_decision: PASS

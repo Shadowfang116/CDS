@@ -1,0 +1,6 @@
+name: lg_001_negative
+base: clean_urban
+expect_triggered: []
+expect_not_triggered:
+- LG_001
+expected_decision: PASS

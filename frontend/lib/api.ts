@@ -264,6 +264,54 @@ export async function changePassword(currentPassword: string, newPassword: strin
 }
 
 // Cases
+export interface InboxItem {
+  id: string;
+  title: string;
+  status: string;
+  decision: string | null;
+  assigned_to_user_id: string | null;
+  assigned_to_email: string | null;
+  updated_at: string;
+  created_at: string;
+  open_high: number;
+  open_medium: number;
+  open_low: number;
+  open_cps: number;
+  open_hard_stop: number;
+  next_action: string;
+  queues: string[];
+}
+
+export interface InboxResponse {
+  items: InboxItem[];
+  page: number;
+  page_size: number;
+  total: number;
+  counts: {
+    mine: number;
+    blocked: number;
+    waiting: number;
+    ready: number;
+    aging: number;
+    all: number;
+  };
+}
+
+export async function listInbox(params: {
+  queue?: string;
+  q?: string;
+  page?: number;
+  page_size?: number;
+} = {}): Promise<InboxResponse> {
+  const sp = new URLSearchParams();
+  if (params.queue) sp.set('queue', params.queue);
+  if (params.q) sp.set('q', params.q);
+  if (params.page != null) sp.set('page', String(params.page));
+  if (params.page_size != null) sp.set('page_size', String(params.page_size));
+  const qs = sp.toString();
+  return fetchApi(`/inbox${qs ? `?${qs}` : ''}`);
+}
+
 export async function listCases(): Promise<any[]> {
   return fetchApi('/cases');
 }
@@ -371,6 +419,20 @@ export async function updateCaseAssignment(caseId: string, action: 'claim' | 'un
   });
 }
 
+export async function updateCaseStatus(caseId: string, status: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function updateCP(cpId: string, status: string, waiverReason?: string): Promise<any> {
+  return fetchApi(`/cps/${cpId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status, waiver_reason: waiverReason }),
+  });
+}
+
 export async function createCase(title: string): Promise<any> {
   return fetchApi('/cases', {
     method: 'POST',
@@ -380,6 +442,42 @@ export async function createCase(title: string): Promise<any> {
 
 export async function getCase(caseId: string): Promise<any> {
   return fetchApi(`/cases/${caseId}`);
+}
+
+export async function getCaseWorkbench(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/workbench`);
+}
+
+export async function workbenchExtract(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/workbench/extract`, { method: "POST" });
+}
+
+export async function workbenchEvaluate(caseId: string): Promise<any> {
+  return fetchApi(`/cases/${caseId}/workbench/evaluate`, { method: "POST" });
+}
+
+export async function workbenchRequestWaiver(
+  caseId: string,
+  exceptionId: string,
+  waiverReason: string
+): Promise<any> {
+  return fetchApi(`/cases/${caseId}/workbench/request-waiver`, {
+    method: "POST",
+    body: JSON.stringify({ exception_id: exceptionId, waiver_reason: waiverReason }),
+  });
+}
+
+export async function workbenchSubmit(
+  caseId: string,
+  payload: { decision?: string; rationale: string }
+): Promise<any> {
+  return fetchApi(`/cases/${caseId}/workbench/submit`, {
+    method: "POST",
+    body: JSON.stringify({
+      decision: payload.decision || "CONDITIONAL_PASS",
+      rationale: payload.rationale,
+    }),
+  });
 }
 
 // Documents
@@ -546,6 +644,7 @@ export async function resolveException(exceptionId: string, reason?: string): Pr
 }
 
 export async function waiveException(exceptionId: string, reason: string): Promise<any> {
+  // Deprecated: ExceptionsPanel still calls this. Matter workbench uses workbenchRequestWaiver.
   return fetchApi(`/exceptions/${exceptionId}`, {
     method: 'PATCH',
     body: JSON.stringify({ action: 'waive', waiver_reason: reason }),
@@ -615,6 +714,7 @@ export async function markVerificationFailed(caseId: string, verificationType: s
 export interface DashboardKPIs {
   active_cases: number;
   open_high_exceptions: number;
+  open_cps?: number;
   pending_verifications: number;
   cp_completion_pct: number;
   verification_completion_pct: number;

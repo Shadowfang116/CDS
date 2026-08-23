@@ -1,0 +1,6 @@
+name: cant_001_negative
+base: clean_cantonment
+expect_triggered: []
+expect_not_triggered:
+- CANT_001
+expected_decision: PASS

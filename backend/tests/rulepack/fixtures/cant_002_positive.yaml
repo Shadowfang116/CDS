@@ -1,0 +1,10 @@
+name: cant_002_positive
+base: clean_cantonment
+pages_add:
+- doc: cant02.pdf
+  page: 1
+  text: The grant remains vulnerable to resumption by the board.
+expect_triggered:
+- CANT_002
+expect_not_triggered: []
+expected_decision: FAIL

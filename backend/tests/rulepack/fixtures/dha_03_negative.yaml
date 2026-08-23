@@ -1,0 +1,6 @@
+name: dha_03_negative
+base: clean_constructed
+expect_triggered: []
+expect_not_triggered:
+- DHA-03
+expected_decision: PASS

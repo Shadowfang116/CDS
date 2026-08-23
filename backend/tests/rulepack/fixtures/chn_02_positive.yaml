@@ -1,0 +1,10 @@
+name: chn_02_positive
+base: clean_urban
+pages_add:
+- doc: chn02.pdf
+  page: 1
+  text: A death certificate has been referenced for the prior owner.
+expect_triggered:
+- CHN-02
+expect_not_triggered: []
+expected_decision: PASS

@@ -1,0 +1,8 @@
+name: lg_001_positive
+base: clean_urban
+doc_types_remove:
+- municipal_dues_clearance
+expect_triggered:
+- LG_001
+expect_not_triggered: []
+expected_decision: PASS

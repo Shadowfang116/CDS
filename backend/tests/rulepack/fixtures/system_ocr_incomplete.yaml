@@ -1,0 +1,6 @@
+name: system_ocr_incomplete
+base: clean_urban
+ocr_complete: false
+expect_error: OCR
+expect_triggered: []
+expect_not_triggered: []

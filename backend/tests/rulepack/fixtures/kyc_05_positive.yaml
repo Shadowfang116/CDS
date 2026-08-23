@@ -1,0 +1,8 @@
+name: kyc_05_positive
+base: clean_urban
+doc_types_remove:
+- Salary Slip
+expect_triggered:
+- KYC-05
+expect_not_triggered: []
+expected_decision: FAIL

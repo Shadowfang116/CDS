@@ -11,6 +11,73 @@ def normalize_whitespace(s: str) -> str:
     return re.sub(r'\s+', ' ', s).strip()
 
 
+EXTRACTION_GARBAGE_TOKENS = [
+    "cds-gold",
+    "sample",
+    "not a real document",
+    "فرضی تربیتی",
+    "حقیقی دستاویز",
+    "ایک جانب",
+    "دوسری جانب",
+    "درج ذیل شرائط",
+    "متفق ہوئے",
+    "جسے آئندہ",
+    "ملاحظہ",
+    "کے لیے",
+    "حصص داران",
+]
+
+MUTATION_FORM_LABELS = [
+    "رجسٹریشن حوالہ",
+    "منتقل الیہ",
+    "منتقل کنندہ",
+    "/ منتقل الیہ",
+    "اندراج نمبر",
+    "حوالہ نمبر",
+    "نمبر اندراج",
+    "transferor",
+    "transferee",
+]
+
+
+def is_mutation_form_label(s: str) -> bool:
+    """True when the string is a mutation-form field label, not a party name."""
+    text = normalize_whitespace(s or "").strip(" /:-|")
+    if not text:
+        return True
+    lowered = text.lower()
+    for label in MUTATION_FORM_LABELS:
+        if text == label or lowered == label.lower():
+            return True
+        if len(text) <= 24 and label in text:
+            return True
+    if text in {"منتقل", "حوالہ", "اندراج"}:
+        return True
+    return False
+
+
+def is_extraction_garbage(s: str, role: str = "person") -> Tuple[bool, Optional[str]]:
+    """True when the string is a watermark, clause leftover, or placeholder — not a name."""
+    if not s:
+        return True, "empty_value"
+    text = normalize_whitespace(s)
+    lowered = text.lower()
+    for token in EXTRACTION_GARBAGE_TOKENS:
+        if token in lowered or token in text:
+            return True, f"garbage_token: {token}"
+    if text.strip() in {"(فرضی)", "فرضی"} or (
+        "(فرضی)" in text and ("گواہ" in text or role == "witness")
+    ):
+        return True, "placeholder_witness"
+    if role == "seller" and any(token in text for token in ("خریدار", "مشتری")):
+        return True, "role_bleed: seller contains buyer marker"
+    if role == "buyer" and "شرائط" in text and "کمپنی" not in text and "لمیٹڈ" not in text:
+        return True, "role_bleed: buyer is boilerplate terms"
+    if is_mutation_form_label(text):
+        return True, "mutation_form_label"
+    return False, None
+
+
 def is_plausible_party_name(s: str, role: str = "person") -> Tuple[bool, Optional[str]]:
     """
     Validate if string is likely a party name (person or organization).
@@ -25,6 +92,12 @@ def is_plausible_party_name(s: str, role: str = "person") -> Tuple[bool, Optiona
         Tuple of (is_valid, warning_reason_if_weak)
     """
     s = normalize_whitespace(s)
+
+    is_garbage, garbage_reason = is_extraction_garbage(s, role=role)
+    if is_garbage:
+        return False, garbage_reason
+    if is_mutation_form_label(s):
+        return False, "mutation_form_label"
     
     # CRITICAL: Hard reject corrupted text FIRST (before ANY other logic)
     # This must run before role-aware allowances for org names
@@ -64,7 +137,8 @@ def is_plausible_party_name(s: str, role: str = "person") -> Tuple[bool, Optiona
     org_keywords = [
         "bank", "ltd", "limited", "pvt", "private", "company", "co", "corp", "corporation",
         "society", "association", "trust", "foundation", "group", "holdings",
-        "بینک", "لمیٹڈ", "پرائیویٹ", "کمپنی", "کارپوریشن", "سوسائٹی", "ٹرسٹ"
+        "بینک", "لمیٹڈ", "پرائیویٹ", "کمپنی", "کارپوریشن", "سوسائٹی", "ٹرسٹ",
+        "ٹیکسٹائل", "textile", "mills",
     ]
     
     # Check if this looks like an organization name

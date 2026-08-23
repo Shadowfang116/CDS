@@ -1,0 +1,10 @@
+name: soc_06_positive
+base: clean_urban
+pages_add:
+- doc: soc06.pdf
+  page: 1
+  text: An authority notice was issued regarding the building status.
+expect_triggered:
+- SOC-06
+expect_not_triggered: []
+expected_decision: PASS

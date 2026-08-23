@@ -1,0 +1,6 @@
+name: lra_002_negative
+base: clean_revenue
+expect_triggered: []
+expect_not_triggered:
+- LRA_002
+expected_decision: PASS

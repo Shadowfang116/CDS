@@ -1,0 +1,10 @@
+name: kyc_06_positive
+base: clean_urban
+pages_add:
+- doc: kyc06.pdf
+  page: 1
+  text: The prior credential is expired and must be renewed.
+expect_triggered:
+- KYC-06
+expect_not_triggered: []
+expected_decision: PASS

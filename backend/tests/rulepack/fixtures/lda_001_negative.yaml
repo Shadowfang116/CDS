@@ -1,0 +1,7 @@
+name: lda_001_negative
+base: clean_urban
+regime: LDA
+expect_triggered: []
+expect_not_triggered:
+- LDA_001
+expected_decision: PASS

@@ -1,0 +1,10 @@
+name: soc_04_negative
+base: clean_urban
+pages_add:
+- doc: soc04-negative.pdf
+  page: 1
+  text: The discharge deed confirms title is without encumbrance.
+expect_triggered: []
+expect_not_triggered:
+- SOC-04
+expected_decision: PASS

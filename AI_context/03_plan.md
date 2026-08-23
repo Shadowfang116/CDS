@@ -105,6 +105,9 @@ for why Stack B changes don't count.
 11. **Field-level validators:** CNIC check-format, date plausibility, khasra/khewat
     format, area-unit arithmetic consistency, amount-in-words vs amount-in-digits
     cross-check. Anything failing validation → NeedsReview, never auto-filled.
+    Party-role names on Pakistani sale deeds use a recital clause parser
+    (`sale_deed_clauses.py`, F10) so reviewable candidates are actual names, not
+    boilerplate.
 12. **Urdu wordlist for Tesseract** (`--user-words`) built from the repaired domain
     vocabulary. Depends on 9.
 

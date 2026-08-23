@@ -1,0 +1,8 @@
+name: stamp_001_positive
+base: clean_urban
+doc_types_remove:
+- estamp_certificate
+expect_triggered:
+- STAMP_001
+expect_not_triggered: []
+expected_decision: PASS

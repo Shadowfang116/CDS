@@ -1,0 +1,6 @@
+name: soc_002_negative
+base: clean_urban
+expect_triggered: []
+expect_not_triggered:
+- SOC_002
+expected_decision: PASS

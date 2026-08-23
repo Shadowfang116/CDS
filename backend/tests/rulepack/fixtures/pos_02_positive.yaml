@@ -1,0 +1,10 @@
+name: pos_02_positive
+base: clean_urban
+pages_add:
+- doc: pos02.pdf
+  page: 1
+  text: A stay order is currently operating against the property.
+expect_triggered:
+- POS-02
+expect_not_triggered: []
+expected_decision: PASS

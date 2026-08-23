@@ -1,0 +1,10 @@
+name: lda_003_negative
+base: clean_urban
+regime: LDA
+dossier_updates:
+  property.use_type:
+  - commercial
+expect_triggered: []
+expect_not_triggered:
+- LDA_003
+expected_decision: PASS

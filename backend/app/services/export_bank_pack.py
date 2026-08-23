@@ -319,7 +319,24 @@ def generate_bank_pack_pdf(
     cp_completion_pct = int(round((closed_cps / len(cps)) * 100)) if cps else 100
 
     story.append(_paragraph(org_name.upper(), title_style))
-    story.append(_paragraph("BANK PACK [DRAFT]", title_style))
+    pack_status = str(case.get("status") or "")
+    pack_decision = str(case.get("decision") or "")
+    if pack_status == "Approved" and pack_decision != "FAIL":
+        pack_heading = f"BANK PACK CDS-BP-{case_ref} VERSION 1 APPROVED"
+        watermark_label = "APPROVED"
+        footer_note = "Issued Bank Pack. Treat this version as immutable; regenerate only as a new version."
+        metadata_title = f"Issued Bank Pack CDS-BP-{case_ref}"
+    elif pack_decision == "FAIL":
+        pack_heading = "FAIL REVIEW PACK — NOT A CLEARANCE"
+        watermark_label = "NOT A CLEARANCE"
+        footer_note = "This FAIL review pack is a file record. It is not a clearance to proceed."
+        metadata_title = "FAIL review pack — not a clearance"
+    else:
+        pack_heading = "DRAFT BANK PACK — NOT APPROVED"
+        watermark_label = "DRAFT"
+        footer_note = "Draft pack preview — not approved. For Approver inspection only."
+        metadata_title = "Draft Bank Pack — not approved"
+    story.append(_paragraph(pack_heading, title_style))
     story.append(_paragraph("Property-Backed Finance Matter Pack", subtitle_style))
 
     story.append(_paragraph("MATTER HEADER", heading_style))
@@ -585,19 +602,23 @@ def generate_bank_pack_pdf(
     story.append(Spacer(1, 0.3 * inch))
     story.append(
         _paragraph(
-            f"Generation timestamp: {generated_timestamp}. This Bank Pack is a structured internal draft prepared for legal and banking review only.",
+            f"Generation timestamp: {generated_timestamp}. {footer_note}",
             ParagraphStyle("BankPackFooter", parent=muted_style, fontSize=8),
         )
     )
 
-    watermark_label = "APPROVED" if case.get("status") == "Approved" else "DRAFT"
     pdf_doc.build(story, onFirstPage=_draw_watermark(watermark_label), onLaterPages=_draw_watermark(watermark_label))
     buffer.seek(0)
     pdf_bytes = buffer.getvalue()
 
     case_id_str = str(case.get("id", ""))
     file_date = datetime.utcnow().strftime("%Y%m%d")
-    filename = f"BANK_PACK__CASE_{case_id_str}__{file_date}__v1.pdf"
+    if pack_status == "Approved" and pack_decision != "FAIL":
+        filename = f"CDS-BP-{case_ref}__V1__APPROVED.pdf"
+    elif pack_decision == "FAIL":
+        filename = f"FAIL_REVIEW_PACK__CASE_{case_id_str}__{file_date}.pdf"
+    else:
+        filename = f"DRAFT_BANK_PACK__CASE_{case_id_str}__{file_date}.pdf"
 
     try:
         from pypdf import PdfReader, PdfWriter
@@ -608,7 +629,7 @@ def generate_bank_pack_pdf(
             writer.add_page(page)
         writer.add_metadata(
             {
-                "/Title": "Bank Pack - Credit Decision Support Memorandum",
+                "/Title": metadata_title,
                 "/Creator": "Covenant Diligence Systems",
             }
         )

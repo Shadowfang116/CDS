@@ -1,4 +1,8 @@
-﻿"""Phase 4: PaddleOCR engine wrapper for ensemble mode."""
+﻿"""DEPRECATED engine-only PaddleOCR wrapper. No production import.
+
+Production OCR is Celery → ocr_pipeline → ocr_service → DocumentPage.
+Do not delete until the Q4/Q1 measurement gate in backend_simplification/05_decisions.md.
+"""
 import logging
 from typing import Any, Dict, Tuple, Optional
 

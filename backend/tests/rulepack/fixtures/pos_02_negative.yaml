@@ -1,0 +1,10 @@
+name: pos_02_negative
+base: clean_urban
+pages_add:
+- doc: pos02-negative.pdf
+  page: 1
+  text: The seller may reclaim the deposit and there is no objection to possession.
+expect_triggered: []
+expect_not_triggered:
+- POS-02
+expected_decision: PASS

@@ -1,0 +1,15 @@
+name: lra_002_positive
+base: clean_revenue
+dossier_updates:
+  property.khasra_numbers:
+  - 12/34
+  - 12/99
+  property.khewat_number:
+  - '56'
+  - '78'
+expect_evidence_for:
+- LRA_002
+expect_triggered:
+- LRA_002
+expect_not_triggered: []
+expected_decision: FAIL

@@ -1,0 +1,1161 @@
+# CDS active Punjab mortgage rulepack
+# Production RULEPACK_PATH points here. Archived KYC photo/salary/utility/co-applicant
+# rules live in docs/rulepacks/archive/generic_mvp_legacy.yaml.
+# Compatibility pack for tests: docs/05_rulepack_v1.yaml
+
+version: "1.0"
+description: "Punjab mortgage due diligence — active pack"
+
+rules:
+  - id: "KYC-01"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Borrower CNIC copy must be present in case documents"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["CNIC Copy", "CNIC", "National ID"]
+    logic:
+      required_doc_types: ["CNIC Copy", "CNIC", "National ID"]
+    outputs:
+      title: "Missing Borrower CNIC Document"
+      exception: "No CNIC copy document found in case files"
+      cp: "Obtain and upload certified copy of borrower's CNIC"
+      evidence_required: "CNIC Copy (front and back)"
+      resolution_conditions: "Upload CNIC copy document and verify against application"
+
+  - id: "KYC-03"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "mismatch"
+    description: "CNIC numbers must be consistent across documents"
+    inputs:
+      dossier_keys: ["party.cnic"]
+    logic:
+      compare_all: true
+      field_pattern: "party.cnic"
+    outputs:
+      title: "CNIC Number Mismatch"
+      exception: "Multiple different CNIC numbers found in documents"
+      cp: "Verify and reconcile CNIC discrepancy"
+      evidence_required: "Attestation letter clarifying CNIC"
+      resolution_conditions: "Confirm correct CNIC and document why others differ"
+
+  - id: "KYC-04"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Check for name variation indicators"
+    inputs:
+      keywords: ["alias", "also known as", "a.k.a", "formerly known", "name change"]
+    logic:
+      keywords_any: ["alias", "also known as", "a.k.a", "formerly known", "name change"]
+    outputs:
+      title: "Name Variation Detected"
+      exception: "Documents indicate borrower may use alternate names"
+      cp: "Obtain name clarification affidavit"
+      evidence_required: "Sworn affidavit explaining name variations"
+      resolution_conditions: "Verify all name variations are documented"
+
+  - id: "KYC-06"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Check for expired document references"
+    inputs:
+      keywords: ["expired", "invalid", "outdated", "no longer valid"]
+    logic:
+      keywords_any: ["expired", "invalid", "outdated", "no longer valid"]
+    outputs:
+      title: "Expired Document Reference"
+      exception: "Documents may reference expired credentials"
+      cp: "Verify and replace expired documents"
+      evidence_required: "Current valid versions of any expired documents"
+      resolution_conditions: "Confirm all documents are current and valid"
+
+  - id: "KYC-08"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Sanctions or PEP indicators"
+    inputs:
+      keywords: ["sanction", "blacklist", "pep", "politically exposed", "watchlist", "restricted"]
+    logic:
+      keywords_any: ["sanction", "blacklist", "pep", "politically exposed", "watchlist", "restricted"]
+    outputs:
+      title: "Sanctions/PEP Risk Indicator"
+      exception: "Documents contain sanctions or PEP-related keywords"
+      cp: "Conduct enhanced due diligence"
+      evidence_required: "Sanctions screening report and PEP verification"
+      resolution_conditions: "Complete EDD and document findings"
+
+  - id: "KYC-09"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Fraud risk indicators in documents"
+    inputs:
+      keywords: ["fraud", "forgery", "fake", "counterfeit", "tampered", "altered"]
+    logic:
+      keywords_any: ["fraud", "forgery", "fake", "counterfeit", "tampered", "altered"]
+    outputs:
+      title: "Fraud Risk Indicator"
+      exception: "Documents contain fraud-related keywords"
+      cp: "Investigate and document fraud risk findings"
+      evidence_required: "Investigation report and verification"
+      resolution_conditions: "Complete investigation and clear fraud concerns"
+
+  - id: "POS-01"
+    module: "Possession/Notice"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Possession certificate or handover letter"
+    inputs:
+      doc_types: ["Possession Letter", "Handover Certificate", "Possession Certificate", "Allotment Letter"]
+    logic:
+      required_doc_types: ["Possession Letter", "Handover Certificate", "Possession Certificate", "Allotment Letter"]
+    outputs:
+      title: "Missing Possession Documentation"
+      exception: "No possession certificate or handover documentation found"
+      cp: "Obtain possession letter from society/developer"
+      evidence_required: "Original possession letter or certified copy"
+      resolution_conditions: "Upload possession documentation with society verification"
+
+  - id: "POS-02"
+    module: "Possession/Notice"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Dispute or objection indicators"
+    inputs:
+      keywords: ["dispute", "objection", "contested", "claim", "litigation", "court order", "stay order"]
+    logic:
+      keywords_any: ["dispute", "objection", "contested", "claim", "litigation", "court order", "stay order"]
+    outputs:
+      title: "Possession Dispute Indicator"
+      exception: "Documents indicate potential possession dispute"
+      cp: "Obtain legal opinion on possession status"
+      evidence_required: "Legal opinion letter and court record search"
+      resolution_conditions: "Clear dispute or document acceptable risk"
+
+  - id: "POS-03"
+    module: "Possession/Notice"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Property site verification report"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["Site Report", "Site Verification", "Property Inspection", "Physical Verification"]
+    logic:
+      required_doc_types: ["Site Report", "Site Verification", "Property Inspection", "Physical Verification"]
+    outputs:
+      title: "Missing Site Verification"
+      exception: "No site/property verification report found"
+      cp: "Conduct physical site verification"
+      evidence_required: "Site verification report with photographs"
+      resolution_conditions: "Upload verification report confirming physical possession"
+
+  - id: "POS-04"
+    module: "Possession/Notice"
+    severity: "Low"
+    evaluator: "keyword_risk"
+    description: "Tenant or third-party occupation"
+    inputs:
+      keywords: ["tenant", "rented", "leased", "occupied by", "third party", "sublease"]
+    logic:
+      keywords_any: ["tenant", "rented", "leased", "occupied by", "third party", "sublease"]
+    outputs:
+      title: "Third-Party Occupation Indicator"
+      exception: "Documents indicate property may be occupied by third party"
+      cp: "Verify current occupation status"
+      evidence_required: "Affidavit confirming possession or lease agreement"
+      resolution_conditions: "Document occupancy status and obtain NOC if needed"
+
+  # ============================================================
+  # MODULE: Society Approval Risk (8 rules)
+  # ============================================================
+
+  - id: "SOC-01"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Society NOC or approval letter"
+    inputs:
+      doc_types: ["Society NOC", "NOC", "No Objection Certificate", "Society Approval", "Transfer NOC"]
+    logic:
+      required_doc_types: ["Society NOC", "NOC", "No Objection Certificate", "Society Approval", "Transfer NOC"]
+    outputs:
+      title: "Missing Society NOC"
+      exception: "No society NOC or approval letter found"
+      cp: "Obtain NOC from housing society"
+      evidence_required: "Original society NOC with seal and signature"
+      resolution_conditions: "Upload NOC and verify society registration"
+
+  - id: "SOC-02"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Unapproved or illegal society indicators"
+    inputs:
+      keywords: ["unapproved", "illegal", "not registered", "unauthorized", "unregistered society", "disputed land"]
+    logic:
+      keywords_any: ["unapproved", "illegal", "not registered", "unauthorized", "unregistered society", "disputed land"]
+    outputs:
+      title: "Unapproved Society Risk"
+      exception: "Documents indicate society may not be approved/registered"
+      cp: "Verify society registration with relevant authority"
+      evidence_required: "Society registration certificate from LDA/CDA/RDA"
+      resolution_conditions: "Confirm society is registered and approved"
+
+  - id: "SOC-03"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Land conversion or CLU certificate"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["CLU", "Land Conversion", "Change of Land Use", "Conversion Certificate"]
+    logic:
+      required_doc_types: ["CLU", "Land Conversion", "Change of Land Use", "Conversion Certificate"]
+    outputs:
+      title: "Missing Land Conversion Certificate"
+      exception: "No CLU or land conversion documentation"
+      cp: "Obtain land conversion certificate if applicable"
+      evidence_required: "CLU certificate from revenue authority"
+      resolution_conditions: "Verify land use is appropriate for residential mortgage"
+
+  - id: "SOC-04"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Encumbrance or lien indicators"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      keywords: ["encumbrance", "lien", "mortgage", "charge", "hypothecation", "security interest"]
+    logic:
+      keywords_any: ["encumbrance", "lien", "mortgage", "charge", "hypothecation", "security interest"]
+    outputs:
+      title: "Prior Encumbrance Indicator"
+      exception: "Documents indicate property may have prior encumbrances"
+      cp: "Obtain encumbrance certificate"
+      evidence_required: "Search report from sub-registrar office"
+      resolution_conditions: "Clear encumbrances or obtain subordination"
+
+  - id: "SOC-05"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Allotment letter from society"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["Allotment Letter", "Plot Allotment", "Membership Letter", "Allotment Certificate"]
+    logic:
+      required_doc_types: ["Allotment Letter", "Plot Allotment", "Membership Letter", "Allotment Certificate"]
+    outputs:
+      title: "Missing Allotment Letter"
+      exception: "No original allotment letter found"
+      cp: "Obtain original allotment letter from society"
+      evidence_required: "Original allotment letter or certified copy"
+      resolution_conditions: "Upload allotment letter and verify with society records"
+
+  - id: "SOC-06"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Development authority notice or violation"
+    inputs:
+      keywords: ["violation", "notice", "demolition", "unauthorized construction", "building violation", "illegal construction"]
+    logic:
+      keywords_any: ["violation", "notice", "demolition", "unauthorized construction", "building violation", "illegal construction"]
+    outputs:
+      title: "Building Violation Indicator"
+      exception: "Documents indicate potential building violations"
+      cp: "Obtain status of any pending violations"
+      evidence_required: "Clearance certificate or violation status report"
+      resolution_conditions: "Clear violations or document acceptable risk"
+
+  - id: "SOC-07"
+    module: "Society/Approval"
+    severity: "Low"
+    evaluator: "missing_evidence"
+    description: "Approved building plan"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["Building Plan", "Approved Plan", "Construction Plan", "Layout Plan"]
+    logic:
+      required_doc_types: ["Building Plan", "Approved Plan", "Construction Plan", "Layout Plan"]
+    outputs:
+      title: "Missing Approved Building Plan"
+      exception: "No approved building plan found in documents"
+      cp: "Obtain approved building plan from authority"
+      evidence_required: "Approved building plan with authority stamp"
+      resolution_conditions: "Upload plan and verify approval status"
+
+  - id: "SOC-08"
+    module: "Society/Approval"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Society dues or outstanding payments"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      keywords: ["outstanding", "dues", "arrears", "unpaid", "defaulter", "pending payment"]
+    logic:
+      keywords_any: ["outstanding", "dues", "arrears", "unpaid", "defaulter", "pending payment"]
+    outputs:
+      title: "Outstanding Society Dues"
+      exception: "Documents indicate unpaid society dues or arrears"
+      cp: "Obtain payment clearance from society"
+      evidence_required: "Dues clearance certificate from society"
+      resolution_conditions: "Clear outstanding dues and upload receipt"
+
+  # ============================================================
+  # MODULE: POA Risk (4 rules)
+  # ============================================================
+
+  - id: "POA-01"
+    module: "POA/Authority"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Power of Attorney involvement"
+    inputs:
+      keywords: ["power of attorney", "poa", "attorney", "authorized representative", "general power"]
+    logic:
+      keywords_any: ["power of attorney", "poa", "attorney", "authorized representative", "general power"]
+    outputs:
+      title: "POA Transaction Detected"
+      exception: "Transaction involves Power of Attorney"
+      cp: "Verify POA validity and authority"
+      evidence_required: "Registered POA with verification from registrar"
+      resolution_conditions: "Verify POA is valid, registered, and specifically authorizes this transaction"
+
+  - id: "POA-02"
+    module: "POA/Authority"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "GPA (General Power of Attorney) risk"
+    inputs:
+      keywords: ["general power of attorney", "gpa", "irrevocable poa", "special power"]
+    logic:
+      keywords_any: ["general power of attorney", "gpa", "irrevocable poa", "special power"]
+    outputs:
+      title: "GPA-Based Transaction Risk"
+      exception: "Transaction may be based on General Power of Attorney"
+      cp: "Obtain legal opinion on GPA validity"
+      evidence_required: "Legal opinion on POA scope and validity"
+      resolution_conditions: "Confirm legal enforceability and specific authority"
+
+  - id: "POA-03"
+    module: "POA/Authority"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "POA revocation or expiry risk"
+    inputs:
+      keywords: ["revoked", "cancelled", "expired poa", "revocation", "death of principal"]
+    logic:
+      keywords_any: ["revoked", "cancelled", "expired poa", "revocation", "death of principal"]
+    outputs:
+      title: "POA Validity Risk"
+      exception: "Documents indicate POA may be revoked or expired"
+      cp: "Verify current POA status"
+      evidence_required: "Fresh verification of POA validity from registrar"
+      resolution_conditions: "Confirm POA is currently valid and not revoked"
+
+  - id: "POA-04"
+    module: "POA/Authority"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Board resolution for company transactions"
+    inputs:
+      doc_types: ["Board Resolution", "Company Resolution", "Corporate Authorization"]
+    logic:
+      required_doc_types: ["Board Resolution", "Company Resolution", "Corporate Authorization"]
+    outputs:
+      title: "Missing Corporate Authorization"
+      exception: "No board resolution for company/corporate transaction"
+      cp: "Obtain board resolution authorizing transaction"
+      evidence_required: "Certified board resolution with company seal"
+      resolution_conditions: "Upload resolution and verify signing authority"
+
+  # ============================================================
+  # MODULE: Chain/Timeline Gaps (2 rules)
+  # ============================================================
+
+  - id: "CHN-01"
+    module: "Chain/Timeline"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Chain of title break indicators"
+    inputs:
+      keywords: ["break in chain", "missing link", "gap in title", "unregistered transfer", "undocumented sale"]
+    logic:
+      keywords_any: ["break in chain", "missing link", "gap in title", "unregistered transfer", "undocumented sale"]
+    outputs:
+      title: "Title Chain Break Indicator"
+      exception: "Documents indicate potential break in chain of title"
+      cp: "Obtain complete chain of title documentation"
+      evidence_required: "All transfer documents from original allotment"
+      resolution_conditions: "Document complete chain or obtain legal opinion"
+
+  - id: "CHN-02"
+    module: "Chain/Timeline"
+    severity: "Medium"
+    evaluator: "keyword_risk"
+    description: "Inheritance or succession indicators"
+    inputs:
+      keywords: ["inheritance", "succession", "deceased", "legal heir", "death certificate", "succession certificate"]
+    logic:
+      keywords_any: ["inheritance", "succession", "deceased", "legal heir", "death certificate", "succession certificate"]
+    outputs:
+      title: "Inheritance/Succession Transaction"
+      exception: "Property may have passed through inheritance"
+      cp: "Obtain succession documentation"
+      evidence_required: "Succession certificate or legal heir certificate and death certificate"
+      resolution_conditions: "Document succession chain and verify all heirs have consented"
+
+  # ============================================================
+  # MODULE: External Verification (2 rules)
+  # ============================================================
+
+  - id: "EST-VERIFY-01"
+    module: "External Verification"
+    severity: "Medium"
+    evaluator: "verification_check"
+    description: "e-Stamp paper must be verified via official portal"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      verification_type: "e_stamp"
+      dossier_keys: ["estamp.number", "estamp.certificate_id"]
+      keywords: ["e-stamp", "estamp", "stamp paper", "stamp duty", "challan"]
+    logic:
+      require_verification: true
+      auto_satisfy_when_verified: true
+    outputs:
+      title: "e-Stamp Verification Required"
+      exception: "e-Stamp paper detected but not verified via official portal"
+      cp: "Verify e-Stamp authenticity via government portal"
+      evidence_required: "Screenshot of e-Stamp verification from official portal"
+      resolution_conditions: "Complete e-Stamp verification and attach portal confirmation"
+
+  - id: "REG-VERIFY-01"
+    module: "External Verification"
+    severity: "Medium"
+    evaluator: "verification_check"
+    description: "Registry/ROD must be verified via official portal"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      verification_type: "registry_rod"
+      dossier_keys: ["registry.number", "registry.year", "rod.number"]
+      keywords: ["registry", "registered deed", "registration", "sub-registrar", "rod", "record of rights"]
+    logic:
+      require_verification: true
+      auto_satisfy_when_verified: true
+    outputs:
+      title: "Registry/ROD Verification Required"
+      exception: "Registry or ROD detected but not verified via official portal"
+      cp: "Verify Registry/ROD authenticity via government portal"
+      evidence_required: "Screenshot of Registry verification from official portal"
+      resolution_conditions: "Complete Registry verification and attach portal confirmation"
+
+  # ============================================================
+  # MODULE: DHA Transfer/Acquisition (4 rules)
+  # ============================================================
+
+  - id: "DHA-01"
+    module: "DHA Transfer/Acquisition"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Missing DHA NDC (No Dues Certificate)"
+    applies_when:
+      regime:
+        - DHA
+    inputs:
+      doc_types: ["dha_ndc", "NDC", "DHA NDC"]
+    logic:
+      required_doc_types: ["dha_ndc", "NDC", "DHA NDC"]
+    outputs:
+      title: "Missing DHA NDC"
+      exception: "No DHA NDC document found in case files"
+      cp: "Obtain NDC issued by DHA office"
+      evidence_required: "Original DHA NDC + verification screenshot/receipt (if available)"
+      resolution_conditions: "Upload DHA NDC and verify with DHA office"
+
+  - id: "DHA-02"
+    module: "DHA Transfer/Acquisition"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Missing Site Plan"
+    applies_when:
+      regime:
+        - DHA
+    inputs:
+      doc_types: ["site_plan", "Site Plan"]
+    logic:
+      required_doc_types: ["site_plan", "Site Plan"]
+    outputs:
+      title: "Missing Site Plan"
+      exception: "No site plan document found in case files"
+      cp: "Obtain site plan"
+      evidence_required: "Original site plan from DHA or approved authority"
+      resolution_conditions: "Upload site plan and verify authenticity"
+
+  - id: "DHA-03"
+    module: "DHA Transfer/Acquisition"
+    severity: "Medium"
+    evaluator: "constructed_gate"
+    description: "Missing Approved Drawing/Map (IF constructed property)"
+    applies_when:
+      regime:
+        - DHA
+    inputs:
+      doc_types: ["approved_map", "Approved Map", "Approved Drawing"]
+      keywords: ["constructed", "building", "constructed property", "structure"]
+    logic:
+      required_doc_types: ["approved_map", "Approved Map", "Approved Drawing"]
+      constructed_indicators: ["constructed", "building", "constructed property", "structure"]
+    outputs:
+      title: "Missing Approved Drawing/Map (Constructed Property)"
+      exception: "Property appears to be constructed but no approved drawing/map found"
+      cp: "Obtain approved drawing/map from DHA or building control authority"
+      evidence_required: "Approved drawing/map with authority stamp"
+      resolution_conditions: "Upload approved drawing/map and verify for constructed property"
+
+  - id: "DHA-04"
+    module: "DHA Transfer/Acquisition"
+    severity: "Low"
+    evaluator: "constructed_gate"
+    description: "Missing Completion Certificate (IF constructed property)"
+    applies_when:
+      regime:
+        - DHA
+    inputs:
+      doc_types: ["completion_certificate", "Completion Certificate"]
+      keywords: ["constructed", "building", "constructed property", "structure"]
+    logic:
+      required_doc_types: ["completion_certificate", "Completion Certificate"]
+      constructed_indicators: ["constructed", "building", "constructed property", "structure"]
+    outputs:
+      title: "Missing Completion Certificate (Constructed Property)"
+      exception: "Property appears to be constructed but no completion certificate found"
+      cp: "Obtain completion certificate from DHA or building control authority"
+      evidence_required: "Completion certificate with authority verification"
+      resolution_conditions: "Upload completion certificate and verify for constructed property"
+
+  # ============================================================
+  # MODULE: TPA (Transfer of Property Act) - P9
+  # ============================================================
+
+  - id: "TPA_NOTICE_POSSESSION_001"
+    module: "TPA"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "keyword_risk"
+    description: "Possession risk indicators - tenant/occupation without evidence"
+    inputs:
+      keywords: ["tenant", "occupied", "rent", "possession with", "qabza", "rental"]
+      dossier_keys: ["property.possession_status"]
+      doc_types: ["possession_affidavit", "site_visit_memo", "rent_agreement", "tenant_noc"]
+    logic:
+      keywords_any: ["tenant", "occupied", "rent", "possession with", "qabza", "rental"]
+      dossier_check: "property.possession_status == 'unknown'"
+      required_doc_types: ["possession_affidavit", "site_visit_memo", "rent_agreement", "tenant_noc"]
+    outputs:
+      title: "Possession Risk - Third Party Occupation"
+      exception: "Documents indicate property may be occupied by tenant/third party without proper evidence"
+      cp: "Obtain possession affidavit OR site visit memo OR rent agreement + tenant NOC"
+      evidence_required: "possession_affidavit OR site_visit_memo OR (rent_agreement + tenant_noc)"
+      resolution_conditions: "Upload evidence clarifying possession status"
+
+  - id: "TPA_CHAIN_GAP_001"
+    module: "TPA"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing chain of title documents - only fard present without registry/certified copy"
+    inputs:
+      doc_types: ["registry_deed", "certified_copy", "fard", "jamabandi"]
+      keywords: ["through attorney", "attorney", "poa"]
+    logic:
+      required_doc_types: ["registry_deed", "certified_copy"]
+      conditional: "if only fard present AND no registry_deed/certified_copy"
+      keywords_any: ["through attorney", "attorney"]
+      require_poa_if_attorney: true
+    outputs:
+      title: "Chain of Title Gap - Missing Registry/Certified Copy"
+      exception: "Only fard/jamabandi present without registered title instrument OR attorney transfer without POA"
+      cp: "Obtain certified copy of prior conveyance / mutation chain / registered deed"
+      evidence_required: "certified_copy OR registry_deed OR prior conveyance documents + POA (if attorney transfer)"
+      resolution_conditions: "Upload complete chain of title documentation"
+
+  - id: "TPA_CAPACITY_001"
+    module: "TPA"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "keyword_risk"
+    description: "Capacity issues - deceased/minor/legal heirs without succession docs"
+    inputs:
+      keywords: ["late", "deceased", "minor", "legal heirs", "succession", "heirs"]
+      doc_types: ["succession_certificate", "letters_of_administration", "guardianship_order"]
+    logic:
+      keywords_any: ["late", "deceased", "minor", "legal heirs", "succession", "heirs"]
+      required_doc_types: ["succession_certificate", "letters_of_administration", "guardianship_order"]
+    outputs:
+      title: "Capacity Risk - Succession/Guardianship Required"
+      exception: "Documents indicate deceased owner OR minor OR legal heirs without succession documentation"
+      cp: "Obtain succession certificate OR letters of administration OR guardianship order"
+      evidence_required: "succession_certificate OR letters_of_administration OR guardianship_order"
+      resolution_conditions: "Upload succession/guardianship documentation and verify all heirs have consented"
+
+  # ============================================================
+  # MODULE: Registration Act - P9
+  # ============================================================
+
+  - id: "REG_001"
+    module: "Registration"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing registered title instrument where required"
+    inputs:
+      doc_types: ["registry_deed", "certified_copy"]
+    logic:
+      required_doc_types: ["registry_deed", "certified_copy"]
+    outputs:
+      title: "Missing Registered Title Instrument"
+      exception: "No registered title instrument (registry_deed or certified_copy) found"
+      cp: "Obtain certified copy of registered deed with registry number/date/sub-registrar details"
+      evidence_required: "certified_copy OR registry_deed with registry_number, registry_date, sub_registrar"
+      resolution_conditions: "Upload registered title instrument with complete registry details"
+
+  - id: "REG_002"
+    module: "Registration"
+    severity: "High"
+    evaluator: "mismatch"
+    description: "Registry number/date mismatch across documents"
+    inputs:
+      dossier_keys: ["registry.registry_number", "registry.registry_date"]
+    logic:
+      compare_all: true
+      field_pattern: "registry.registry_number"
+      compare_dates: true
+      field_pattern_date: "registry.registry_date"
+    outputs:
+      title: "Registry Number/Date Mismatch"
+      exception: "Extracted registry number or date differs across documents (legal opinion vs deed vs ROD output)"
+      cp: "Verify correct registry number/date via ROD evidence upload OR certified copy"
+      evidence_required: "ROD_output OR certified_copy with verified registry_number and registry_date"
+      resolution_conditions: "Reconcile registry details and upload verified evidence"
+
+  # ============================================================
+  # MODULE: Stamp Act - P9
+  # ============================================================
+
+  - id: "STAMP_001"
+    module: "Stamp"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Missing e-stamp certificate or challan where required (sale/mortgage)"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["estamp_certificate", "stamp_challan", "stamp_receipt"]
+    logic:
+      required_doc_types: ["estamp_certificate", "stamp_challan", "stamp_receipt"]
+    outputs:
+      title: "Missing E-Stamp Evidence"
+      exception: "No e-stamp certificate or paid challan found for sale/mortgage transaction"
+      cp: "Obtain e-stamp certificate OR paid stamp challan/receipt"
+      evidence_required: "estamp_certificate OR stamp_challan OR stamp_receipt"
+      resolution_conditions: "Upload e-stamp evidence and verify payment"
+
+  - id: "STAMP_002"
+    module: "Stamp"
+    severity: "Medium"
+    evaluator: "mismatch"
+    description: "Consideration amount vs stamp basis mismatch (>15% threshold)"
+    inputs:
+      dossier_keys: ["transaction.consideration_amount", "stamp.stamp_basis_amount"]
+    logic:
+      compare_fields: ["transaction.consideration_amount", "stamp.stamp_basis_amount"]
+      threshold_percent: 15
+    outputs:
+      title: "Stamp Duty Basis Mismatch"
+      exception: "Extracted consideration amount differs from stamp basis amount by >15%"
+      cp: "Obtain DC valuation basis note + paid stamp proof explaining difference"
+      evidence_required: "DC_valuation_basis_note + paid_stamp_proof"
+      resolution_conditions: "Upload valuation basis and stamp payment evidence explaining discrepancy"
+
+  # ============================================================
+  # MODULE: Land Revenue Act (Punjab) - P9
+  # ============================================================
+
+  - id: "LRA_001"
+    module: "Land Revenue"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Missing fard/jamabandi for revenue regime"
+    inputs:
+      doc_types: ["fard", "jamabandi"]
+    logic:
+      required_doc_types: ["fard", "jamabandi"]
+      conditional: "if regime == REVENUE"
+    outputs:
+      title: "Missing Fard/Jamabandi (Revenue Regime)"
+      exception: "Revenue regime detected but no fard/jamabandi found"
+      cp: "Obtain fard malkiat OR jamabandi from revenue authority"
+      evidence_required: "fard OR jamabandi with khasra/khewat/mouza details"
+      resolution_conditions: "Upload fard/jamabandi and verify against registry details"
+
+  - id: "LRA_002"
+    module: "Land Revenue"
+    severity: "High"
+    evaluator: "mismatch"
+    description: "Khasra/khewat mismatch between deed/legal opinion and fard/jamabandi"
+    inputs:
+      dossier_keys: ["property.khasra_numbers", "property.khewat_number"]
+    logic:
+      compare_all: true
+      field_pattern: "property.khasra_numbers"
+      compare_fields: ["property.khasra_numbers", "property.khewat_number"]
+    outputs:
+      title: "Khasra/Khewat Mismatch"
+      exception: "Khasra/khewat numbers differ between deed/legal opinion and fard/jamabandi"
+      cp: "Verify correct khasra/khewat via fresh fard/jamabandi OR revenue authority confirmation"
+      evidence_required: "fresh_fard OR jamabandi OR revenue_authority_confirmation"
+      resolution_conditions: "Reconcile khasra/khewat details and upload verified evidence"
+
+  - id: "LRA_003"
+    module: "Land Revenue"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing mutation entry/charge noting (if bank policy requires)"
+    inputs:
+      doc_types: ["mutation_entry", "intiqal"]
+    logic:
+      required_doc_types: ["mutation_entry", "intiqal"]
+      conditional: "if bank_requires_mutation == true"
+    outputs:
+      title: "Missing Mutation Entry (Policy Requirement)"
+      exception: "Bank policy requires mutation entry but none found"
+      cp: "Obtain mutation entry / intiqal from revenue authority showing current ownership"
+      evidence_required: "mutation_entry OR intiqal with revenue authority stamp"
+      resolution_conditions: "Upload mutation entry and verify current ownership status"
+
+  # ============================================================
+  # MODULE: Society / Cooperative - P9
+  # ============================================================
+
+  - id: "SOC_001"
+    module: "Society"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing society transfer/ownership letter chain"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["society_transfer", "society_allotment"]
+    logic:
+      required_doc_types: ["society_transfer", "society_allotment"]
+    outputs:
+      title: "Missing Society Transfer/Ownership Letter"
+      exception: "No society transfer or ownership letter chain found"
+      cp: "Obtain complete society transfer/ownership letter chain from original allotment"
+      evidence_required: "society_transfer OR society_allotment showing complete chain"
+      resolution_conditions: "Upload society transfer/allotment documents and verify chain"
+
+  - id: "SOC_002"
+    module: "Society"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing society mortgage permission / lien marking"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["society_mortgage_permission"]
+    logic:
+      required_doc_types: ["society_mortgage_permission"]
+    outputs:
+      title: "Missing Society Mortgage Permission"
+      exception: "No society mortgage permission or lien marking found"
+      cp: "Obtain society mortgage permission / lien marking certificate"
+      evidence_required: "society_mortgage_permission with society seal and signature"
+      resolution_conditions: "Upload society mortgage permission and verify with society office"
+
+  - id: "SOC_003"
+    module: "Society"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Missing society dues clearance (NDC)"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["society_ndc"]
+    logic:
+      required_doc_types: ["society_ndc"]
+    outputs:
+      title: "Missing Society NDC (Dues Clearance)"
+      exception: "No society NDC or dues clearance certificate found"
+      cp: "Obtain society NDC showing all dues cleared"
+      evidence_required: "society_ndc with society seal confirming no outstanding dues"
+      resolution_conditions: "Upload society NDC and verify dues clearance"
+
+  # ============================================================
+  # MODULE: LDA - P9
+  # ============================================================
+
+  - id: "LDA_001"
+    module: "LDA"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing scheme approval evidence (layout plan/NOC/placement)"
+    applies_when:
+      regime:
+        - LDA
+    inputs:
+      doc_types: ["lda_layout_plan", "lda_noc", "placement_letter"]
+    logic:
+      required_doc_types: ["lda_layout_plan", "lda_noc", "placement_letter"]
+    outputs:
+      title: "Missing LDA Scheme Approval Evidence"
+      exception: "No LDA layout plan, NOC, or placement letter found"
+      cp: "Obtain approved layout plan OR LDA NOC OR placement letter"
+      evidence_required: "lda_layout_plan OR lda_noc OR placement_letter with LDA authority stamp"
+      resolution_conditions: "Upload LDA approval evidence and verify scheme approval status"
+
+  - id: "LDA_002"
+    module: "LDA"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Revised plan under process / approval awaited risk"
+    applies_when:
+      regime:
+        - LDA
+    inputs:
+      keywords: ["revised plan under process", "approval awaited", "submitted for approval", "under process"]
+    logic:
+      keywords_any: ["revised plan under process", "approval awaited", "submitted for approval", "under process"]
+    outputs:
+      title: "LDA Revised Plan Risk - Approval Pending"
+      exception: "Documents indicate revised plan is under process or approval awaited"
+      cp: "Obtain final approved revised plan OR conditional approval with undertaking/indemnity + CP with deadline"
+      evidence_required: "final_approved_revised_plan OR (conditional_approval + undertaking_indemnity)"
+      resolution_conditions: "Upload final approved plan OR conditional approval with undertaking and set CP deadline"
+
+  - id: "LDA_003"
+    module: "LDA"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Missing commercialization evidence if property use indicates commercial"
+    applies_when:
+      regime:
+        - LDA
+    inputs:
+      doc_types: ["commercialization_letter", "challan_receipt"]
+      dossier_keys: ["property.use_type"]
+    logic:
+      required_doc_types: ["commercialization_letter", "challan_receipt"]
+      conditional: "if property.use_type == 'commercial' OR keywords indicate commercial use"
+    outputs:
+      title: "Missing Commercialization Evidence (Commercial Property)"
+      exception: "Property use indicates commercial but no commercialization letter/challan found"
+      cp: "Obtain commercialization letter + paid challans"
+      evidence_required: "commercialization_letter + challan_receipt"
+      resolution_conditions: "Upload commercialization evidence and verify commercial use approval"
+
+  # ============================================================
+  # MODULE: RUDA - P9
+  # ============================================================
+
+  - id: "RUDA_001"
+    module: "RUDA"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing RUDA NOC when RUDA detected"
+    inputs:
+      doc_types: ["ruda_noc", "ruda_notification"]
+    logic:
+      required_doc_types: ["ruda_noc", "ruda_notification"]
+      conditional: "if regime == RUDA"
+    outputs:
+      title: "Missing RUDA NOC"
+      exception: "RUDA regime detected but no RUDA NOC or notification found"
+      cp: "Obtain RUDA NOC or notification from RUDA authority"
+      evidence_required: "ruda_noc OR ruda_notification with RUDA authority stamp"
+      resolution_conditions: "Upload RUDA NOC and verify with RUDA office"
+
+  - id: "RUDA_002"
+    module: "RUDA"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Acquisition/notified area/restrictions referenced"
+    inputs:
+      keywords: ["acquisition", "notified area", "restrictions", "ruda acquisition", "land acquisition"]
+    logic:
+      keywords_any: ["acquisition", "notified area", "restrictions", "ruda acquisition", "land acquisition"]
+    outputs:
+      title: "RUDA Acquisition/Restrictions Risk"
+      exception: "Documents reference RUDA acquisition or notified area restrictions"
+      cp: "Obtain RUDA clearance certificate OR legal opinion on acquisition status"
+      evidence_required: "ruda_clearance_certificate OR legal_opinion_on_acquisition"
+      resolution_conditions: "Upload RUDA clearance or legal opinion confirming no acquisition risk"
+
+  # ============================================================
+  # MODULE: Cantonment - P9
+  # ============================================================
+
+  - id: "CANT_001"
+    module: "Cantonment"
+    severity: "High"
+    is_hard_stop: true
+    evaluator: "missing_evidence"
+    description: "Missing cantonment transfer permission/NOC where applicable"
+    inputs:
+      doc_types: ["cantonment_noc"]
+    logic:
+      required_doc_types: ["cantonment_noc"]
+      conditional: "if regime == CANTONMENT"
+    outputs:
+      title: "Missing Cantonment Transfer Permission/NOC"
+      exception: "Cantonment regime detected but no cantonment NOC found"
+      cp: "Obtain cantonment transfer permission / NOC from cantonment board"
+      evidence_required: "cantonment_noc with cantonment board seal and signature"
+      resolution_conditions: "Upload cantonment NOC and verify with cantonment board"
+
+  - id: "CANT_002"
+    module: "Cantonment"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Leasehold/grant/resumption risk present without lease/grant docs"
+    inputs:
+      keywords: ["leasehold", "grant", "resumption", "lease", "cantonment lease"]
+      doc_types: ["lease_deed", "grant_conditions"]
+    logic:
+      keywords_any: ["leasehold", "grant", "resumption", "lease", "cantonment lease"]
+      required_doc_types: ["lease_deed", "grant_conditions"]
+    outputs:
+      title: "Cantonment Leasehold/Grant Risk"
+      exception: "Documents indicate leasehold/grant property but no lease deed or grant conditions found"
+      cp: "Obtain lease deed OR grant conditions from cantonment board"
+      evidence_required: "lease_deed OR grant_conditions with cantonment board verification"
+      resolution_conditions: "Upload lease/grant documentation and verify lease terms and resumption risk"
+
+  # ============================================================
+  # MODULE: Municipal / Property Tax - P9
+  # ============================================================
+
+  - id: "LG_001"
+    module: "Municipal"
+    severity: "Medium"
+    evaluator: "missing_evidence"
+    description: "Missing municipal dues clearance"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["municipal_dues_clearance"]
+    logic:
+      required_doc_types: ["municipal_dues_clearance"]
+    outputs:
+      title: "Missing Municipal Dues Clearance"
+      exception: "No municipal dues clearance certificate found"
+      cp: "Obtain municipal dues clearance certificate"
+      evidence_required: "municipal_dues_clearance with municipal authority stamp"
+      resolution_conditions: "Upload municipal dues clearance and verify no outstanding dues"
+
+  - id: "LG_002"
+    module: "Municipal"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Sealing/demolition/violation keywords found"
+    inputs:
+      keywords: ["sealing", "demolition", "violation", "building violation", "sealed", "demolish"]
+    logic:
+      keywords_any: ["sealing", "demolition", "violation", "building violation", "sealed", "demolish"]
+    outputs:
+      title: "Municipal Violation/Demolition Risk"
+      exception: "Documents contain sealing/demolition/violation keywords"
+      cp: "Obtain municipal clearance certificate OR status report on violations"
+      evidence_required: "municipal_clearance_certificate OR violation_status_report"
+      resolution_conditions: "Upload municipal clearance or violation status and verify no active violations"
+
+  - id: "PUA_PT1_001"
+    module: "Municipal"
+    severity: "Low"
+    evaluator: "missing_evidence"
+    description: "PT-1 / property tax evidence missing (if policy requires)"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["pt1", "property_tax_receipt"]
+    logic:
+      required_doc_types: ["pt1", "property_tax_receipt"]
+      conditional: "if policy_requires_pt1 == true"
+    outputs:
+      title: "Missing PT-1 / Property Tax Evidence (Policy Requirement)"
+      exception: "Bank policy requires PT-1 but none found"
+      cp: "Obtain PT-1 or property tax receipt"
+      evidence_required: "pt1 OR property_tax_receipt"
+      resolution_conditions: "Upload PT-1 or property tax evidence and verify payment status"
+
+  # ============================================================
+  # GOLD legal facts (generic — not hard-coded to a named borrower)
+  # ============================================================
+
+  - id: "GOLD-AREA-01"
+    module: "Title/Area"
+    severity: "High"
+    evaluator: "area_mismatch"
+    description: "Property area on the title instrument must match the revenue record"
+    applies_when:
+      transaction_type:
+        - mortgage
+    logic: {}
+    outputs:
+      title: "Property area mismatch"
+      exception: "Area stated on the title instrument differs from the area on the revenue record"
+      cp: "Reconcile area with a current fard or correction instrument"
+      evidence_required: "Current fard showing area consistent with the registered title"
+      resolution_conditions: "Upload a current fard (or correction) whose area matches the title"
+
+  - id: "GOLD-PLAN-01"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Approved building plan is required for a constructed or industrial mortgage"
+    applies_when:
+      transaction_type:
+        - mortgage
+      borrower_type:
+        - company
+    inputs:
+      doc_types: ["Building Plan", "Approved Plan"]
+    logic:
+      required_doc_types: ["Building Plan", "Approved Plan"]
+    outputs:
+      title: "Approved building plan missing"
+      exception: "No approved building plan found for this mortgage"
+      cp: "Obtain the approved building plan from the competent authority"
+      evidence_required: "Approved building plan with authority stamp"
+      resolution_conditions: "Upload the approved plan"
+
+  - id: "GOLD-DUES-01"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Outstanding development charges without a clearance instrument"
+    applies_when:
+      transaction_type:
+        - mortgage
+    inputs:
+      keywords: ["development charge", "development charges", "ترقیاتی"]
+    logic:
+      keywords_any: ["development charge", "development charges", "ترقیاتی"]
+      cleared_by_doc_types: ["Dues Clearance"]
+    outputs:
+      title: "Outstanding development charges"
+      exception: "Documents indicate unpaid development charges and no clearance instrument is on file"
+      cp: "Obtain development-charges clearance from the society or authority"
+      evidence_required: "Dues clearance certificate"
+      resolution_conditions: "Upload dues clearance covering the outstanding charges"
+
+  - id: "GOLD-ENCUMB-01"
+    module: "Encumbrance"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Prior charge or encumbrance without a release instrument"
+    applies_when:
+      transaction_type:
+        - mortgage
+    inputs:
+      keywords: ["prior charge", "existing mortgage", "CHG-", "سابقہ رہن"]
+    logic:
+      keywords_any: ["prior charge", "existing mortgage", "CHG-", "سابقہ رہن"]
+      in_doc_types: ["Search Report"]
+      cleared_by_doc_types: ["Charge Release"]
+    outputs:
+      title: "Prior encumbrance"
+      exception: "Search report or title search indicates a prior charge that is not released"
+      cp: "Obtain a release or satisfaction of the prior charge"
+      evidence_required: "Charge release letter"
+      resolution_conditions: "Upload the release instrument for the cited charge"
+
+  - id: "GOLD-FARD-01"
+    module: "Title/Timeline"
+    severity: "Medium"
+    evaluator: "stale_document"
+    description: "Fard / record of rights must be current"
+    applies_when:
+      transaction_type:
+        - mortgage
+    logic:
+      doc_types: ["Fard"]
+      max_age_days: 90
+    outputs:
+      title: "Stale fard"
+      exception: "The newest fard on file is older than the permitted freshness window, or its issue date cannot be established"
+      cp: "Obtain a current fard with a parseable issue date"
+      evidence_required: "Fard issued within the freshness window"
+      resolution_conditions: "Upload a current fard"
+
+  - id: "GOLD-NAME-01"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "name_variation"
+    description: "Borrower/owner name varies across source documents"
+    applies_when:
+      transaction_type:
+        - mortgage
+    logic:
+      cleared_by_doc_types: ["Identity Confirmation"]
+    outputs:
+      title: "Party name variation"
+      exception: "Owner or borrower name is not identical across independent sources"
+      cp: "Obtain identity confirmation reconciling the name variants"
+      evidence_required: "Identity confirmation or name clarification"
+      resolution_conditions: "Upload identity confirmation covering the variants"
+
+  - id: "GOLD-TAX-01"
+    module: "Municipal"
+    severity: "Low"
+    evaluator: "historical_keyword"
+    description: "Historical property-tax arrears that may be waived with recorded reason"
+    applies_when:
+      transaction_type:
+        - mortgage
+    inputs:
+      keywords: ["previous year", "historic tax", "historical tax", "back years", "گزشتہ سال", "تاریخی", "paper receipt", "waiver scenario", "20-2019"]
+    logic:
+      keywords_any: ["previous year", "historic tax", "historical tax", "back years", "گزشتہ سال", "تاریخی", "paper receipt", "waiver scenario", "20-2019"]
+      in_doc_types: ["Property Tax/PT-10"]
+    outputs:
+      title: "Historical property tax"
+      exception: "Property tax records refer to historic or prior-year arrears"
+      cp: "Confirm current-year tax is paid; historic arrears may be waived with recorded reason"
+      evidence_required: "Current tax receipt and waiver rationale if historic arrears remain"
+      resolution_conditions: "Waive with documented reason once current tax position is accepted"

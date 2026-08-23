@@ -1,0 +1,10 @@
+name: soc_02_positive
+base: clean_urban
+pages_add:
+- doc: soc02.pdf
+  page: 1
+  text: The scheme is described as an unregistered society in the file.
+expect_triggered:
+- SOC-02
+expect_not_triggered: []
+expected_decision: FAIL

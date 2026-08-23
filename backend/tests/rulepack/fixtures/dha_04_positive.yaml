@@ -1,0 +1,9 @@
+name: dha_04_positive
+base: clean_constructed
+regime: DHA
+doc_types_remove:
+- completion_certificate
+expect_triggered:
+- DHA-04
+expect_not_triggered: []
+expected_decision: PASS

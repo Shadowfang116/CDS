@@ -61,6 +61,7 @@ export async function resolveException(exceptionId: string, payload?: any): Prom
 }
 
 export async function waiveException(exceptionId: string, payload: { waiver_reason: string }): Promise<ExceptionRow> {
+  // Deprecated direct waive BFF. Matter workbench uses dual-control /workbench/request-waiver.
   const res = await fetch(`/api/exceptions/${exceptionId}/waive`, {
     method: "POST",
     headers: {

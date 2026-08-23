@@ -1,0 +1,10 @@
+name: kyc_09_positive
+base: clean_urban
+pages_add:
+- doc: kyc09.pdf
+  page: 1
+  text: The record refers to a counterfeit document presented earlier.
+expect_triggered:
+- KYC-09
+expect_not_triggered: []
+expected_decision: PASS

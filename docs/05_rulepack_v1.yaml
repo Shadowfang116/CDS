@@ -1,4 +1,7 @@
 # Covenant Diligence Systems - Rulepack v1
+# Compatibility pack for backend/tests/rulepack. Production RULEPACK_PATH is
+# docs/rulepacks/punjab_mortgage_v1.yaml. Archived KYC-02/05/07/10 live in
+# docs/rulepacks/archive/generic_mvp_legacy.yaml.
 # 28 rules across 5 modules for MVP evaluation
 
 version: "1.0"
@@ -14,6 +17,9 @@ rules:
     severity: "High"
     evaluator: "missing_evidence"
     description: "Borrower CNIC copy must be present in case documents"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["CNIC Copy", "CNIC", "National ID"]
     logic:
@@ -30,6 +36,9 @@ rules:
     severity: "High"
     evaluator: "missing_evidence"
     description: "Borrower photograph must be present"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["Photograph", "Photo", "Passport Photo"]
     logic:
@@ -79,6 +88,9 @@ rules:
     severity: "High"
     evaluator: "missing_evidence"
     description: "Proof of income must be present"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["Salary Slip", "Income Certificate", "Bank Statement", "Tax Return", "Employment Letter"]
     logic:
@@ -111,6 +123,9 @@ rules:
     severity: "Low"
     evaluator: "missing_evidence"
     description: "Utility bill for address verification"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["Utility Bill", "Electricity Bill", "Gas Bill", "Water Bill"]
     logic:
@@ -159,6 +174,9 @@ rules:
     severity: "Low"
     evaluator: "missing_evidence"
     description: "Co-applicant CNIC if applicable"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["Co-applicant CNIC", "Guarantor CNIC", "Co-borrower ID"]
     logic:
@@ -211,6 +229,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Property site verification report"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["Site Report", "Site Verification", "Property Inspection", "Physical Verification"]
     logic:
@@ -279,6 +300,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Land conversion or CLU certificate"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["CLU", "Land Conversion", "Change of Land Use", "Conversion Certificate"]
     logic:
@@ -295,6 +319,9 @@ rules:
     severity: "Medium"
     evaluator: "keyword_risk"
     description: "Encumbrance or lien indicators"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       keywords: ["encumbrance", "lien", "mortgage", "charge", "hypothecation", "security interest"]
     logic:
@@ -311,6 +338,9 @@ rules:
     severity: "High"
     evaluator: "missing_evidence"
     description: "Allotment letter from society"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["Allotment Letter", "Plot Allotment", "Membership Letter", "Allotment Certificate"]
     logic:
@@ -343,6 +373,9 @@ rules:
     severity: "Low"
     evaluator: "missing_evidence"
     description: "Approved building plan"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["Building Plan", "Approved Plan", "Construction Plan", "Layout Plan"]
     logic:
@@ -359,6 +392,9 @@ rules:
     severity: "Medium"
     evaluator: "keyword_risk"
     description: "Society dues or outstanding payments"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       keywords: ["outstanding", "dues", "arrears", "unpaid", "defaulter", "pending payment"]
     logic:
@@ -483,6 +519,9 @@ rules:
     severity: "Medium"
     evaluator: "verification_check"
     description: "e-Stamp paper must be verified via official portal"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       verification_type: "e_stamp"
       dossier_keys: ["estamp.number", "estamp.certificate_id"]
@@ -502,6 +541,9 @@ rules:
     severity: "Medium"
     evaluator: "verification_check"
     description: "Registry/ROD must be verified via official portal"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       verification_type: "registry_rod"
       dossier_keys: ["registry.number", "registry.year", "rod.number"]
@@ -525,6 +567,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Missing DHA NDC (No Dues Certificate)"
+    applies_when:
+      regime:
+        - DHA
     inputs:
       doc_types: ["dha_ndc", "NDC", "DHA NDC"]
     logic:
@@ -541,6 +586,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Missing Site Plan"
+    applies_when:
+      regime:
+        - DHA
     inputs:
       doc_types: ["site_plan", "Site Plan"]
     logic:
@@ -557,6 +605,9 @@ rules:
     severity: "Medium"
     evaluator: "constructed_gate"
     description: "Missing Approved Drawing/Map (IF constructed property)"
+    applies_when:
+      regime:
+        - DHA
     inputs:
       doc_types: ["approved_map", "Approved Map", "Approved Drawing"]
       keywords: ["constructed", "building", "constructed property", "structure"]
@@ -575,6 +626,9 @@ rules:
     severity: "Low"
     evaluator: "constructed_gate"
     description: "Missing Completion Certificate (IF constructed property)"
+    applies_when:
+      regime:
+        - DHA
     inputs:
       doc_types: ["completion_certificate", "Completion Certificate"]
       keywords: ["constructed", "building", "constructed property", "structure"]
@@ -702,6 +756,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Missing e-stamp certificate or challan where required (sale/mortgage)"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["estamp_certificate", "stamp_challan", "stamp_receipt"]
     logic:
@@ -797,6 +854,9 @@ rules:
     is_hard_stop: true
     evaluator: "missing_evidence"
     description: "Missing society transfer/ownership letter chain"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["society_transfer", "society_allotment"]
     logic:
@@ -814,6 +874,9 @@ rules:
     is_hard_stop: true
     evaluator: "missing_evidence"
     description: "Missing society mortgage permission / lien marking"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["society_mortgage_permission"]
     logic:
@@ -830,6 +893,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Missing society dues clearance (NDC)"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["society_ndc"]
     logic:
@@ -851,6 +917,9 @@ rules:
     is_hard_stop: true
     evaluator: "missing_evidence"
     description: "Missing scheme approval evidence (layout plan/NOC/placement)"
+    applies_when:
+      regime:
+        - LDA
     inputs:
       doc_types: ["lda_layout_plan", "lda_noc", "placement_letter"]
     logic:
@@ -867,6 +936,9 @@ rules:
     severity: "High"
     evaluator: "keyword_risk"
     description: "Revised plan under process / approval awaited risk"
+    applies_when:
+      regime:
+        - LDA
     inputs:
       keywords: ["revised plan under process", "approval awaited", "submitted for approval", "under process"]
     logic:
@@ -883,6 +955,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Missing commercialization evidence if property use indicates commercial"
+    applies_when:
+      regime:
+        - LDA
     inputs:
       doc_types: ["commercialization_letter", "challan_receipt"]
       dossier_keys: ["property.use_type"]
@@ -983,6 +1058,9 @@ rules:
     severity: "Medium"
     evaluator: "missing_evidence"
     description: "Missing municipal dues clearance"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["municipal_dues_clearance"]
     logic:
@@ -1015,6 +1093,9 @@ rules:
     severity: "Low"
     evaluator: "missing_evidence"
     description: "PT-1 / property tax evidence missing (if policy requires)"
+    applies_when:
+      borrower_type:
+        - individual
     inputs:
       doc_types: ["pt1", "property_tax_receipt"]
     logic:
@@ -1026,3 +1107,140 @@ rules:
       cp: "Obtain PT-1 or property tax receipt"
       evidence_required: "pt1 OR property_tax_receipt"
       resolution_conditions: "Upload PT-1 or property tax evidence and verify payment status"
+
+  # ============================================================
+  # GOLD legal facts (generic — not hard-coded to a named borrower)
+  # ============================================================
+
+  - id: "GOLD-AREA-01"
+    module: "Title/Area"
+    severity: "High"
+    evaluator: "area_mismatch"
+    description: "Property area on the title instrument must match the revenue record"
+    applies_when:
+      transaction_type:
+        - mortgage
+    logic: {}
+    outputs:
+      title: "Property area mismatch"
+      exception: "Area stated on the title instrument differs from the area on the revenue record"
+      cp: "Reconcile area with a current fard or correction instrument"
+      evidence_required: "Current fard showing area consistent with the registered title"
+      resolution_conditions: "Upload a current fard (or correction) whose area matches the title"
+
+  - id: "GOLD-PLAN-01"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Approved building plan is required for a constructed or industrial mortgage"
+    applies_when:
+      transaction_type:
+        - mortgage
+      borrower_type:
+        - company
+    inputs:
+      doc_types: ["Building Plan", "Approved Plan"]
+    logic:
+      required_doc_types: ["Building Plan", "Approved Plan"]
+    outputs:
+      title: "Approved building plan missing"
+      exception: "No approved building plan found for this mortgage"
+      cp: "Obtain the approved building plan from the competent authority"
+      evidence_required: "Approved building plan with authority stamp"
+      resolution_conditions: "Upload the approved plan"
+
+  - id: "GOLD-DUES-01"
+    module: "Society/Approval"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Outstanding development charges without a clearance instrument"
+    applies_when:
+      transaction_type:
+        - mortgage
+    inputs:
+      keywords: ["development charge", "development charges", "ترقیاتی"]
+    logic:
+      keywords_any: ["development charge", "development charges", "ترقیاتی"]
+      cleared_by_doc_types: ["Dues Clearance"]
+    outputs:
+      title: "Outstanding development charges"
+      exception: "Documents indicate unpaid development charges and no clearance instrument is on file"
+      cp: "Obtain development-charges clearance from the society or authority"
+      evidence_required: "Dues clearance certificate"
+      resolution_conditions: "Upload dues clearance covering the outstanding charges"
+
+  - id: "GOLD-ENCUMB-01"
+    module: "Encumbrance"
+    severity: "High"
+    evaluator: "keyword_risk"
+    description: "Prior charge or encumbrance without a release instrument"
+    applies_when:
+      transaction_type:
+        - mortgage
+    inputs:
+      keywords: ["prior charge", "existing mortgage", "CHG-", "سابقہ رہن"]
+    logic:
+      keywords_any: ["prior charge", "existing mortgage", "CHG-", "سابقہ رہن"]
+      in_doc_types: ["Search Report"]
+      cleared_by_doc_types: ["Charge Release"]
+    outputs:
+      title: "Prior encumbrance"
+      exception: "Search report or title search indicates a prior charge that is not released"
+      cp: "Obtain a release or satisfaction of the prior charge"
+      evidence_required: "Charge release letter"
+      resolution_conditions: "Upload the release instrument for the cited charge"
+
+  - id: "GOLD-FARD-01"
+    module: "Title/Timeline"
+    severity: "Medium"
+    evaluator: "stale_document"
+    description: "Fard / record of rights must be current"
+    applies_when:
+      transaction_type:
+        - mortgage
+    logic:
+      doc_types: ["Fard"]
+      max_age_days: 90
+    outputs:
+      title: "Stale fard"
+      exception: "The newest fard on file is older than the permitted freshness window, or its issue date cannot be established"
+      cp: "Obtain a current fard with a parseable issue date"
+      evidence_required: "Fard issued within the freshness window"
+      resolution_conditions: "Upload a current fard"
+
+  - id: "GOLD-NAME-01"
+    module: "Identity/KYC"
+    severity: "Medium"
+    evaluator: "name_variation"
+    description: "Borrower/owner name varies across source documents"
+    applies_when:
+      transaction_type:
+        - mortgage
+    logic:
+      cleared_by_doc_types: ["Identity Confirmation"]
+    outputs:
+      title: "Party name variation"
+      exception: "Owner or borrower name is not identical across independent sources"
+      cp: "Obtain identity confirmation reconciling the name variants"
+      evidence_required: "Identity confirmation or name clarification"
+      resolution_conditions: "Upload identity confirmation covering the variants"
+
+  - id: "GOLD-TAX-01"
+    module: "Municipal"
+    severity: "Low"
+    evaluator: "historical_keyword"
+    description: "Historical property-tax arrears that may be waived with recorded reason"
+    applies_when:
+      transaction_type:
+        - mortgage
+    inputs:
+      keywords: ["previous year", "historic tax", "historical tax", "back years", "گزشتہ سال", "تاریخی", "paper receipt", "waiver scenario", "20-2019"]
+    logic:
+      keywords_any: ["previous year", "historic tax", "historical tax", "back years", "گزشتہ سال", "تاریخی", "paper receipt", "waiver scenario", "20-2019"]
+      in_doc_types: ["Property Tax/PT-10"]
+    outputs:
+      title: "Historical property tax"
+      exception: "Property tax records refer to historic or prior-year arrears"
+      cp: "Confirm current-year tax is paid; historic arrears may be waived with recorded reason"
+      evidence_required: "Current tax receipt and waiver rationale if historic arrears remain"
+      resolution_conditions: "Waive with documented reason once current tax position is accepted"

@@ -1,0 +1,8 @@
+name: kyc_02_positive
+base: clean_urban
+doc_types_remove:
+- Photograph
+expect_triggered:
+- KYC-02
+expect_not_triggered: []
+expected_decision: FAIL

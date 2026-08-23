@@ -1,0 +1,9 @@
+name: dha_01_positive
+base: clean_urban
+regime: DHA
+doc_types_remove:
+- dha_ndc
+expect_triggered:
+- DHA-01
+expect_not_triggered: []
+expected_decision: PASS

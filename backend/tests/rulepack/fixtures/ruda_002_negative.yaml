@@ -1,0 +1,6 @@
+name: ruda_002_negative
+base: clean_ruda
+expect_triggered: []
+expect_not_triggered:
+- RUDA_002
+expected_decision: PASS

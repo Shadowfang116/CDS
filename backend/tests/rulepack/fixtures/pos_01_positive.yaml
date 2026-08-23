@@ -1,0 +1,8 @@
+name: pos_01_positive
+base: clean_urban
+doc_types_remove:
+- Possession Letter
+expect_triggered:
+- POS-01
+expect_not_triggered: []
+expected_decision: FAIL

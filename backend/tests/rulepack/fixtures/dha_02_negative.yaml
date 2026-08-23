@@ -1,0 +1,6 @@
+name: dha_02_negative
+base: clean_urban
+expect_triggered: []
+expect_not_triggered:
+- DHA-02
+expected_decision: PASS

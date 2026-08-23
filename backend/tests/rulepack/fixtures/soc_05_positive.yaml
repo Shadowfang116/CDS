@@ -1,0 +1,8 @@
+name: soc_05_positive
+base: clean_urban
+doc_types_remove:
+- Membership Letter
+expect_triggered:
+- SOC-05
+expect_not_triggered: []
+expected_decision: FAIL

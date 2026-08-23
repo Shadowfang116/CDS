@@ -1,0 +1,15 @@
+name: gold_area_01_negative
+base: clean_urban
+facts:
+  - key: fact.area
+    value: 4 Kanal
+    doc_type: Sale Deed
+    page: 2
+  - key: fact.area
+    value: 4 Kanal
+    doc_type: Fard
+    page: 1
+expect_triggered: []
+expect_not_triggered:
+- GOLD-AREA-01
+expected_decision: PASS

@@ -1,0 +1,10 @@
+name: kyc_08_positive
+base: clean_urban
+pages_add:
+- doc: kyc08.pdf
+  page: 1
+  text: Internal screening notes a watchlist hit for the applicant.
+expect_triggered:
+- KYC-08
+expect_not_triggered: []
+expected_decision: FAIL

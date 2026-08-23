@@ -1,0 +1,13 @@
+name: gold_dues_01_negative
+base: clean_urban
+borrower_type: company
+doc_types_add:
+- Dues Clearance
+pages_add:
+- doc: noc.pdf
+  page: 1
+  text: Society records show unpaid development charges against the plot.
+expect_triggered: []
+expect_not_triggered:
+- GOLD-DUES-01
+expected_decision: PASS

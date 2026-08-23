@@ -4,17 +4,124 @@
 
 | | |
 |---|---|
-| **Last updated** | 2026-08-16 |
-| **Phase** | Phase 0 / WS0 & WS1 |
-| **Branch** | `feat/ocr-accuracy-improvements` |
-| **Code changed** | `ocr_service/Dockerfile`, `eval_urdu_ocr.py`, `config.py`, `ocr_domain_ur.py`, `ocr_text.py`, `test_ocr_domain_ur.py`, `ci.yml`, `eval_ocr_service.py`, `ocr_service/preprocessing.py`, `pdf_text_layer.py`, `test_pdf_text_layer.py`, `test_preprocessing.py`, `tesseract_engine.py`, `test_tesseract_engine.py`, `ocr_service/main.py` |
-| **Findings** | 3 open, 6 fixed (F1, F2, F3, F4, F5, F9), 1 in progress (F6) |
+| **Last updated** | 2026-08-19 |
+| **Phase** | Matter Workbench product phase — Phase 1 shell |
+| **Branch** | `refactor/cds-backend-core` |
+| **Live case** | RUN 3 flagship `38e6069e-4c3d-4a41-94c8-8b9ecc92e069`. Visual corpus RUN 2 `5bcdb8eb-…`. Do not use RUN 1 `4673c7f2-…`. |
+| **Findings** | F10 🟢, F11 🟢, F12 🟢. Open: F7, F8. In progress: F3, F6. |
 | **Baseline CER/WER/F1** | ❌ pending sample PDFs (Q1) |
-| **Next action** | Workstream 2 (Surya engine rewrite for modern surya-ocr API) |
+| **Next action** | Walk RUN 2/3 on the Phase 1 Decision Strip. Do not start Inbox. |
 
 ---
 
 ## Log — append new entries at the top
+
+### 2026-08-19 — Matter Workbench Phase 1 shell
+
+Frontend-only. No backend semantic change. No Inbox.
+
+- Audit vs Figma 01 + RUN 3 spec: Decision Strip was missing borrower, blocker, readiness, hard-stop; File/Work were not collapsible.
+- Header now derives borrower/regime/facility from existing workbench `fields[]`. Decision is never inferred from High count.
+- File and Work panes are collapsible; Evidence stays primary.
+- Tests: `npm run test:workbench` + typecheck after this pass.
+
+No CER claimed.
+
+### 2026-08-18 — Backend freeze-and-delete cleanup
+
+Notes: `AI_context/backend_simplification/`. Branch `refactor/cds-backend-core`.
+
+- S0/S1 inventory. No Exception+CP merge. No Finding table.
+- S2 `GET /cases/{id}/workbench` + façades. Matter `load()` uses the read model.
+- S3 deleted two `.bak` files. Left phase10 and frozen analytics registered.
+- S4 deprecated direct waive; ExceptionsPanel still calls it.
+- S5 active `docs/rulepacks/punjab_mortgage_v1.yaml`; archived KYC-02/05/07/10; tests keep `05_rulepack_v1.yaml`.
+- S6 documented Celery → ocr_pipeline → ocr_service; Stack B not deleted.
+
+No CER claimed.
+
+### 2026-08-18 — Matter workbench against gold legal findings
+
+File | Evidence | Work can now replay RUN 2/RUN 3 without leaving Matter.
+
+- Findings show `GOLD-*-01`, description, required evidence, and jump to source page.
+- File pane lists canonical types + OCR status; missing instruments for the selected finding; Extract (`autofill overwrite=false`) and Evaluate on the matter.
+- Waive proposes `exception_waive` (reason dialog). Decide splits waiver vs case decision. Checker ≠ maker. Re-eval after waiver approve.
+- Draft/issue pack lists exports and download when `succeeded`.
+- Tests: `npm run test:workbench` passed. Live RUN 2/RUN 3 walk not run — API/frontend were down.
+
+No CER claimed.
+
+### 2026-08-17 — CDS-GOLD-001 RUN 3 complete
+
+Matter `38e6069e-4c3d-4a41-94c8-8b9ecc92e069`. Report: `execution_reports/04_cds_gold_001_run3.md`.
+
+Initial FAIL with 7 gold findings including area mismatch, stale Fard from `15 جنوری 2026`, and historic tax. Additional batch cleared area/plan/dues/encumbrance/Fard/name. GOLD-TAX stayed open, reviewer proposed waiver, admin approved, re-eval kept it Waived, decision PASS, bank pack queued.
+
+### 2026-08-17 — F12 gold fact extraction (area / Fard date / historic tax)
+
+RUN 2 proved pipeline + classification + arbitration + remediation. It did not
+fire area mismatch or historic tax, and it treated Fard upload time as issue date.
+
+- Prefer `کل رقبہ` totals; `کنال` / OCR `JUS` = kanal; skip 1-kanal khasra pieces.
+- `گست` → August only when it is not already `اگست`. Locale-independent month parse.
+- Newest Fard without a parseable issue date → `Fard date unconfirmed`, not current.
+- GOLD-TAX keywords include `تاریخی`, `paper receipt`, `waiver scenario`, `20-2019`.
+- `run_rules` does not reopen Waived/Resolved rule ids. Decision uses live exception rows.
+- E2E title is RUN 3; reviewer proposes GOLD-TAX waiver, admin approves, then bank pack.
+
+Tests: 175 targeted passed (`test_cds_gold_001_semantics` + rulepack + mvp + autofill).
+
+### 2026-08-17 — CDS-GOLD-001 RUN 2 live comparison
+
+Matter `5bcdb8eb-75bc-440b-9bcb-3a963b574360`. Full report: `execution_reports/03_cds_gold_001_semantics.md`.
+
+- Seller `محمد اکرم` and buyer `اے بی سی ٹیکسٹائلز (پرائیویٹ) لمیٹڈ` survived the additional-batch autofill (`clause_urdu`, sale deed). Plot `82` / block `B` kept.
+- All 16 files classified to the canonical vocabulary (Sale Deed, Possession Letter, Fard, NOC, Search Report, …).
+- Initial evaluate: 5 gold findings (PLAN, DUES, ENCUMB, NAME, FARD). No salary-slip / photograph / false missing title / false missing possession.
+- Additional batch resolved PLAN, DUES, ENCUMB, NAME. After rebuilding evaluators, re-eval is PASS (stale Fard uses newer Fard upload time; area no longer compares unrelated docs).
+- GOLD-AREA did not fire on the initial batch (no sale-deed kanal fact). GOLD-TAX never opened (no historic-tax keyword captured).
+
+### 2026-08-17 — F11 CDS-GOLD-001 semantics (arbitration, classification, gold rules)
+
+Branch `fix/cds-gold-001-semantics`. No Surya/Paddle/frontend work.
+
+- Candidate arbitration is source-aware: `(case_id, field_key, document_id)`. Later mutation cannot replace sale-deed `clause_urdu`. Conflicts are preserved and marked for review.
+- Mutation form labels rejected. Sale-deed detection requires strong markers; mutation is penalized. Party roles only on `sale_deed`.
+- Canonical `doc_type` vocabulary persisted after OCR, before `run_rules`. Filename is a hint; content classifies when OCR exists.
+- Document facts: area, issue date, owner name, dues language, charge ref, tax history.
+- Gold rules GOLD-AREA-01, GOLD-PLAN-01, GOLD-DUES-01, GOLD-ENCUMB-01, GOLD-FARD-01, GOLD-NAME-01, GOLD-TAX-01. Existing KYC photo/salary/utility/co-applicant rules apply to `borrower_type: individual` only.
+- Worker default rulepack path walks parents to `docs/05_rulepack_v1.yaml` (Docker `/app/docs/...`). Compose still sets `RULEPACK_PATH`. `pilot_real_case.ps1` uses `/auth/login`.
+
+Tests: 165 targeted passed; 188 backend tests passed (host `jwt` missing for `test_exception_waivable.py` only).
+
+### 2026-08-17 — CDS-GOLD-001 live E2E
+
+Full report: `execution_reports/02_cds_gold_001_e2e.md`.
+
+- Uploaded 11 initial + 5 additional Urdu PDFs. OCR Done on all 16 (Tesseract fallback).
+- Initial autofill: plot `82`, block `B`, seller `محمد اکرم`, buyer `اے بی سی ٹیکسٹائلز (پرائیویٹ) لمیٹڈ` via `clause_urdu`.
+- Second autofill overwrite from mutation replaced party names with `رجسٹریشن حوالہ` / `/ منتقل الیہ`.
+- Rulepack decision FAIL (24→25 missing-doc exceptions). Gold content defects (area mismatch, stale fard, name variant) were not raised. Building-plan missing dropped after additional evidence.
+
+### 2026-08-17 — F10 contextual autofill (WS4.2 party names)
+
+Test case 1 (`01697780-20a0-4544-92e5-d74639a6d893`) before this pass:
+
+- `property.plot_number` = `82` (correct)
+- `property.block` = `B` (correct)
+- `party.seller.names` = clause leftover including buyer company (wrong)
+- `party.buyer.names` = `درج ذیل شرائط پر متفق ہوئے۔` (wrong)
+- `party.witness.names` = `CDS-GOLD-001 | فرضی تربیتی` (wrong)
+
+After (pytest on the same OCR strings, 8 passed):
+
+- seller → `محمد اکرم` via `clause_urdu`, offsets not page 0
+- buyer → `اے بی سی ٹیکسٹائلز (پرائیویٹ) لمیٹڈ`
+- witness omitted
+- plot `82` / block `B` still extract from sale deed and PT-10
+- PT-10 does not emit party roles
+- No CER claimed (D4). Autofill still writes candidates only (D7).
 
 ### 2026-08-16 — Session 8: Unit 1.6 Fallback Alarm Observability (F3 Observability Added)
 

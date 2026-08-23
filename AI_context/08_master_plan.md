@@ -225,6 +225,11 @@ text, so normalization belongs backend-side, post-response. Decide and record it
 `05_decisions.md` before writing code.
 
 **4.2** — Anything failing validation → NeedsReview, **never auto-filled**.
+Party names (2026-08-17, F10): `sale_deed_clauses.py` parses Urdu recitals first;
+`validators.is_extraction_garbage` refuses watermarks and clause leftovers;
+`dossier_autofill` will not persist a party candidate without char offsets.
+Pytest: `backend/tests/test_contextual_autofill.py`. CNIC/khasra/date/amount
+validators in this unit remain as originally scoped.
 
 **4.3** — Without this, Q3's "validated field accuracy" framing is unmeasurable and
 therefore unclaimable.

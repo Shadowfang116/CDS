@@ -9,6 +9,7 @@ class DashboardKPIs(BaseModel):
     """Key Performance Indicators for the dashboard."""
     active_cases: int
     open_high_exceptions: int
+    open_cps: int = 0
     cp_completion_pct: float
     verification_completion_pct: float
     pending_verifications: int

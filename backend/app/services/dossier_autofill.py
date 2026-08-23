@@ -24,6 +24,154 @@ logger = logging.getLogger(__name__)
 # Debug flag for dossier autofill write-path observability
 DOSSIER_AUTOFILL_DEBUG = os.getenv("DOSSIER_AUTOFILL_DEBUG", "true").lower() == "true"
 PARTY_ROLES_DEBUG = os.getenv("PARTY_ROLES_DEBUG", "true").lower() == "true"
+
+COMPANY_MARKERS = ("لمیٹڈ", "limited", "pvt", "private", "کمپنی", "textile")
+
+
+def infer_borrower_type(
+    documents: List[Any],
+    combined_text: str = "",
+    party_values: Optional[List[str]] = None,
+) -> str:
+    """Company when a board resolution or corporate name markers are present."""
+    from app.services.canonical_docs import canonical_key
+
+    blob = f"{combined_text or ''}".lower()
+    for doc in documents or []:
+        if canonical_key(getattr(doc, "doc_type", None)) == "board_resolution":
+            return "company"
+        filename = (getattr(doc, "original_filename", None) or "").lower()
+        if "board_resolution" in filename or "board resolution" in filename:
+            return "company"
+    for value in party_values or []:
+        text = value or ""
+        if any(marker in text or marker in text.lower() for marker in COMPANY_MARKERS):
+            return "company"
+    if any(marker in (combined_text or "") or marker in blob for marker in COMPANY_MARKERS):
+        return "company"
+    return "individual"
+
+
+def upsert_inferred_dossier_field(
+    db: Session,
+    *,
+    case_id: uuid.UUID,
+    org_id: uuid.UUID,
+    field_key: str,
+    value: str,
+    document_id: Optional[uuid.UUID] = None,
+) -> str:
+    """Persist inferred case context (borrower_type / transaction_type).
+
+    Same pattern as regime inference: system-written, reviewer can confirm later.
+    Does not overwrite a reviewer-confirmed value.
+    """
+    existing = db.query(CaseDossierField).filter(
+        CaseDossierField.case_id == case_id,
+        CaseDossierField.org_id == org_id,
+        CaseDossierField.field_key == field_key,
+    ).first()
+    if existing:
+        if existing.confirmed_by_user_id:
+            return existing.field_value or value
+        existing.field_value = value
+        existing.needs_confirmation = True
+        if document_id and not existing.source_document_id:
+            existing.source_document_id = document_id
+        return value
+    db.add(
+        CaseDossierField(
+            org_id=org_id,
+            case_id=case_id,
+            field_key=field_key,
+            field_value=value,
+            needs_confirmation=True,
+            source_document_id=document_id,
+            source_page_number=1,
+            confidence=0.9,
+        )
+    )
+    return value
+
+
+def infer_and_store_case_context(
+    db: Session,
+    case_id: uuid.UUID,
+    org_id: uuid.UUID,
+) -> Tuple[str, str]:
+    """Infer borrower/transaction type from documents and pending candidates."""
+    documents = db.query(Document).filter(
+        Document.case_id == case_id,
+        Document.org_id == org_id,
+    ).all()
+    pages = []
+    if documents:
+        pages = db.query(DocumentPage).filter(
+            DocumentPage.org_id == org_id,
+            DocumentPage.document_id.in_([doc.id for doc in documents]),
+        ).all()
+    combined = "\n".join(
+        (page.corrected_text or page.ocr_text or "") for page in pages
+    )
+    party_rows = db.query(OCRExtractionCandidate).filter(
+        OCRExtractionCandidate.case_id == case_id,
+        OCRExtractionCandidate.org_id == org_id,
+        OCRExtractionCandidate.field_key.in_(
+            ["party.buyer.names", "party.seller.names", "case.borrower_type"]
+        ),
+    ).all()
+    party_values = [row.proposed_value or "" for row in party_rows]
+    existing_borrower = next(
+        (row.proposed_value for row in party_rows if row.field_key == "case.borrower_type" and row.proposed_value),
+        None,
+    )
+    borrower_type = existing_borrower or infer_borrower_type(documents, combined, party_values)
+    if borrower_type not in {"company", "individual"}:
+        borrower_type = infer_borrower_type(documents, combined, party_values)
+    transaction_type = "mortgage"
+    source_id = documents[0].id if documents else None
+    upsert_inferred_dossier_field(
+        db, case_id=case_id, org_id=org_id, field_key="case.borrower_type",
+        value=borrower_type, document_id=source_id,
+    )
+    upsert_inferred_dossier_field(
+        db, case_id=case_id, org_id=org_id, field_key="case.transaction_type",
+        value=transaction_type, document_id=source_id,
+    )
+    db.flush()
+    return borrower_type, transaction_type
+
+
+def apply_cross_doc_consensus(all_extractions: Dict[str, list]) -> None:
+    """Boost plot/block confidence when two or more documents agree."""
+    for field_key in ("property.plot_number", "property.block"):
+        items = all_extractions.get(field_key) or []
+        docs_by_value: Dict[str, set] = {}
+        for value, _conf, doc_id, _page, _start, _end in items:
+            docs_by_value.setdefault(value, set()).add(doc_id)
+        consensus_values = {value for value, docs in docs_by_value.items() if len(docs) >= 2}
+        if not consensus_values:
+            continue
+        all_extractions[field_key] = [
+            (value, max(conf, 0.95) if value in consensus_values else conf, doc_id, page, start, end)
+            for value, conf, doc_id, page, start, end in items
+        ]
+
+
+def party_role_confidence(method: str, role: str) -> Tuple[float, bool]:
+    """Return (confidence, needs_review) for a party-role extraction method."""
+    method = method or ""
+    if method == "clause_urdu":
+        return 0.90, False
+    if method in {"label_urdu", "label_urdu_page"}:
+        return 0.85, False
+    if method in {"section_cnic", "urdu_marker_cnic", "urdu_marker_direct"}:
+        return (0.70 if role != "witness" else 0.65), True
+    if method in {"cnic_fallback", "cnic_page_order", "anchor"}:
+        return 0.45, True
+    return 0.70, True
+
+
 LOW_QUALITY_CONFIDENCE_CAP = 0.4
 LOW_QUALITY_SHORT_VALUE_LEN = 10
 PAGE_QUALITY_FACTORS = {
@@ -79,6 +227,8 @@ def extract_plot_number(ocr_text: str) -> List[Tuple[str, float, int, int]]:
     """Extract plot number patterns. Returns (value, confidence, start_idx, end_idx)."""
     patterns = [
         (r'(?:plot|plot\s*no\.?|plot\s*#|plot\s*number)\s*[:]?\s*(\d+)', 0.95),
+        (r'پلاٹ\s*نمبر\s*[:]?\s*(\d+)', 0.95),
+        (r't-p-(\d+)', 0.90),
         (r'plot\s*(\d+)', 0.85),
         (r'no\.?\s*(\d+)', 0.70),  # Generic "No. X" - lower confidence
     ]
@@ -87,7 +237,8 @@ def extract_plot_number(ocr_text: str) -> List[Tuple[str, float, int, int]]:
     text_lower = ocr_text.lower()
     
     for pattern, base_confidence in patterns:
-        matches = re.finditer(pattern, text_lower, re.IGNORECASE)
+        search_text = ocr_text if any(ch in pattern for ch in "پلاٹنمبر") else text_lower
+        matches = re.finditer(pattern, search_text, re.IGNORECASE)
         for match in matches:
             value = match.group(1)
             # Validate it's a reasonable plot number (1-9999)
@@ -102,7 +253,7 @@ def extract_plot_number(ocr_text: str) -> List[Tuple[str, float, int, int]]:
 
 
 def extract_block(ocr_text: str) -> List[Tuple[str, float, int, int]]:
-    """Extract block (e.g., "Block E", "Block-E")."""
+    """Extract block (e.g., "Block E", "Block-E", "بلاک۔بی")."""
     patterns = [
         (r'block\s*([A-Z])', 0.95),
         (r'block\s*-\s*([A-Z])', 0.95),
@@ -117,6 +268,14 @@ def extract_block(ocr_text: str) -> List[Tuple[str, float, int, int]]:
         for match in matches:
             value = match.group(1).upper()
             results.append((value, confidence, match.start(), match.end()))
+
+    urdu_block = re.search(r'بلاک[۔.\-\s]*([اأإآبا-ی]+)', ocr_text)
+    if urdu_block:
+        token = urdu_block.group(1)
+        urdu_map = {"ا": "A", "ب": "B", "بی": "B", "ج": "C", "د": "D", "ہ": "E"}
+        mapped = urdu_map.get(token, urdu_map.get(token[:1]))
+        if mapped:
+            results.append((mapped, 0.92, urdu_block.start(), urdu_block.end()))
     
     if results:
         best = max(results, key=lambda x: x[1])
@@ -644,6 +803,9 @@ def autofill_dossier(
             ).order_by(DocumentPage.page_number).all()
             
             for page in pages:
+                if hf_pages_called >= 3:
+                    break
+
                 # Get OCR text and metadata for this page
                 effective_text = get_page_text_with_fallback(
                     db=db,
@@ -656,20 +818,17 @@ def autofill_dossier(
                 if not effective_text:
                     continue
                 
-                # Get page image bytes for HF Extractor
-                from app.services.documents.pdf_render import get_page_image_bytes
-                page_image_bytes = get_page_image_bytes(page.minio_key_page_pdf)
-                
-                # Call HF Extractor (with image - hf-extractor will run OCR if needed)
+                # Request-path autofill uses existing OCR text only. Rendering every
+                # page image and re-OCRing in hf-extractor exceeds gunicorn's timeout.
                 hf_pages_called += 1
                 entities = extract_entities_page(
                     doc_id=str(doc.id),
                     page_no=page.page_number,
-                    ocr_text=effective_text,  # Optional - pass if available
-                    ocr_engine="tesseract",  # DocumentPage doesn't have ocr_engine field
+                    ocr_text=effective_text,
+                    ocr_engine="tesseract",
                     ocr_confidence=float(page.ocr_confidence) if page.ocr_confidence else 0.0,
                     labels=["CNIC", "PLOT_NO", "SCHEME_NAME", "REGISTRY_NO", "DATE", "AMOUNT"],
-                    image_bytes=page_image_bytes,  # P17: Pass image bytes so hf-extractor can run OCR
+                    image_bytes=None,
                 )
                 
                 if entities:
@@ -681,6 +840,8 @@ def autofill_dossier(
                             f"DOSSIER_AUTOFILL_DEBUG: [{request_id}] hf_extractor doc_id={doc.id} page_no={page.page_number} "
                             f"entities_received={len(entities)}"
                         )
+            if hf_pages_called >= 3:
+                break
         
         if DOSSIER_AUTOFILL_DEBUG:
             logger.info(
@@ -791,9 +952,14 @@ def autofill_dossier(
             roles = extract_party_roles_from_document(doc_pages_ocr)
             
             # P16: Only write party roles for sale deed documents (hard rule)
-            from app.services.extractors.party_roles import detect_sale_deed
+            from app.services.extractors.doc_routing import classify_document, allows_party_roles
             combined_text = '\n'.join([p.text for p in doc_pages_ocr])
-            is_sale_deed_result = detect_sale_deed(combined_text)
+            doc_class = classify_document(
+                doc.original_filename or "",
+                combined_text,
+                getattr(doc, "doc_type", None),
+            )
+            is_sale_deed_result = allows_party_roles(doc_class)
             
             # Write-path observability: log raw extraction results
             if DOSSIER_AUTOFILL_DEBUG or PARTY_ROLES_DEBUG:
@@ -828,21 +994,22 @@ def autofill_dossier(
             
             # P20: Normalize roles into structured format for deterministic processing
             # Extract all roles with their metadata
+            evidence = roles.get("evidence") or {}
             normalized_roles = {
                 "seller": {
                     "value": roles.get("seller_names", ""),
-                    "page": roles.get("evidence", {}).get("page_number", doc_pages_ocr[0].page_number if doc_pages_ocr else 1),
-                    "method": roles.get("evidence", {}).get("role_method", {}).get("seller", "cnic_fallback"),
+                    "page": evidence.get("page_number", doc_pages_ocr[0].page_number if doc_pages_ocr else 1),
+                    "method": (evidence.get("role_method") or {}).get("seller", ""),
                 },
                 "buyer": {
                     "value": roles.get("buyer_names", ""),
-                    "page": roles.get("evidence", {}).get("page_number", doc_pages_ocr[0].page_number if doc_pages_ocr else 1),
-                    "method": roles.get("evidence", {}).get("role_method", {}).get("buyer", "cnic_fallback"),
+                    "page": evidence.get("page_number", doc_pages_ocr[0].page_number if doc_pages_ocr else 1),
+                    "method": (evidence.get("role_method") or {}).get("buyer", ""),
                 },
                 "witness": {
                     "value": roles.get("witness_names", ""),
-                    "page": roles.get("evidence", {}).get("page_number", doc_pages_ocr[0].page_number if doc_pages_ocr else 1),
-                    "method": roles.get("evidence", {}).get("role_method", {}).get("witness", "cnic_fallback"),
+                    "page": evidence.get("page_number", doc_pages_ocr[0].page_number if doc_pages_ocr else 1),
+                    "method": (evidence.get("role_method") or {}).get("witness", ""),
                 },
             }
             
@@ -862,34 +1029,11 @@ def autofill_dossier(
                 # Determine field path and confidence based on role
                 if role == "seller":
                     field_path = 'party.seller.names'
-                    if role_data["method"] == "label_urdu":
-                        confidence = 0.92
-                    elif role_data["method"] == "anchor":
-                        confidence = 0.90
-                    elif role_data["method"] == "section_cnic":
-                        confidence = 0.85
-                    else:
-                        confidence = 0.70
                 elif role == "buyer":
                     field_path = 'party.buyer.names'
-                    if role_data["method"] == "label_urdu":
-                        confidence = 0.92
-                    elif role_data["method"] == "anchor":
-                        confidence = 0.90
-                    elif role_data["method"] == "section_cnic":
-                        confidence = 0.85
-                    else:
-                        confidence = 0.70
-                else:  # witness
+                else:
                     field_path = 'party.witness.names'
-                    if role_data["method"] == "label_urdu":
-                        confidence = 0.88
-                    elif role_data["method"] == "anchor":
-                        confidence = 0.85
-                    elif role_data["method"] == "section_cnic":
-                        confidence = 0.80
-                    else:
-                        confidence = 0.65
+                confidence, method_needs_review = party_role_confidence(role_data["method"], role)
                 
                 # Check if role value is empty
                 if not val or not val.strip():
@@ -915,25 +1059,49 @@ def autofill_dossier(
                     roles_missing.append(role)
                     continue  # Skip invalid roles
                 
-                # Add to all_extractions
-                roles_present.append(role)
                 if field_path not in all_extractions:
                     all_extractions[field_path] = []
                 
-                # Find snippet in OCR text for start/end indices
-                combined_text = '\n'.join([p.text for p in doc_pages_ocr])
-                snippet = roles.get("evidence", {}).get("snippet", "") or val
-                snippet_start = combined_text.find(snippet) if snippet else 0
-                snippet_end = snippet_start + len(snippet) if snippet_start >= 0 else len(combined_text)
+                # Resolve char offsets from the clause parser; never fall back to page start.
+                span = (evidence.get("role_spans") or {}).get(role) or {}
+                page_num = span.get("page_number") or role_data["page"]
+                page_text = ""
+                for p_num, text in pages_by_document.get(doc.id, []):
+                    if p_num == page_num:
+                        page_text = text
+                        break
+                if not page_text and doc_pages_ocr:
+                    page_text = next((p.text for p in doc_pages_ocr if p.page_number == page_num), doc_pages_ocr[0].text)
+
+                start_idx = span.get("char_start")
+                end_idx = span.get("char_end")
+                if start_idx is None or end_idx is None:
+                    located = page_text.find(val) if page_text and val else -1
+                    if located < 0:
+                        missing_reasons[role] = "missing_evidence_offsets"
+                        roles_missing.append(role)
+                        continue
+                    start_idx, end_idx = located, located + len(val)
                 
+                roles_present.append(role)
                 all_extractions[field_path].append((
                     val,
                     confidence,
                     doc.id,
-                    role_data["page"],
-                    snippet_start if snippet_start >= 0 else 0,
-                    snippet_end,
+                    page_num,
+                    start_idx,
+                    end_idx,
                 ))
+                # Stash method on a side map for the ExtractedField stage
+                if "_party_methods" not in all_extractions:
+                    all_extractions["_party_methods"] = {}
+                all_extractions["_party_methods"][(field_path, str(doc.id))] = {
+                    "method": role_data["method"],
+                    "needs_review": method_needs_review,
+                    "start_idx": start_idx,
+                    "end_idx": end_idx,
+                    "page": page_num,
+                }
             
             # P20: Log summary of roles collected
             logger.info(
@@ -945,7 +1113,67 @@ def autofill_dossier(
             # Legacy code removed
     except Exception as e:
         logger.exception(f"DOSSIER_AUTOFILL_DEBUG: [{request_id}] EXCEPTION stage=party_roles {repr(e)}")
-        raise
+        errors.append(f"Party role extraction failed: {e}")
+
+    try:
+        from app.services.canonical_docs import persist_document_classification
+        from app.services.extractors.document_facts import extract_document_facts
+
+        combined_all = []
+        party_hint_values = [
+            item[0]
+            for key in ("party.buyer.names", "party.seller.names")
+            for item in all_extractions.get(key, [])
+        ]
+        for doc in documents:
+            combined = "\n".join(text for _page, text in pages_by_document.get(doc.id, []))
+            combined_all.append(f"{doc.original_filename or ''} {combined}")
+            persist_document_classification(db, doc, combined)
+            for page_num, text in pages_by_document.get(doc.id, []):
+                for fact in extract_document_facts(
+                    text=text,
+                    page_number=page_num,
+                    filename=doc.original_filename or "",
+                    doc_type=getattr(doc, "doc_type", None),
+                    document_id=str(doc.id),
+                ):
+                    all_extractions.setdefault(fact.key, []).append((
+                        fact.value,
+                        0.85,
+                        doc.id,
+                        page_num,
+                        fact.char_start,
+                        fact.char_end,
+                    ))
+        blob = "\n".join(combined_all)
+        borrower_type = infer_borrower_type(documents, blob, party_hint_values)
+        transaction_type = "mortgage"
+        if documents:
+            all_extractions["case.borrower_type"] = [(borrower_type, 0.9, documents[0].id, 1, 0, 0)]
+            all_extractions["case.transaction_type"] = [(transaction_type, 0.9, documents[0].id, 1, 0, 0)]
+            upsert_inferred_dossier_field(
+                db,
+                case_id=case_id,
+                org_id=org_id,
+                field_key="case.borrower_type",
+                value=borrower_type,
+                document_id=documents[0].id,
+            )
+            upsert_inferred_dossier_field(
+                db,
+                case_id=case_id,
+                org_id=org_id,
+                field_key="case.transaction_type",
+                value=transaction_type,
+                document_id=documents[0].id,
+            )
+        db.flush()
+    except Exception as e:
+        logger.exception(f"DOSSIER_AUTOFILL_DEBUG: [{request_id}] EXCEPTION stage=document_facts {repr(e)}")
+        errors.append(f"Document fact extraction failed: {e}")
+
+    party_methods = all_extractions.pop("_party_methods", {})
+    apply_cross_doc_consensus(all_extractions)
     
     # B. Immediately after party roles extraction
     party_role_extractions = []
@@ -1017,8 +1245,9 @@ def autofill_dossier(
         # Party role fields: keep all (one per document, already consolidated)
         # Other fields: pick best extraction
         is_party_role_field = field_path in ['party.seller.names', 'party.buyer.names', 'party.witness.names']
+        is_multi_source_field = is_party_role_field or field_path.startswith("fact.")
         
-        if is_party_role_field:
+        if is_multi_source_field:
             # For party role fields, process each extraction (one per document)
             for value, confidence, doc_id, page_num, start_idx, end_idx in extractions:
                 # P23: Keep original raw value and normalize (belt+suspenders)
@@ -1049,10 +1278,14 @@ def autofill_dossier(
                         )
                     continue
                 
+                if start_idx is None or end_idx is None or start_idx < 0:
+                    continue
+
                 snippet = extract_snippet(ocr_text_for_snippet, start_idx, end_idx)
                 
                 # Normalize confidence
                 confidence_normalized = _normalize_confidence(confidence)
+                method_meta = party_methods.get((field_path, str(doc_id))) or {}
                 
                 # Include names_list in evidence metadata if available
                 evidence_metadata = {
@@ -1061,29 +1294,30 @@ def autofill_dossier(
                     "snippet": snippet,
                     "snippet_start_idx": start_idx,
                     "snippet_end_idx": end_idx,
-                    # P23: Store original and cleaned values for audit
                     "raw_value_original": original_raw_value,
                     "raw_value": cleaned_raw,
+                    "extraction_method": method_meta.get("method") or "",
+                    "needs_review": bool(method_meta.get("needs_review")),
                 }
                 
-                # Get names_list from roles extraction
-                for doc in documents:
-                    if doc.id == doc_id and doc.id in pages_by_document:
-                        from app.services.extractors.party_roles import extract_party_roles_from_document, PageOCR
-                        doc_pages_ocr = []
-                        for p_num, text in pages_by_document[doc.id]:
-                            doc_pages_ocr.append(PageOCR(
-                                document_id=str(doc.id),
-                                document_name=doc.original_filename or "",
-                                page_number=p_num,
-                                text=text
-                            ))
-                        roles = extract_party_roles_from_document(doc_pages_ocr)
-                        if roles.get("names_list"):
-                            role_key = "seller" if field_path == "party.seller.names" else ("buyer" if field_path == "party.buyer.names" else "witness")
-                            if role_key in roles["names_list"]:
-                                evidence_metadata["names_list"] = roles["names_list"][role_key]
-                        break
+                if is_party_role_field:
+                    for doc in documents:
+                        if doc.id == doc_id and doc.id in pages_by_document:
+                            from app.services.extractors.party_roles import extract_party_roles_from_document, PageOCR
+                            doc_pages_ocr = []
+                            for p_num, text in pages_by_document[doc.id]:
+                                doc_pages_ocr.append(PageOCR(
+                                    document_id=str(doc.id),
+                                    document_name=doc.original_filename or "",
+                                    page_number=p_num,
+                                    text=text
+                                ))
+                            roles = extract_party_roles_from_document(doc_pages_ocr)
+                            if roles.get("names_list"):
+                                role_key = "seller" if field_path == "party.seller.names" else ("buyer" if field_path == "party.buyer.names" else "witness")
+                                if role_key in roles["names_list"]:
+                                    evidence_metadata["names_list"] = roles["names_list"][role_key]
+                            break
                 
                 # P23: Use cleaned_raw as the value (will be normalized again by gate)
                 extracted_fields.append(ExtractedField(
@@ -1318,32 +1552,71 @@ def autofill_dossier(
             if ef.field_path not in seen_normalized:
                 seen_normalized[ef.field_path] = set()
             
-            if normalized_value in seen_normalized[ef.field_path]:
-                # Skip duplicate
+            is_multi_source_write = ef.field_path in {
+                "party.seller.names",
+                "party.buyer.names",
+                "party.witness.names",
+            } or ef.field_path.startswith("fact.")
+            if normalized_value in seen_normalized[ef.field_path] and not is_multi_source_write:
                 continue
             
             seen_normalized[ef.field_path].add(normalized_value)
             
-            # Check if there's already a pending candidate for this field (by normalized value)
-            existing_candidate = db.query(OCRExtractionCandidate).filter(
+            from app.services.extractors.candidate_arbitration import (
+                CandidateSnapshot,
+                arbitrate_candidate,
+            )
+
+            pending_rows = db.query(OCRExtractionCandidate).filter(
                 OCRExtractionCandidate.case_id == case_id,
                 OCRExtractionCandidate.org_id == org_id,
                 OCRExtractionCandidate.field_key == ef.field_path,
                 OCRExtractionCandidate.status == "Pending",
-            ).first()
-            
-            # Also check for duplicate by normalized value in existing candidates
-            if not existing_candidate:
-                all_candidates = db.query(OCRExtractionCandidate).filter(
-                    OCRExtractionCandidate.case_id == case_id,
-                    OCRExtractionCandidate.org_id == org_id,
-                    OCRExtractionCandidate.field_key == ef.field_path,
-                ).all()
-                for cand in all_candidates:
-                    cand_normalized = normalize_whitespace(cand.proposed_value or "").lower()
-                    if cand_normalized == normalized_value:
-                        existing_candidate = cand
-                        break
+            ).all()
+            incoming_snapshot = CandidateSnapshot(
+                id=None,
+                document_id=str(ef.evidence.get("document_id") or ""),
+                field_key=ef.field_path,
+                value=ef.value,
+                confidence=float(ef.confidence or 0),
+                method=(ef.evidence or {}).get("extraction_method") or "",
+            )
+            existing_snapshots = [
+                CandidateSnapshot(
+                    id=str(row.id),
+                    document_id=str(row.document_id),
+                    field_key=row.field_key,
+                    value=row.proposed_value or "",
+                    confidence=float(row.confidence or 0),
+                    method=row.extraction_method or "",
+                    status=row.status or "Pending",
+                )
+                for row in pending_rows
+            ]
+            decision = arbitrate_candidate(existing_snapshots, incoming_snapshot)
+            existing_candidate = None
+            if decision.action in {"update_same_source", "skip_downgrade"} and decision.target_id:
+                existing_candidate = next(
+                    (row for row in pending_rows if str(row.id) == decision.target_id),
+                    None,
+                )
+            if decision.action == "keep_conflict":
+                for row in pending_rows:
+                    row.needs_review = True
+                    if row.review_status not in {"reviewed", "verified"}:
+                        row.review_status = "needs_review"
+                    note = decision.warning or "conflicting_source"
+                    row.warning_reason = (
+                        f"{row.warning_reason}; {note}" if row.warning_reason else note
+                    )
+                existing_candidate = None
+            if decision.action == "skip_downgrade":
+                if existing_candidate and decision.mark_review:
+                    existing_candidate.needs_review = True
+                    if existing_candidate.review_status not in {"reviewed", "verified"}:
+                        existing_candidate.review_status = "needs_review"
+                skipped_fields.append(ef.field_path)
+                continue
             
             # Check if dossier field already exists and has value
             existing_dossier_field = db.query(CaseDossierField).filter(
@@ -1447,6 +1720,10 @@ def autofill_dossier(
                 ef.confidence,
                 warning_reason,
             )
+            extraction_method = (ef.evidence or {}).get("extraction_method") or None
+            if (ef.evidence or {}).get("needs_review") or decision.mark_review or decision.action == "keep_conflict":
+                needs_review = True
+                review_status = "needs_review"
             
             # If candidate exists, update it; otherwise create new
             if existing_candidate:
@@ -1471,6 +1748,8 @@ def autofill_dossier(
                 if review_status == "needs_review" and existing_candidate.review_status not in {"reviewed", "verified"}:
                     existing_candidate.review_status = "needs_review"
                 existing_candidate.updated_at = datetime.utcnow()
+                if extraction_method:
+                    existing_candidate.extraction_method = extraction_method
                 # P20: Set run_id on update
                 if is_party_role_field:
                     existing_candidate.run_id = request_id
@@ -1516,6 +1795,7 @@ def autofill_dossier(
                     warning_reason=warning_reason,
                     evidence_json=evidence_json if evidence_json else None,  # P16: Include evidence_json
                     run_id=request_id if is_party_role_field else None,  # P20: Set run_id for party roles
+                    extraction_method=extraction_method,
                 )
                 db.add(new_candidate)
             

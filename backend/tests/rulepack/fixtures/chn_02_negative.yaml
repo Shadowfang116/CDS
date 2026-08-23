@@ -1,0 +1,6 @@
+name: chn_02_negative
+base: clean_urban
+expect_triggered: []
+expect_not_triggered:
+- CHN-02
+expected_decision: PASS

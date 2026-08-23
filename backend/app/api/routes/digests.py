@@ -1,4 +1,8 @@
-"""Digest schedules and runs API routes."""
+"""Digest schedules and runs API routes.
+
+FROZEN: /digests page still calls these routes. Celery beat still runs
+digests.run_due_schedules. Do not expand; do not unregister until callers are gone.
+"""
 from typing import List
 from uuid import UUID
 from datetime import datetime

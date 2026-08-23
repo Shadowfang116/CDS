@@ -1,0 +1,10 @@
+name: soc_08_positive
+base: clean_urban
+pages_add:
+- doc: soc08.pdf
+  page: 1
+  text: The member is currently marked as a defaulter by the society office.
+expect_triggered:
+- SOC-08
+expect_not_triggered: []
+expected_decision: PASS

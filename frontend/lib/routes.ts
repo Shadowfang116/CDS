@@ -63,6 +63,13 @@ export function getCaseTabPath(caseId: string, tab: CaseTabKey): string {
   return getCaseDetailPath(caseId, { tab });
 }
 
+export function getCaseWorkbenchPath(
+  caseId: string,
+  query?: Record<string, QueryValue>
+): string {
+  return getCaseDetailPath(caseId, query);
+}
+
 export function getCaseDocumentFocusPath(
   caseId: string,
   documentId: string,
@@ -70,9 +77,8 @@ export function getCaseDocumentFocusPath(
   candidateId?: string
 ): string {
   return getCaseDetailPath(caseId, {
-    tab: "documents",
-    focusDocId: documentId,
-    focusPage: page,
-    focusCandidateId: candidateId,
+    doc: documentId,
+    page,
+    candidate: candidateId,
   });
 }

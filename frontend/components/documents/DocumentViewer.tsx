@@ -31,6 +31,8 @@ import {
 } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 import { getCaseTabPath } from '@/lib/routes';
+import { cn } from '@/lib/utils';
+import { urduTextProps } from '@/lib/text-script';
 
 type PageQualityMeta = {
   quality_level?: string | null;
@@ -107,9 +109,27 @@ interface DocumentViewerProps {
   initialPage?: number;
   onUploadRequest?: () => void;
   onDocumentDeleted?: () => void;
+  variant?: "default" | "workbench" | "evidence";
+  highlightLabel?: string | null;
+  highlightValue?: string | null;
+  onOpenFullViewer?: () => void;
+  onUseAsFact?: (text: string) => void;
 }
 
-export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvidence, initialDocId, initialPage, onUploadRequest, onDocumentDeleted }: DocumentViewerProps) {
+export function DocumentViewer({
+  caseId,
+  documents: documentsProp,
+  onAttachEvidence,
+  initialDocId,
+  initialPage,
+  onUploadRequest,
+  onDocumentDeleted,
+  variant = "default",
+  highlightLabel,
+  highlightValue,
+  onOpenFullViewer,
+  onUseAsFact,
+}: DocumentViewerProps) {
   const router = useRouter();
   const { toast } = useToast();
   const getDocumentId = (doc: CaseDocumentItem | null | undefined): string | null => {
@@ -456,9 +476,13 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
     );
   }
 
+  const compact = variant === "workbench" || variant === "evidence";
+  const selectedSnippetText = selectedSnippet || highlightValue || "";
+
   return (
-    <div className="flex h-[calc(100vh-200px)] bg-[rgba(14,18,22,0.92)]">
+    <div className={compact ? "flex h-full min-h-0 bg-background" : "flex h-[calc(100vh-200px)] bg-[rgba(14,18,22,0.92)]"}>
       {/* Left: Document List */}
+      {compact ? null : (
       <div className="w-64 overflow-y-auto border-r border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.72)]">
         <div className="p-4 space-y-2">
           {documents.map((doc) => {
@@ -554,22 +578,33 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
           })}
         </div>
       </div>
+      )}
 
       {/* Middle: Page Thumbnails */}
       {selectedDoc && (
-        <div className="w-32 overflow-y-auto border-r border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.58)]">
-          <div className="p-2 space-y-2">
+        <div className={compact
+          ? "w-[76px] shrink-0 overflow-y-auto border-r border-border bg-[hsl(var(--canvas))] px-0 py-[18px]"
+          : "w-32 overflow-y-auto border-r border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.58)]"
+        }>
+          {variant === "evidence" ? <p className="cds-meta mb-2.5 px-3">Pages</p> : null}
+          <div className={compact ? "flex flex-col items-center gap-2.5" : "p-2 space-y-2"}>
             {Array.from({ length: selectedDoc.page_count || 0 }, (_, i) => i + 1).map((pageNum) => (
               <button
                 key={pageNum}
                 onClick={() => setSelectedPage(pageNum)}
-                className={`w-full aspect-[3/4] rounded border-2 transition-colors ${
+                className={compact
+                  ? `relative h-24 w-[72px] overflow-hidden rounded-[3px] border ${
+                      selectedPage === pageNum
+                        ? "border-2 border-[hsl(var(--crimson-border))] bg-[#2e3030] text-foreground"
+                        : "border-border bg-[hsl(var(--pill))] text-muted-foreground"
+                    }`
+                  : `w-full aspect-[3/4] rounded border-2 transition-colors ${
                   selectedPage === pageNum
                     ? 'border-[rgba(152,161,135,0.45)] bg-[rgba(24,28,32,0.92)] shadow-[inset_0_0_0_1px_rgba(152,161,135,0.18)]'
                     : 'border-[rgba(82,90,99,0.32)] bg-[rgba(18,22,27,0.82)] hover:border-[rgba(126,133,111,0.38)]'
                 }`}
               >
-                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[rgba(34,39,45,0.72)] px-1 text-xs text-stone-500">
+                <div className={`flex h-full w-full flex-col items-center justify-center gap-2 px-1 text-xs ${compact ? "font-display text-[10px]" : "bg-[rgba(34,39,45,0.72)] text-stone-500"}`}>
                   <span>{pageNum}</span>
                   {selectedPage === pageNum && selectedPageOcrStatus ? (
                     <Badge variant="outline" className="text-[9px]">
@@ -600,12 +635,24 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
         ) : null}
 
         {/* Toolbar */}
-        <div className="border-b border-[rgba(82,90,99,0.34)] bg-[rgba(20,24,28,0.78)]">
-          <div className="flex min-h-12 items-center justify-between px-4 py-2">
+        {variant === "workbench" ? null : (
+        <div className={compact ? "border-b border-border bg-[hsl(var(--canvas))]" : "border-b border-[rgba(82,90,99,0.34)] bg-[rgba(20,24,28,0.78)]"}>
+          <div className={compact ? "flex h-[38px] items-center gap-2.5 px-[18px]" : "flex min-h-12 items-center justify-between px-4 py-2"}>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-stone-300">
+              <span className={compact ? "text-[11px] font-medium text-muted-foreground" : "text-sm text-stone-300"}>
                 Page {selectedPage} of {selectedDoc?.page_count || 0}
               </span>
+              {compact ? (
+                <>
+                  <span className="cds-pill">{Math.round(zoom * 100)}%</span>
+                  <button type="button" className="cds-btn cds-btn-ghost px-3" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>−</button>
+                  <button type="button" className="cds-btn cds-btn-ghost px-3" onClick={() => setZoom(Math.min(2, zoom + 0.25))}>+</button>
+                  {highlightLabel ? (
+                    <span className="font-display text-[10px] text-muted-foreground">Selected source: {highlightLabel}</span>
+                  ) : null}
+                </>
+              ) : (
+                <>
               {selectedDoc && selectedDoc.doc_type && (
                 <Badge variant="outline" className="text-xs">
                   Type: {formatType(selectedDoc.doc_type)}
@@ -625,7 +672,10 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
               )}
               {selectedDoc && getOcrStatusBadge()}
               {renderQualityBadge(documentQualityLevel, pageQualityMeta?.quality_score, documentWarningReason)}
+                </>
+              )}
             </div>
+            {compact ? null : (
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>
                 -
@@ -658,10 +708,11 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
                 </Button>
               )}
             </div>
+            )}
           </div>
           
           {/* OCR Quality Info */}
-          {ocrStatus && (
+          {ocrStatus && !compact ? (
             <div className="border-t border-[rgba(82,90,99,0.24)] bg-[rgba(18,22,27,0.62)] px-4 py-2">
               <div className="flex flex-wrap items-center gap-4 text-xs text-stone-400">
                 {selectedPageOcrStatus ? <span>Page OCR: {selectedPageOcrStatus.status}</span> : null}
@@ -690,19 +741,27 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
                 )}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
+        )}
 
         {/* Page Image */}
-        <div className="flex flex-1 items-center justify-center overflow-auto bg-[rgba(14,18,22,0.92)] p-4">
-          <div className="relative flex h-full w-full items-center justify-center rounded-lg border border-[rgba(82,90,99,0.24)] bg-[rgba(18,22,27,0.52)] p-4">
+        <div className={compact ? "flex min-h-0 flex-1 gap-3.5 overflow-hidden bg-[hsl(var(--canvas))] p-[18px]" : "flex flex-1 items-center justify-center overflow-auto bg-[rgba(14,18,22,0.92)] p-4"}>
+          <div className={compact
+            ? "relative flex min-h-0 flex-1 items-start justify-center overflow-auto"
+            : "relative flex h-full w-full items-center justify-center rounded-lg border border-[rgba(82,90,99,0.24)] bg-[rgba(18,22,27,0.52)] p-4"
+          }>
             {pageImageUrl ? (
               <>
                 <img
                   src={pageImageUrl}
                   alt={`Page ${selectedPage}`}
-                  className="h-auto max-w-full rounded-md border border-[rgba(82,90,99,0.22)] shadow-[0_18px_44px_rgba(0,0,0,0.24)] transition-opacity duration-150"
+                  className={compact
+                    ? "h-auto max-h-full border border-[#b2b2ad] bg-[#f2f0e5] object-contain shadow-none transition-opacity duration-150"
+                    : "h-auto max-w-full rounded-md border border-[rgba(82,90,99,0.22)] shadow-[0_18px_44px_rgba(0,0,0,0.24)] transition-opacity duration-150"
+                  }
                   style={{ transform: `scale(${zoom})`, opacity: pageLoading ? 0.72 : 1 }}
+                  onDoubleClick={() => onOpenFullViewer?.()}
                 />
                 {pageLoading ? (
                   <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/24">
@@ -718,13 +777,76 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
               <div className="text-stone-400">No image available</div>
             )}
           </div>
+          {compact && (selectedSnippetText || highlightLabel) ? (
+            <aside className={variant === "evidence"
+              ? "flex w-[270px] shrink-0 flex-col gap-2.5 rounded-[5px] border border-border bg-[hsl(var(--surface))] p-3.5"
+              : "flex w-[130px] shrink-0 flex-col gap-2"
+            }>
+              {variant === "workbench" ? <span className="cds-pill cds-pill-high w-fit">Selected</span> : <p className="cds-meta">Selected evidence</p>}
+              {variant === "workbench" ? <p className="text-[10px] font-medium text-muted-foreground">Evidence highlight</p> : null}
+              <p className="text-[12px] font-semibold text-foreground">{highlightLabel || "Selected text"}</p>
+              <p className={variant === "evidence" ? "text-[26px] font-semibold leading-[38px] text-foreground" : "text-[20px] font-semibold leading-[29px] text-foreground"}>
+                {selectedSnippetText || highlightValue || "—"}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Source: p.{selectedPage}</p>
+              {variant === "evidence" ? (
+                <>
+                  <div className="h-px bg-border" />
+                  <p className="cds-meta">Candidate</p>
+                  <span className="cds-pill cds-pill-proposed w-fit">Proposed</span>
+                  {highlightLabel ? <p className="font-display text-[10px] text-muted-foreground">{highlightLabel}</p> : null}
+                </>
+              ) : null}
+              <button
+                type="button"
+                className="cds-btn cds-btn-primary"
+                onClick={() => {
+                  const text = selectedSnippetText || ocrText;
+                  if (!text) return;
+                  onUseAsFact?.(text);
+                }}
+              >
+                {variant === "evidence" ? "Use as field value" : "Use as fact"}
+              </button>
+              {variant === "evidence" ? (
+                <button
+                  type="button"
+                  className="cds-btn cds-btn-ghost"
+                  onClick={() => {
+                    const documentId = getDocumentId(selectedDoc);
+                    if (!documentId) return;
+                    onAttachEvidence?.(documentId, selectedPage);
+                  }}
+                >
+                  Attach to finding
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="cds-btn cds-btn-ghost"
+                  onClick={() => {
+                    const text = selectedSnippetText || ocrText;
+                    if (!text) return;
+                    navigator.clipboard.writeText(text);
+                  }}
+                >
+                  Copy text
+                </button>
+              )}
+            </aside>
+          ) : null}
         </div>
 
         {/* OCR Text Panel - P14: Correction Support */}
-        <div className="h-64 overflow-y-auto border-t border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.82)] p-4">
+        <div className={compact
+          ? "h-[150px] shrink-0 overflow-y-auto border-t border-border bg-[hsl(var(--surface))] px-4 py-3.5"
+          : "h-64 overflow-y-auto border-t border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.82)] p-4"
+        }>
           <div className="flex justify-between items-center mb-2">
             <div className="flex items-center gap-2">
-              <h4 className="text-sm font-medium text-stone-100">OCR Text</h4>
+              <h4 className={compact ? "cds-meta" : "text-sm font-medium text-stone-100"}>
+                {variant === "evidence" ? "OCR / Native text" : compact ? "Extracted text" : "OCR Text"}
+              </h4>
               {ocrTextData?.has_correction && (
                 <Badge className="bg-amber-600/20 text-amber-200 border-amber-600/50 text-xs">
                   Corrected
@@ -859,8 +981,9 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
                 <textarea
                   value={ocrCorrectionText}
                   onChange={(e) => setOcrCorrectionText(e.target.value)}
-                  className="w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 font-mono text-xs text-stone-100"
+                  className="cds-extract-text w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-xs text-stone-100"
                   rows={8}
+                  {...urduTextProps(ocrCorrectionText)}
                 />
               </div>
               <div>
@@ -938,8 +1061,15 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
               </div>
             </div>
           ) : (
+            <>
             <div
-              className="select-text whitespace-pre-wrap rounded-md border border-[rgba(82,90,99,0.22)] bg-[rgba(14,18,22,0.5)] px-3 py-2 font-mono text-xs text-stone-300"
+              className={cn(
+                "cds-extract-text select-text whitespace-pre-wrap",
+                compact
+                  ? "text-[12px] text-foreground"
+                  : "rounded-md border border-[rgba(82,90,99,0.22)] bg-[rgba(14,18,22,0.5)] px-3 py-2 text-xs text-stone-300"
+              )}
+              {...urduTextProps(ocrText)}
               onMouseUp={() => {
                 const selection = window.getSelection();
                 if (selection && selection.toString().trim()) {
@@ -951,6 +1081,18 @@ export function DocumentViewer({ caseId, documents: documentsProp, onAttachEvide
             >
               {ocrText || 'OCR text not available'}
             </div>
+            {compact && highlightLabel && selectedSnippetText ? (
+              <p className="mt-2 font-display text-[10px] text-muted-foreground">
+                {variant === "evidence"
+                  ? "Text is preserved as extracted. Reviewer corrections create a separate audited value."
+                  : `Selected fact: ${highlightLabel} = ${selectedSnippetText}`}
+              </p>
+            ) : compact && variant === "evidence" ? (
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Text is preserved as extracted. Reviewer corrections create a separate audited value.
+              </p>
+            ) : null}
+            </>
           )}
         </div>
 

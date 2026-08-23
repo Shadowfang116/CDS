@@ -1,0 +1,8 @@
+name: soc_002_positive
+base: clean_urban
+doc_types_remove:
+- society_mortgage_permission
+expect_triggered:
+- SOC_002
+expect_not_triggered: []
+expected_decision: FAIL

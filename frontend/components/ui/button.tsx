@@ -1,80 +1,87 @@
-'use client';
+import * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
+import { Slot } from "radix-ui"
 
-import { cn } from '@/lib/utils';
-import { Slot } from '@radix-ui/react-slot';
-import { ButtonHTMLAttributes, forwardRef, ReactNode } from 'react';
+import { cn } from "@/lib/utils"
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'primary' | 'secondary' | 'ghost' | 'danger' | 'destructive' | 'outline';
-  size?: 'sm' | 'md' | 'lg' | 'icon';
-  children: ReactNode;
-  loading?: boolean;
-  asChild?: boolean;
+const buttonVariants = cva(
+  "group/button inline-flex h-10 shrink-0 items-center justify-center rounded border border-transparent text-sm font-medium whitespace-nowrap transition-colors duration-200 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        outline:
+          "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-muted aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+        ghost:
+          "hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground",
+        destructive:
+          "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20",
+        danger:
+          "border-border bg-background text-foreground hover:bg-muted",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default:
+          "h-10 gap-2 px-4",
+        compact: "h-[34px] gap-1 rounded px-[13px] text-[11px] font-semibold",
+        xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+        sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-10 gap-2 px-5",
+        icon: "size-8",
+        "icon-xs":
+          "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+        "icon-sm":
+          "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
+        "icon-lg": "size-9",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+function Button({
+  className,
+  variant = "default",
+  size = "default",
+  asChild = false,
+  loading = false,
+  disabled,
+  children,
+  ...props
+}: React.ComponentProps<"button"> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean
+    loading?: boolean
+  }) {
+  const Comp = asChild ? Slot.Root : "button"
+
+  return (
+    <Comp
+      data-slot="button"
+      data-variant={variant}
+      data-size={size}
+      className={cn(buttonVariants({ variant, size, className }))}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...props}
+    >
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {loading ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
+          {children}
+        </>
+      )}
+    </Comp>
+  )
 }
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', children, loading, disabled, asChild = false, ...props }, ref) => {
-    const baseStyles =
-      'relative inline-flex items-center justify-center overflow-hidden rounded-md border text-sm font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-[rgba(154,165,137,0.85)] focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:transform-none active:translate-y-px';
-
-    const variants = {
-      default:
-        'border-[rgba(143,154,127,0.85)] bg-[linear-gradient(180deg,rgba(161,173,142,0.98),rgba(133,144,116,0.96))] text-[#111411] shadow-[0_10px_24px_rgba(103,116,83,0.18)] before:absolute before:inset-0 before:bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.22),transparent)] before:translate-x-[-140%] before:transition-transform before:duration-500 hover:border-[rgba(176,188,159,0.92)] hover:shadow-[0_14px_30px_rgba(103,116,83,0.22)] hover:before:translate-x-[140%]',
-      primary:
-        'border-[rgba(143,154,127,0.85)] bg-[linear-gradient(180deg,rgba(161,173,142,0.98),rgba(133,144,116,0.96))] text-[#111411] shadow-[0_10px_24px_rgba(103,116,83,0.18)] before:absolute before:inset-0 before:bg-[linear-gradient(120deg,transparent,rgba(255,255,255,0.22),transparent)] before:translate-x-[-140%] before:transition-transform before:duration-500 hover:border-[rgba(176,188,159,0.92)] hover:shadow-[0_14px_30px_rgba(103,116,83,0.22)] hover:before:translate-x-[140%]',
-      secondary:
-        'border-[rgba(91,101,112,0.62)] bg-[rgba(32,38,43,0.9)] text-stone-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-[rgba(115,126,139,0.78)] hover:bg-[rgba(40,47,53,0.96)] hover:text-stone-50',
-      ghost: 'border-transparent bg-transparent text-stone-300 hover:bg-[rgba(44,50,57,0.72)] hover:text-stone-100',
-      danger:
-        'border-[rgba(170,88,84,0.72)] bg-[linear-gradient(180deg,rgba(157,75,72,0.95),rgba(132,58,56,0.94))] text-stone-50 shadow-[0_10px_24px_rgba(124,54,51,0.16)] hover:border-[rgba(197,110,105,0.82)] hover:shadow-[0_14px_30px_rgba(124,54,51,0.2)]',
-      destructive:
-        'border-[rgba(170,88,84,0.72)] bg-[linear-gradient(180deg,rgba(157,75,72,0.95),rgba(132,58,56,0.94))] text-stone-50 shadow-[0_10px_24px_rgba(124,54,51,0.16)] hover:border-[rgba(197,110,105,0.82)] hover:shadow-[0_14px_30px_rgba(124,54,51,0.2)]',
-      outline:
-        'border-[rgba(91,101,112,0.62)] bg-[rgba(18,22,26,0.44)] text-stone-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] hover:border-[rgba(136,148,161,0.76)] hover:bg-[rgba(32,38,43,0.88)] hover:text-stone-50',
-    };
-
-    const sizes = {
-      sm: 'h-8 px-3 text-sm gap-1.5',
-      md: 'h-9 px-4 gap-2',
-      lg: 'h-10 px-5 text-sm gap-2.5',
-      icon: 'h-8 w-8 p-0',
-    };
-
-    if (asChild) {
-      return (
-        <Slot
-          ref={ref}
-          className={cn(baseStyles, variants[variant], sizes[size], className)}
-          aria-disabled={disabled || loading}
-          {...props}
-        >
-          {children}
-        </Slot>
-      );
-    }
-
-    const Comp = asChild ? Slot : 'button';
-
-    return (
-      <Comp
-        ref={ref}
-        className={cn(baseStyles, variants[variant], sizes[size], className)}
-        disabled={disabled || loading}
-        {...props}
-      >
-        <span className="relative z-10 inline-flex items-center gap-2">
-        {loading && (
-          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        )}
-        {children}
-        </span>
-      </Comp>
-    );
-  }
-);
-
-Button.displayName = 'Button';
-
+export { Button, buttonVariants }

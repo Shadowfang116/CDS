@@ -38,12 +38,15 @@ import { ExceptionsPanel } from '@/components/cases/ExceptionsPanel';
 import { SetPageChrome } from '@/components/layout/set-page-chrome';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
-import { CaseStatusPill, type CaseStatus } from '@/components/ui/case-status-pill';
+import { type CaseStatus } from '@/components/ui/case-status-pill';
+import { CaseTruthBar } from '@/components/cds/case-truth-bar';
+import { MatterNav } from '@/components/cds/matter-nav';
+import { LifecycleRail } from '@/components/cds/lifecycle-rail';
+import { EvidencePeek } from '@/components/cds/evidence-peek';
 import { SeverityBadge } from '@/components/ui/severity-badge';
 import { getRuleEvidenceDefinition, isEvidenceSatisfied } from '@/config/rules_evidence';
 import { getFieldLabelMeta } from '@/lib/field-labels';
 import {
-  CASE_TABS,
   type CaseTabKey,
   getCaseTabPath,
   getCaseDocumentFocusPath,
@@ -235,6 +238,7 @@ export function CaseWorkspace(props: { caseId: string }) {
   const [generatedDrafts, setGeneratedDrafts] = useState<any[]>([]);
   const [insights, setInsights] = useState<CaseInsightsResponse | null>(null);
   const [insightsDays, setInsightsDays] = useState(30);
+  const [peek, setPeek] = useState<{ title: string; severity: string; refs: Array<{ document_id?: string | null; page_number?: number | null; note?: string | null; snippet?: string | null }> } | null>(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [dossierLoading, setDossierLoading] = useState(false);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
@@ -617,14 +621,6 @@ export function CaseWorkspace(props: { caseId: string }) {
     () => enrichedCpItems.filter((cp: any) => cp.status === 'Open').length,
     [enrichedCpItems]
   );
-  const satisfiedCpCount = useMemo(
-    () => enrichedCpItems.filter((cp: any) => cp.status === 'Satisfied').length,
-    [enrichedCpItems]
-  );
-  const waivedExceptionCount = useMemo(
-    () => exceptionItems.filter((exc: any) => exc.status === 'Waived').length,
-    [exceptionItems]
-  );
   const openExceptionTotal = useMemo(
     () => openExceptionCounts.high + openExceptionCounts.medium + openExceptionCounts.low,
     [openExceptionCounts]
@@ -706,78 +702,51 @@ export function CaseWorkspace(props: { caseId: string }) {
 
   return (
     <>
-      <SetPageChrome
-        title={caseData?.title || 'Case'}
-        breadcrumbs={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Cases', href: '/dashboard/cases' },
-          { label: caseData?.title || 'Case' }
-        ]}
-        actions={<CaseStatusPill status={caseStatus} />}
-      />
-      <div className="space-y-6 p-6">
+      <SetPageChrome title={caseData?.title || 'Matter'} />
+      <div
+        className="space-y-8 px-[clamp(1.5rem,3vw,2.5rem)] py-6"
+        data-page="matter"
+        data-surface="operational"
+      >
         {error && (
-          <div className="rounded-lg border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] px-4 py-3 text-sm text-[rgb(219,156,153)]">
+          <div className="border border-border px-4 py-3 text-sm text-primary">
             <div className="flex items-start justify-between gap-4">
               <span>{error}</span>
-              <button onClick={() => setError('')} className="text-[rgb(219,156,153)] hover:text-stone-100">×</button>
+              <button onClick={() => setError('')} className="text-muted-foreground">×</button>
             </div>
           </div>
         )}
 
-        <section className="rounded-lg border border-[rgba(82,90,99,0.4)] bg-[rgba(24,28,32,0.9)] px-5 py-4">
-          <div className="grid gap-4 lg:grid-cols-[1.4fr_repeat(3,minmax(0,1fr))]">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Case Workspace</div>
-              <div className="mt-2 text-xl font-semibold text-stone-100">{caseData?.title || caseId}</div>
-              <div className="mt-1 text-sm text-stone-400">{borrowerLabel ? `Borrower / Client: ${borrowerLabel}` : `Case Reference: ${caseId}`}</div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => { setActiveTab('documents'); router.replace(getCaseTabPath(caseId, 'documents'), { scroll: false }); }}>
-                  Open Documents
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => { setActiveTab('exceptions'); router.replace(getCaseTabPath(caseId, 'exceptions'), { scroll: false }); }}>
-                  Review Exceptions
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => { setActiveTab('exports'); router.replace(getCaseTabPath(caseId, 'exports'), { scroll: false }); }}>
-                  Exports & Drafts
-                </Button>
-              </div>
-            </div>
-            <div className="rounded-md border border-[rgba(82,90,99,0.35)] bg-[rgba(34,39,45,0.75)] px-4 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Status</div>
-              <div className="mt-2">
-                <CaseStatusPill status={caseStatus} />
-              </div>
-            </div>
-            <div className="rounded-md border border-[rgba(82,90,99,0.35)] bg-[rgba(34,39,45,0.75)] px-4 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Open Exceptions</div>
-              <div className="mt-2 text-2xl font-semibold text-stone-100">{exceptions?.open_count ?? openExceptionTotal}</div>
-            </div>
-            <div className="rounded-md border border-[rgba(82,90,99,0.35)] bg-[rgba(34,39,45,0.75)] px-4 py-3">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Open CPs</div>
-              <div className="mt-2 text-2xl font-semibold text-stone-100">{cps?.open_count ?? 0}</div>
-            </div>
-          </div>
-        </section>
-
-        <div className="flex gap-4 overflow-x-auto border-b border-[rgba(82,90,99,0.32)]">
-          {CASE_TABS.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => {
-                setActiveTab(key);
-                router.replace(getCaseTabPath(caseId, key), { scroll: false });
-              }}
-              data-tour={key === 'ocr-extractions' ? 'ocr-review' : key === 'exceptions' ? 'exceptions' : key === 'exports' ? 'export' : undefined}
-              className={`pb-3 text-sm whitespace-nowrap transition-colors ${activeTab === key ? 'border-b-2 border-[rgba(126,133,111,0.88)] text-stone-100' : 'text-stone-500 hover:text-stone-200'}`}
-            >
-              {label}
-              {key === 'exceptions' && exceptions?.open_count > 0 ? (
-                <span className="ml-2 badge badge-error">{exceptions.open_count}</span>
-              ) : null}
-            </button>
-          ))}
-        </div>
+        <CaseTruthBar
+          title={caseData?.title || caseId}
+          status={caseStatus}
+          highExceptions={exceptions?.high_count ?? 0}
+          openCps={cps?.open_count ?? 0}
+          documents={documents.length}
+          blockedBy={
+            (exceptions?.high_count ?? 0) > 0
+              ? 'high-risk exceptions'
+              : (cps?.open_count ?? 0) > 0
+                ? 'open conditions precedent'
+                : null
+          }
+          nextAction={
+            (exceptions?.high_count ?? 0) > 0
+              ? 'Review high-risk exceptions'
+              : (cps?.open_count ?? 0) > 0
+                ? 'Close open CPs'
+                : 'Continue file review'
+          }
+        />
+        <LifecycleRail status={caseStatus} />
+        <MatterNav
+          activeTab={activeTab}
+          exceptionCount={exceptions?.open_count}
+          onSelect={(key) => {
+            setActiveTab(key);
+            router.replace(getCaseTabPath(caseId, key), { scroll: false });
+          }}
+        />
 
       {/* Documents Tab */}
       {activeTab === 'documents' && (
@@ -930,6 +899,7 @@ export function CaseWorkspace(props: { caseId: string }) {
           onExceptionsChange={setExceptions}
           onEvaluate={handleEvaluate}
           evaluating={evaluating}
+          onPeekEvidence={setPeek}
         />
       )}
 
@@ -1251,307 +1221,104 @@ export function CaseWorkspace(props: { caseId: string }) {
         )
       )}
 
-      {/* Executive Summary Tab */}
       {activeTab === 'summary' && (
-        <div className="space-y-6">
-          <div className="card">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Executive Summary</h2>
-              <p className="text-sm text-slate-400">Primary review posture, credit decision signal, and operating context for this case.</p>
+        <div className="space-y-10">
+          <dl>
+            <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-6 border-t border-border py-4 text-sm">
+              <dt className="cds-meta pt-0.5">Borrower</dt>
+              <dd className="text-foreground">{borrowerLabel || 'Not recorded'}</dd>
             </div>
-
-            <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
-              <div className="space-y-6">
-                <section className="rounded-lg border border-[rgba(82,90,99,0.35)] bg-[rgba(34,39,45,0.75)] p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Case Snapshot</div>
-                      <div className="mt-2 text-base font-semibold text-stone-100">{caseData?.title || caseId}</div>
-                      <div className="mt-1 text-sm text-stone-400">{borrowerLabel || 'Borrower / client not recorded'}</div>
-                    </div>
-                    <CaseStatusPill status={caseStatus} />
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    <div className="rounded-md border border-[rgba(82,90,99,0.3)] bg-[rgba(24,28,32,0.86)] px-3 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Borrower</div>
-                      <div className="mt-2 text-sm font-medium text-stone-100">{borrowerLabel || 'Not recorded'}</div>
-                    </div>
-                    <div className="rounded-md border border-[rgba(82,90,99,0.3)] bg-[rgba(24,28,32,0.86)] px-3 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Documents</div>
-                      <div className="mt-2 text-2xl font-semibold text-stone-100">{documents.length}</div>
-                    </div>
-                    <div className="rounded-md border border-[rgba(82,90,99,0.3)] bg-[rgba(24,28,32,0.86)] px-3 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Exceptions</div>
-                      <div className="mt-2 text-2xl font-semibold text-stone-100">{exceptionItems.length}</div>
-                    </div>
-                    <div className="rounded-md border border-[rgba(82,90,99,0.3)] bg-[rgba(24,28,32,0.86)] px-3 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Conditions Precedent</div>
-                      <div className="mt-2 text-2xl font-semibold text-stone-100">{cpItems.length}</div>
-                    </div>
-                    <div className="rounded-md border border-[rgba(82,90,99,0.3)] bg-[rgba(24,28,32,0.86)] px-3 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Open Exceptions</div>
-                      <div className="mt-2 text-2xl font-semibold text-stone-100">{openExceptionTotal}</div>
-                    </div>
-                    <div className="rounded-md border border-[rgba(82,90,99,0.3)] bg-[rgba(24,28,32,0.86)] px-3 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Open Conditions Precedent</div>
-                      <div className="mt-2 text-2xl font-semibold text-stone-100">{openCpCount}</div>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-lg border border-[rgba(82,90,99,0.35)] bg-[rgba(34,39,45,0.75)] p-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Risk Summary</div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <div className="rounded-md border border-[rgba(189,90,86,0.32)] bg-[rgba(189,90,86,0.1)] px-3 py-3">
-                      <div className="text-xs text-stone-300">High Severity Open</div>
-                      <div className="mt-2 text-2xl font-semibold text-[rgb(219,156,153)]">{openExceptionCounts.high}</div>
-                    </div>
-                    <div className="rounded-md border border-[rgba(184,151,95,0.32)] bg-[rgba(184,151,95,0.1)] px-3 py-3">
-                      <div className="text-xs text-stone-300">Medium Severity Open</div>
-                      <div className="mt-2 text-2xl font-semibold text-[rgb(219,194,137)]">{openExceptionCounts.medium}</div>
-                    </div>
-                    <div className="rounded-md border border-[rgba(71,128,159,0.32)] bg-[rgba(71,128,159,0.1)] px-3 py-3">
-                      <div className="text-xs text-stone-300">Low Severity Open</div>
-                      <div className="mt-2 text-2xl font-semibold text-[rgb(150,193,217)]">{openExceptionCounts.low}</div>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              <div className="space-y-6">
-                <section className={`rounded-lg border p-4 ${decisionIndicator.surface}`}>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Decision Indicator</div>
-                  <div className={`mt-3 text-2xl font-semibold ${decisionIndicator.tone}`}>{decisionIndicator.label}</div>
-                  <p className="mt-2 text-sm text-stone-300">{decisionIndicator.rationale}</p>
-                  <dl className="mt-4 grid gap-3 text-xs text-stone-300">
-                    <div className="flex items-center justify-between">
-                      <dt className="text-stone-500">Open High Exceptions</dt>
-                      <dd className="font-medium">{openExceptionCounts.high}</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-stone-500">Open Conditions Precedent</dt>
-                      <dd className="font-medium">{openCpCount}</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-stone-500">Residual Medium / Low</dt>
-                      <dd className="font-medium">{openExceptionCounts.medium + openExceptionCounts.low}</dd>
-                    </div>
-                  </dl>
-                </section>
-
-                <section className={`rounded-lg border p-4 ${approvalReadiness.surface}`}>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Approval Readiness</div>
-                  <div className={`mt-3 text-2xl font-semibold ${approvalReadiness.tone}`}>{approvalReadiness.label}</div>
-                  <p className="mt-2 text-sm text-stone-300">{approvalReadiness.rationale}</p>
-                  <dl className="mt-4 grid gap-3 text-xs text-stone-300">
-                    <div className="flex items-center justify-between">
-                      <dt className="text-stone-500">Open High Severity Exceptions</dt>
-                      <dd className="font-medium">{openExceptionCounts.high}</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-stone-500">Waived Exceptions</dt>
-                      <dd className="font-medium">{exceptions?.waived_count ?? waivedExceptionCount}</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-stone-500">Open Conditions Precedent</dt>
-                      <dd className="font-medium">{cps?.open_count ?? openCpCount}</dd>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <dt className="text-stone-500">Satisfied Conditions Precedent</dt>
-                      <dd className="font-medium">{cps?.satisfied_count ?? satisfiedCpCount}</dd>
-                    </div>
-                  </dl>
-                </section>
-
-                <section className="rounded-lg border border-[rgba(82,90,99,0.35)] bg-[rgba(34,39,45,0.75)] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Key Issues</div>
-                    <span className="text-xs text-stone-500">Top {Math.min(keyIssues.length, 5) || 0}</span>
-                  </div>
-                  {keyIssues.length === 0 ? (
-                    <EmptyState
-                      title="No key issues currently open."
-                      description="The case has no unresolved exceptions requiring escalation in the executive summary."
-                      className="mt-4 min-h-[220px]"
-                    />
-                  ) : (
-                    <div className="mt-4 space-y-3">
-                      {keyIssues.map((issue: any) => {
-                        const firstEvidence = Array.isArray(issue.evidence_refs) ? issue.evidence_refs[0] : null;
-                        return (
-                          <div key={issue.id} className={`rounded-lg border p-3 ${getSeverityAccent(issue.severity)}`}>
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="font-medium text-stone-100">{issue.title}</div>
-                                <p className="mt-1 text-sm text-stone-300 line-clamp-2">
-                                  {truncateText(issue.description, 150) || 'No reviewer description recorded.'}
-                                </p>
-                                <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-400">
-                                  {firstEvidence ? (
-                                    <span>{formatEvidenceLabel(firstEvidence)}</span>
-                                  ) : (
-                                    <span>Evidence reference pending</span>
-                                  )}
-                                  {issue.cp_text ? <span>Condition imposed</span> : null}
-                                </div>
-                              </div>
-                              <span className={`badge ${
-                                issue.severity === 'High' ? 'badge-error' :
-                                issue.severity === 'Medium' ? 'badge-warning' : 'badge-info'
-                              }`}>
-                                {issue.severity}
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </section>
-              </div>
+            <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-6 border-t border-border py-4 text-sm">
+              <dt className="cds-meta pt-0.5">Posture</dt>
+              <dd>
+                <p className={decisionIndicator.label === 'Proceed' ? 'text-foreground' : 'text-primary'}>
+                  {decisionIndicator.label}
+                </p>
+                <p className="mt-1 text-muted-foreground">{decisionIndicator.rationale}</p>
+              </dd>
             </div>
-          </div>
-
-          <div className="card">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold">Controls & Evidence Checklist</h2>
-              <p className="text-sm text-slate-400">Operational controls, evidence readiness, and approval blockers for the current file.</p>
+            <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-6 border-t border-border py-4 text-sm">
+              <dt className="cds-meta pt-0.5">Readiness</dt>
+              <dd>
+                <p className={approvalReadiness.label === 'READY' ? 'text-foreground' : 'text-primary'}>
+                  {approvalReadiness.label === 'READY' ? 'Ready' : 'Not ready'}
+                </p>
+                <p className="mt-1 text-muted-foreground">{approvalReadiness.rationale}</p>
+              </dd>
             </div>
-            <CaseControlsCard
-              controls={controls}
-              onViewDocument={(docId) => focusEvidence(docId)}
-              onNavigateToDocuments={navigateToDocuments}
-            />
-          </div>
-
-          <div className="card">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-lg font-semibold">Activity and Reviewer Signals</h2>
-                <p className="text-sm text-stone-400">Exception, CP, verification, and OCR activity over time.</p>
-              </div>
-              <div className="flex gap-1 rounded-md border border-[rgba(82,90,99,0.45)] bg-[rgba(24,28,32,0.86)] p-1">
-                {[7, 30, 90].map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setInsightsDays(d)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                      insightsDays === d
-                        ? 'bg-[rgba(126,133,111,0.92)] text-stone-950'
-                        : 'text-stone-500 hover:bg-[rgba(44,50,57,0.92)] hover:text-stone-100'
-                    }`}
-                  >
-                    {d}d
-                  </button>
-                ))}
-              </div>
+            <div className="grid grid-cols-[9rem_minmax(0,1fr)] gap-6 border-y border-border py-4 text-sm">
+              <dt className="cds-meta pt-0.5">File</dt>
+              <dd className="flex flex-wrap gap-x-8 gap-y-1 tabular text-muted-foreground">
+                <span>{String(documents.length).padStart(2, '0')} documents</span>
+                <span className={openExceptionCounts.high > 0 ? 'text-primary' : undefined}>
+                  {String(openExceptionTotal).padStart(2, '0')} open exceptions
+                </span>
+                <span>{String(openCpCount).padStart(2, '0')} open CPs</span>
+              </dd>
             </div>
+          </dl>
 
-            {insightsLoading && !insights ? (
-              <CaseTabSkeleton />
-            ) : insights ? (
-              <div className="space-y-6">
-                {/* KPI Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.38)] bg-[rgba(34,39,45,0.82)] p-4">
-                    <p className="text-sm text-stone-400">Open High</p>
-                    <p className="text-2xl font-semibold tracking-tight text-[rgb(219,156,153)]">{insights.summary.open_exceptions_high}</p>
-                  </div>
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.38)] bg-[rgba(34,39,45,0.82)] p-4">
-                    <p className="text-sm text-stone-400">Open Medium</p>
-                    <p className="text-2xl font-semibold tracking-tight text-[rgb(219,194,137)]">{insights.summary.open_exceptions_medium}</p>
-                  </div>
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.38)] bg-[rgba(34,39,45,0.82)] p-4">
-                    <p className="text-sm text-stone-400">CP Completion</p>
-                    <p className="text-2xl font-semibold tracking-tight text-[rgb(194,200,185)]">{insights.summary.cp_completion_pct}%</p>
-                  </div>
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.38)] bg-[rgba(34,39,45,0.82)] p-4">
-                    <p className="text-sm text-stone-400">Verification</p>
-                    <p className="text-2xl font-semibold tracking-tight text-stone-100">{insights.summary.verification_completion_pct}%</p>
-                  </div>
-                </div>
-
-                {/* Activity Summary */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.32)] bg-[rgba(34,39,45,0.62)] p-3">
-                    <p className="text-xs text-stone-500">Open Low</p>
-                    <p className="text-lg font-semibold text-[rgb(187,205,189)]">{insights.summary.open_exceptions_low}</p>
-                  </div>
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.32)] bg-[rgba(34,39,45,0.62)] p-3">
-                    <p className="text-xs text-stone-500">Exports</p>
-                    <p className="text-lg font-semibold">{insights.summary.exports_generated}</p>
-                  </div>
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.32)] bg-[rgba(34,39,45,0.62)] p-3">
-                    <p className="text-xs text-stone-500">Last Rule Run</p>
-                    <p className="text-sm">{insights.summary.last_rule_run_at ? new Date(insights.summary.last_rule_run_at).toLocaleDateString() : '—'}</p>
-                  </div>
-                  <div className="rounded-lg border border-[rgba(82,90,99,0.32)] bg-[rgba(34,39,45,0.62)] p-3">
-                    <p className="text-xs text-stone-500">Last OCR</p>
-                    <p className="text-sm">{insights.summary.last_ocr_at ? new Date(insights.summary.last_ocr_at).toLocaleDateString() : '—'}</p>
-                  </div>
-                </div>
-
-                {/* Activity Timeline */}
-                <div>
-                  <h3 className="mb-4 text-base font-semibold">Activity Timeline ({insightsDays} days)</h3>
-                  <div className="overflow-x-auto rounded-lg border border-[rgba(82,90,99,0.38)] bg-[rgba(34,39,45,0.82)] p-4">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-stone-500">
-                          <th className="pb-2">Date</th>
-                          <th className="pb-2">Exc. Opened</th>
-                          <th className="pb-2">Exc. Resolved</th>
-                          <th className="pb-2">CPs Satisfied</th>
-                          <th className="pb-2">Verified</th>
-                          <th className="pb-2">Exports</th>
-                          <th className="pb-2">Rule Runs</th>
-                          <th className="pb-2">OCR Pages</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {insights.timeseries.filter(t => 
-                          t.exceptions_opened > 0 || t.exceptions_resolved > 0 || 
-                          t.cps_satisfied > 0 || t.verifications_verified > 0 ||
-                          t.exports_generated > 0 || t.rule_evaluations > 0 || t.ocr_pages_done > 0
-                        ).slice(-10).map((t) => (
-                          <tr key={t.date} className="border-t border-[rgba(82,90,99,0.38)]">
-                            <td className="py-2">{new Date(t.date).toLocaleDateString()}</td>
-                            <td className="py-2">{t.exceptions_opened || '—'}</td>
-                            <td className="py-2">{t.exceptions_resolved || '—'}</td>
-                            <td className="py-2">{t.cps_satisfied || '—'}</td>
-                            <td className="py-2">{t.verifications_verified || '—'}</td>
-                            <td className="py-2">{t.exports_generated || '—'}</td>
-                            <td className="py-2">{t.rule_evaluations || '—'}</td>
-                            <td className="py-2">{t.ocr_pages_done || '—'}</td>
-                          </tr>
-                        ))}
-                        {insights.timeseries.filter(t => 
-                          t.exceptions_opened > 0 || t.exceptions_resolved > 0 || 
-                          t.cps_satisfied > 0 || t.verifications_verified > 0 ||
-                          t.exports_generated > 0 || t.rule_evaluations > 0 || t.ocr_pages_done > 0
-                        ).length === 0 && (
-                          <tr>
-                            <td colSpan={8} className="py-8 text-center text-stone-400">
-                              No activity in this time range
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+          <section>
+            <p className="cds-meta">Key issues</p>
+            {keyIssues.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">No open exceptions requiring escalation.</p>
             ) : (
-              <EmptyState
-                title="Summary data unavailable"
-                description="Activity metrics could not be loaded for this case. Core reviewer actions remain available in the other tabs."
-              />
+              <ul className="mt-2">
+                {keyIssues.map((issue: any) => {
+                  const refs = Array.isArray(issue.evidence_refs) ? issue.evidence_refs : [];
+                  const firstEvidence = refs[0] ?? null;
+                  const highRisk = issue.severity === 'High' || issue.severity === 'Critical';
+                  return (
+                    <li key={issue.id} className="border-b border-border py-4">
+                      <div className={highRisk ? "border-l border-primary pl-4" : undefined}>
+                        <div className="flex items-start justify-between gap-6">
+                          <div className="min-w-0">
+                            <p className={highRisk ? "text-primary" : "text-foreground"}>{issue.title}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {truncateText(issue.description, 150) || "No reviewer description recorded."}
+                            </p>
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              {firstEvidence ? formatEvidenceLabel(firstEvidence) : "Evidence reference pending"}
+                              {issue.cp_text ? " · Condition imposed" : ""}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="shrink-0 text-sm text-muted-foreground transition-colors duration-[180ms] hover:text-foreground"
+                            onClick={() =>
+                              setPeek({
+                                title: issue.title,
+                                severity: issue.severity,
+                                refs,
+                              })
+                            }
+                          >
+                            Review evidence
+                          </button>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
-          </div>
+          </section>
+
+          <CaseControlsCard
+            controls={controls}
+            onViewDocument={(docId) => focusEvidence(docId)}
+            onNavigateToDocuments={navigateToDocuments}
+          />
         </div>
       )}
-    </div>
+        <EvidencePeek
+          open={Boolean(peek)}
+          onClose={() => setPeek(null)}
+          title={peek?.title ?? ""}
+          severity={peek?.severity}
+          refs={peek?.refs ?? []}
+        />
+      </div>
     </>
   );
 }

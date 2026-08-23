@@ -14,6 +14,7 @@ import {
 } from '@/config/rules_evidence';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
+import { canWaiveFinding } from '@/lib/workbench/findings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,6 +51,8 @@ type CaseException = {
   waived_at?: string | null;
   created_at: string;
   evidence_refs: ExceptionEvidenceRef[];
+  is_hard_stop?: boolean;
+  waivable?: boolean;
 };
 
 type ExceptionsResponse = {
@@ -71,6 +74,7 @@ type ExceptionsPanelProps = {
   onExceptionsChange?: (data: ExceptionsResponse) => void;
   onEvaluate?: () => void | Promise<void>;
   evaluating?: boolean;
+  onPeekEvidence?: (payload: { title: string; severity: string; refs: ExceptionEvidenceRef[] }) => void;
 };
 
 const severityOrder: Record<string, number> = {
@@ -170,6 +174,7 @@ export function ExceptionsPanel({
   onExceptionsChange,
   onEvaluate,
   evaluating = false,
+  onPeekEvidence,
 }: ExceptionsPanelProps) {
   const { toast } = useToast();
   const [data, setData] = useState<ExceptionsResponse | null>(null);
@@ -411,6 +416,21 @@ export function ExceptionsPanel({
                         <TableCell className="text-right">
                           {exceptionItem.status === 'Open' ? (
                             <div className="flex justify-end gap-2" onClick={(event) => event.stopPropagation()}>
+                              {onPeekEvidence ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    onPeekEvidence({
+                                      title: exceptionItem.title,
+                                      severity: exceptionItem.severity,
+                                      refs: exceptionItem.evidence_refs ?? [],
+                                    })
+                                  }
+                                >
+                                  Review evidence
+                                </Button>
+                              ) : null}
                               <Button
                                 size="sm"
                                 variant="secondary"
@@ -421,6 +441,15 @@ export function ExceptionsPanel({
                               >
                                 Resolve
                               </Button>
+                              {canWaiveFinding({
+                                id: exceptionItem.id,
+                                kind: 'exception',
+                                severity: exceptionItem.severity,
+                                status: exceptionItem.status,
+                                title: exceptionItem.title,
+                                is_hard_stop: exceptionItem.is_hard_stop,
+                                waivable: exceptionItem.waivable,
+                              }) ? (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -431,6 +460,7 @@ export function ExceptionsPanel({
                               >
                                 Waive
                               </Button>
+                              ) : null}
                             </div>
                           ) : (
                             <span className="text-xs text-stone-500">Closed</span>

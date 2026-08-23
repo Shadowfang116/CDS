@@ -1,0 +1,11 @@
+name: lda_002_positive
+base: clean_urban
+regime: LDA
+pages_add:
+- doc: lda02.pdf
+  page: 1
+  text: The revised plan under process remains approval awaited.
+expect_triggered:
+- LDA_002
+expect_not_triggered: []
+expected_decision: FAIL

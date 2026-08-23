@@ -1,4 +1,8 @@
-﻿"""Phase 6: Layout-aware OCR segmentation for scanned legal documents."""
+﻿"""DEPRECATED engine-only layout segmentation. No production import.
+
+Production OCR is Celery → ocr_pipeline → ocr_service → DocumentPage.
+Do not delete until the Q4/Q1 measurement gate.
+"""
 import logging
 from typing import Any, Dict, List, Tuple
 

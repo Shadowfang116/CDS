@@ -1,0 +1,8 @@
+name: soc_03_positive
+base: clean_urban
+doc_types_remove:
+- CLU
+expect_triggered:
+- SOC-03
+expect_not_triggered: []
+expected_decision: PASS

@@ -118,8 +118,6 @@ def extract_entities_page(
                 "normalized": True
             }
     
-    # Get extractor options from config
-    from app.core.config import settings
     extractor_version = settings.HF_EXTRACTOR_VERSION
     enable_layoutxlm = settings.HF_EXTRACTOR_ENABLE_LAYOUTXLM
     model_name_or_path = settings.HF_LAYOUTXLM_MODEL_PATH if settings.HF_LAYOUTXLM_MODEL_PATH else None
@@ -145,7 +143,7 @@ def extract_entities_page(
     
     try:
         # Call HF Extractor service with timeout and retry
-        with httpx.Client(timeout=10.0) as client:
+        with httpx.Client(timeout=4.0) as client:
             response = client.post(
                 f"{extractor_url}/v1/extract",
                 json=payload,

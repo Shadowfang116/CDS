@@ -1,0 +1,8 @@
+name: pos_03_positive
+base: clean_urban
+doc_types_remove:
+- Site Report
+expect_triggered:
+- POS-03
+expect_not_triggered: []
+expected_decision: PASS

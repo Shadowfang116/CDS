@@ -1,0 +1,11 @@
+name: lra_003_positive
+base: clean_revenue
+doc_types_remove:
+- mutation_entry
+dossier_updates:
+  bank_requires_mutation:
+  - 'true'
+expect_triggered:
+- LRA_003
+expect_not_triggered: []
+expected_decision: FAIL

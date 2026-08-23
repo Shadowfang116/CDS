@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ChevronDown, HelpCircle, LogOut, Settings } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { LogOut, Settings } from "lucide-react"
 
 import { getMe, logout } from "@/lib/api"
 import { AppSidebar } from "@/components/app-sidebar"
@@ -19,13 +19,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
-import { DashboardMotion } from "./dashboard-motion"
 import { ThemeToggle } from "./theme-toggle"
 import { PageChromeProvider, usePageChrome } from "./page-chrome"
-import TutorialDialog from "./TutorialDialog"
-import { OnboardingTour } from "@/components/OnboardingTour"
-import { OnboardingChecklist } from "@/components/OnboardingChecklist"
-import { PRODUCT_WALKTHROUGH_OPEN_EVENT, PRODUCT_WALKTHROUGH_STORAGE_KEY } from "@/config/product-walkthrough"
+import { HelpDialog } from "@/components/help/help-dialog"
+import { openHelp } from "@/lib/help"
 
 interface AppShellProps {
   children: React.ReactNode
@@ -38,8 +35,7 @@ interface WorkspaceUser {
   orgName: string
 }
 
-const HEADER_ICON_BUTTON_CLASSNAME =
-  "flex h-8 w-8 items-center justify-center rounded-md border border-zinc-800 bg-zinc-900/70 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+const HEADER_ICON_BUTTON_CLASSNAME = "cds-icon-btn"
 
 const SETTINGS_ROUTE = "/dashboard/settings"
 const SETTINGS_ROUTE_AVAILABLE = true
@@ -164,10 +160,10 @@ function WorkspaceUserMenu() {
       <button
         type="button"
         disabled
-        className="flex h-9 items-center gap-2 rounded-md border border-zinc-800/90 bg-zinc-950/70 px-2.5 text-[13px] text-zinc-500"
+        className="flex h-[41px] items-center gap-2 rounded border border-border bg-[hsl(var(--pill))] px-[11px] py-2 text-[11px] text-muted-foreground"
         aria-label="Loading account"
       >
-        <span className="h-7 w-7 rounded-full bg-zinc-900" />
+        <span className="cds-pill">—</span>
         <span>Loading</span>
       </button>
     )
@@ -181,50 +177,45 @@ function WorkspaceUserMenu() {
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex h-9 items-center gap-2 rounded-md border border-zinc-800/90 bg-zinc-950/70 px-2.5 text-[13px] text-zinc-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] transition-colors hover:bg-zinc-900 hover:text-zinc-50"
+          className="flex h-[41px] items-center gap-2 rounded border border-border bg-[hsl(var(--pill))] px-[11px] py-2 text-[11px] font-semibold text-foreground transition-colors hover:bg-muted"
           aria-label="Open account menu"
         >
-          <Avatar className="h-7 w-7 border-zinc-700/90 bg-zinc-900">
-            <AvatarFallback className="bg-zinc-800 text-[10px] font-semibold tracking-[0.02em] text-zinc-200">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <span className="max-w-28 truncate font-medium text-zinc-200">{displayName}</span>
-          <ChevronDown className="size-3.5 text-zinc-500" />
+          <span className="cds-pill">{initials}</span>
+          <span className="max-w-28 truncate">{displayName}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-72 rounded-lg border border-zinc-800 bg-zinc-950 p-1 text-zinc-100 backdrop-blur-none shadow-[0_18px_40px_rgba(0,0,0,0.5)]"
+        className="w-72 rounded-lg border border-border bg-popover p-1 text-popover-foreground"
       >
         <DropdownMenuLabel className="px-3 py-3">
           <div className="flex items-start gap-3">
-            <Avatar className="h-9 w-9 border-zinc-700/90 bg-zinc-900">
-              <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-200">
+            <Avatar className="size-9 border-border bg-muted">
+              <AvatarFallback className="bg-muted text-xs font-semibold text-foreground">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0 space-y-1">
-              <p className="truncate text-sm font-medium text-zinc-100">{user.displayName}</p>
-              <p className="truncate text-xs text-zinc-400">{user.email}</p>
-              <p className="text-xs text-zinc-500">
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="truncate text-sm font-medium">{user.displayName}</p>
+              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+              <p className="text-xs text-muted-foreground">
                 {user.role}
                 {user.orgName ? ` • ${user.orgName}` : ""}
               </p>
             </div>
           </div>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-zinc-800/90" />
+        <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="gap-2 rounded-md px-3 py-2 text-[13px] text-zinc-300 focus:bg-zinc-800/90 focus:text-zinc-100"
+          className="gap-2 rounded-md px-3 py-2 text-[13px]"
           onSelect={handleSettingsSelect}
         >
           <Settings className="size-4" />
           Profile / Settings
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-zinc-800/90" />
+        <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="gap-2 rounded-md px-3 py-2 text-[13px] text-zinc-300 focus:bg-zinc-800/90 focus:text-zinc-100"
+          className="gap-2 rounded-md px-3 py-2 text-[13px]"
           onSelect={() => {
             void handleSignOut()
           }}
@@ -239,40 +230,28 @@ function WorkspaceUserMenu() {
 
 function AppShellContent({ children }: { children: React.ReactNode }) {
   const { title, subtitle, breadcrumbs, actions } = usePageChrome()
-  const [tutorialOpen, setTutorialOpen] = React.useState(false)
+  const pathname = usePathname()
+  const isOverview = pathname === "/dashboard"
+  const isMatter = Boolean(pathname && /\/dashboard\/cases\/[^/]+/.test(pathname))
 
-  React.useEffect(() => {
-    if (typeof window === "undefined") {
-      return
-    }
-
-    const handleOpenTutorial = () => {
-      setTutorialOpen(true)
-    }
-
-    if (localStorage.getItem(PRODUCT_WALKTHROUGH_STORAGE_KEY) !== "true") {
-      setTutorialOpen(true)
-    }
-
-    window.addEventListener(PRODUCT_WALKTHROUGH_OPEN_EVENT, handleOpenTutorial)
-    return () => {
-      window.removeEventListener(PRODUCT_WALKTHROUGH_OPEN_EVENT, handleOpenTutorial)
-    }
-  }, [])
-
-  const displayTitle = title || "Dashboard"
+  const displayTitle = title || "Inbox"
   const displaySubtitle = subtitle || "Active workspace"
 
   return (
     <SidebarInset className="dashboard-app-shell">
-      <header className="sticky top-0 z-30 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl">
-        <div className="flex min-h-[4.75rem] items-center justify-between gap-4 px-4 sm:px-5 lg:px-6">
-          <div className="flex min-w-0 flex-1 items-start gap-3">
+      <header className="sticky top-0 z-30 h-[58px] border-b border-border bg-[hsl(var(--header))]">
+        <div className="flex h-[58px] items-center justify-between gap-4 px-5">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            {isOverview ? (
+              <p className="cds-meta">Inbox</p>
+            ) : isMatter ? (
+              <p className="cds-meta">Matter</p>
+            ) : (
             <div className="min-w-0 flex-1">
               {breadcrumbs.length > 0 ? (
                 <nav
                   aria-label="Breadcrumb"
-                  className="mb-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-zinc-400"
+                  className="mb-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-muted-foreground"
                 >
                   {breadcrumbs.map((crumb, index) => {
                     const isLast = index === breadcrumbs.length - 1
@@ -281,16 +260,16 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
                         {crumb.href && !isLast ? (
                           <Link
                             href={crumb.href}
-                            className="max-w-[10rem] truncate transition-colors hover:text-zinc-200"
+                            className="max-w-[10rem] truncate transition-colors hover:text-foreground"
                           >
                             {crumb.label}
                           </Link>
                         ) : (
-                          <span className={isLast ? "truncate text-zinc-300" : "truncate"}>
+                          <span className={isLast ? "truncate text-foreground/80" : "truncate"}>
                             {crumb.label}
                           </span>
                         )}
-                        {!isLast ? <span className="text-zinc-600">/</span> : null}
+                        {!isLast ? <span className="text-muted-foreground/60">/</span> : null}
                       </React.Fragment>
                     )
                   })}
@@ -298,36 +277,34 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
               ) : null}
 
               <div className="min-w-0">
-                <h1 className="truncate text-sm font-semibold text-zinc-100">{displayTitle}</h1>
-                <p className="truncate text-xs text-zinc-500">{displaySubtitle}</p>
+                <h1 className="truncate text-xl font-medium tracking-[-0.03em] text-foreground sm:text-2xl">{displayTitle}</h1>
+                <p className="truncate text-sm text-muted-foreground">{displaySubtitle}</p>
               </div>
             </div>
+            )}
           </div>
 
-          <div className="flex shrink-0 items-center gap-2">
-            {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
-            <ThemeToggle />
+          <div className="flex shrink-0 items-center gap-2.5">
+            {actions && !isOverview && !isMatter ? <div className="flex items-center gap-2">{actions}</div> : null}
+            <ThemeToggle className={HEADER_ICON_BUTTON_CLASSNAME} />
             <NotificationBell />
             <button
               type="button"
               className={HEADER_ICON_BUTTON_CLASSNAME}
-              aria-label="Open CDS tutorial"
-              onClick={() => setTutorialOpen(true)}
+              aria-label="Open CDS help"
+              onClick={() => openHelp()}
             >
-              <HelpCircle className="size-4" />
+              ?
             </button>
             <WorkspaceUserMenu />
           </div>
         </div>
       </header>
 
-      <main className="dashboard-main min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5 lg:px-6 lg:py-6">
-        <div className="mx-auto max-w-[1480px]">{children}</div>
+      <main className={isOverview ? "dashboard-main min-h-0 flex-1 overflow-y-auto" : isMatter ? "dashboard-main min-h-0 flex-1 overflow-hidden" : "dashboard-main min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-5 lg:px-6 lg:py-6"}>
+        <div className={isOverview ? "mx-auto max-w-[1600px]" : isMatter ? "h-full w-full" : "mx-auto max-w-[1480px]"}>{children}</div>
       </main>
-
-      <OnboardingTour />
-      <React.Suspense><OnboardingChecklist /></React.Suspense>
-      <TutorialDialog open={tutorialOpen} onOpenChange={setTutorialOpen} />
+      <HelpDialog />
     </SidebarInset>
   )
 }
@@ -335,13 +312,6 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
 export function AppShell({ children }: AppShellProps) {
   return (
     <div className="dashboard-shell">
-      <DashboardMotion />
-      <div className="dashboard-backdrop" aria-hidden="true">
-        <div className="dashboard-backdrop__grid" />
-        <div className="dashboard-backdrop__orb dashboard-backdrop__orb--primary" data-dashboard-drift="slow" />
-        <div className="dashboard-backdrop__orb dashboard-backdrop__orb--secondary" data-dashboard-drift="fast" />
-        <div className="dashboard-backdrop__orb dashboard-backdrop__orb--ambient" data-dashboard-drift="slow" />
-      </div>
       <SidebarProvider>
         <AppSidebar />
         <PageChromeProvider>

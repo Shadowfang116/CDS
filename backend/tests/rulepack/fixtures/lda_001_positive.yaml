@@ -1,0 +1,9 @@
+name: lda_001_positive
+base: clean_urban
+regime: LDA
+doc_types_remove:
+- lda_layout_plan
+expect_triggered:
+- LDA_001
+expect_not_triggered: []
+expected_decision: FAIL

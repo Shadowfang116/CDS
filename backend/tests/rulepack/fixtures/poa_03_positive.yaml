@@ -1,0 +1,10 @@
+name: poa_03_positive
+base: clean_urban
+pages_add:
+- doc: poa03.pdf
+  page: 1
+  text: A revocation was recorded against the prior authority instrument.
+expect_triggered:
+- POA-03
+expect_not_triggered: []
+expected_decision: PASS

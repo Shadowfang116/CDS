@@ -1,0 +1,6 @@
+name: system_regime_unknown
+base: clean_urban
+regime: null
+expect_error: regime
+expect_triggered: []
+expect_not_triggered: []

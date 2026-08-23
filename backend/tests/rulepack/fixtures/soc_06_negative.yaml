@@ -1,0 +1,10 @@
+name: soc_06_negative
+base: clean_urban
+pages_add:
+- doc: soc06-negative.pdf
+  page: 1
+  text: The property is noticeably compliant with all building controls.
+expect_triggered: []
+expect_not_triggered:
+- SOC-06
+expected_decision: PASS

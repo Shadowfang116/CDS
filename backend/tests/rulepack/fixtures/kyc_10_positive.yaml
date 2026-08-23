@@ -1,0 +1,8 @@
+name: kyc_10_positive
+base: clean_urban
+doc_types_remove:
+- Co-applicant CNIC
+expect_triggered:
+- KYC-10
+expect_not_triggered: []
+expected_decision: PASS

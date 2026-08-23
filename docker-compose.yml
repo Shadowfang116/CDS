@@ -106,7 +106,7 @@ services:
       MINIO_EXTERNAL_PORT: ${MINIO_EXTERNAL_PORT:-9000}
       APP_ENV: ${APP_ENV:-development}
       APP_SECRET_KEY: ${APP_SECRET_KEY:-change_me_to_random_secret_key}
-      RULEPACK_PATH: /app/docs/05_rulepack_v1.yaml
+      RULEPACK_PATH: /app/docs/rulepacks/punjab_mortgage_v1.yaml
       EMAIL_ENABLED: ${EMAIL_ENABLED:-true}
       SMTP_HOST: ${SMTP_HOST:-mailhog}
       SMTP_PORT: ${SMTP_PORT:-1025}
@@ -131,6 +131,7 @@ services:
       - ./scripts:/app/scripts:ro
     ports:
       - "8000:8000"
+    command: gunicorn -k uvicorn.workers.UvicornWorker -w 2 --timeout 120 --graceful-timeout 30 -b 0.0.0.0:8000 app.main:app
     depends_on:
       db:
         condition: service_healthy
@@ -172,6 +173,7 @@ services:
       PARTY_ROLES_DEBUG: ${PARTY_ROLES_DEBUG:-true}
       # Dossier autofill write-path observability
       DOSSIER_AUTOFILL_DEBUG: ${DOSSIER_AUTOFILL_DEBUG:-true}
+      RULEPACK_PATH: /app/docs/rulepacks/punjab_mortgage_v1.yaml
       # HF Extractor service
       HF_EXTRACTOR_URL: ${HF_EXTRACTOR_URL:-http://hf-extractor:8090}
       # OCR service

@@ -1,0 +1,8 @@
+name: soc_01_positive
+base: clean_urban
+doc_types_remove:
+- Society NOC
+expect_triggered:
+- SOC-01
+expect_not_triggered: []
+expected_decision: FAIL

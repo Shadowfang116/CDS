@@ -7,12 +7,24 @@ on:
   pull_request:
     branches: [main, master]
 
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -40,8 +52,12 @@ jobs:
   backend-tests:
     name: Backend Pytest
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -57,11 +73,15 @@ jobs:
         run: |
           pytest backend/tests/
 
-  docker-build:
-    name: Docker build
+  docker-build-api:
+    name: Docker API image
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -74,8 +94,21 @@ jobs:
           push: false
           load: true
           tags: api:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=api-image
+          cache-to: type=gha,mode=max,scope=api-image
+
+  docker-build-ocr-service:
+    name: Docker OCR image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build OCR service image
         uses: docker/build-push-action@v6
@@ -85,8 +118,21 @@ jobs:
           push: false
           load: true
           tags: ocr_service:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=ocr-image
+          cache-to: type=gha,mode=max,scope=ocr-image
+
+  docker-build-frontend:
+    name: Docker frontend image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build frontend image
         uses: docker/build-push-action@v6
@@ -96,15 +142,19 @@ jobs:
           push: false
           load: true
           tags: frontend:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=frontend-image
+          cache-to: type=gha,mode=max,scope=frontend-image
 
   smoke:
     name: API & OCR smoke
     runs-on: ubuntu-latest
-    needs: [docker-build]
+    needs: [docker-build-api, docker-build-ocr-service]
+    timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Create .env for CI
         run: |
@@ -114,11 +164,19 @@ jobs:
           echo "APP_SECRET_KEY=ci-secret-key" >> .env
 
       - name: Build and start services
-        run: docker compose up -d api db redis minio ocr_service
+        run: docker compose up -d --build api db redis minio ocr_service
 
       - name: Check OCR service health
         run: |
-          curl -f http://localhost:8001/health || exit 1
+          deadline=$((SECONDS + 120))
+          until curl -fsS http://localhost:8001/health > /dev/null; do
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "OCR service did not become healthy within 120 seconds"
+              docker compose logs ocr_service
+              exit 1
+            fi
+            sleep 5
+          done
 
       - name: Run API smoke script
         run: bash scripts/ci/api_smoke.sh
@@ -126,9 +184,50 @@ jobs:
       - name: Show logs on failure
         if: failure()
         run: |
-          docker compose logs api
-          docker compose logs ocr_service
+          docker compose logs api || true
+          docker compose logs ocr_service || true
 
       - name: Tear down
         if: always()
-        run: docker compose down -v
+        run: docker compose down -v || true
+
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - frontend
+      - backend-tests
+      - docker-build-api
+      - docker-build-ocr-service
+      - docker-build-frontend
+      - smoke
+    timeout-minutes: 5
+    steps:
+      - name: Enforce required job results
+        env:
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          BACKEND_RESULT: ${{ needs.backend-tests.result }}
+          DOCKER_API_RESULT: ${{ needs.docker-build-api.result }}
+          DOCKER_OCR_RESULT: ${{ needs.docker-build-ocr-service.result }}
+          DOCKER_FRONTEND_RESULT: ${{ needs.docker-build-frontend.result }}
+          SMOKE_RESULT: ${{ needs.smoke.result }}
+        run: |
+          for result in \
+            "$FRONTEND_RESULT" \
+            "$BACKEND_RESULT" \
+            "$DOCKER_API_RESULT" \
+            "$DOCKER_OCR_RESULT" \
+            "$DOCKER_FRONTEND_RESULT" \
+            "$SMOKE_RESULT"; do
+            if [ "$result" != "success" ]; then
+              echo "A required CI job did not succeed."
+              echo "frontend=$FRONTEND_RESULT"
+              echo "backend-tests=$BACKEND_RESULT"
+              echo "docker-build-api=$DOCKER_API_RESULT"
+              echo "docker-build-ocr-service=$DOCKER_OCR_RESULT"
+              echo "docker-build-frontend=$DOCKER_FRONTEND_RESULT"
+              echo "smoke=$SMOKE_RESULT"
+              exit 1
+            fi
+          done

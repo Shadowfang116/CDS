@@ -1,0 +1,10 @@
+name: tpa_notice_possession_001_positive
+base: clean_urban
+pages_add:
+- doc: tpa_notice.pdf
+  page: 1
+  text: The inspection records qabza on the plot boundary.
+expect_triggered:
+- TPA_NOTICE_POSSESSION_001
+expect_not_triggered: []
+expected_decision: FAIL

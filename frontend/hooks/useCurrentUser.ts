@@ -5,6 +5,7 @@ import * as React from "react";
 export type Role = "Admin" | "Reviewer" | "Approver" | "Viewer";
 
 export interface CurrentUser {
+  id: string | null;
   email: string | null;
   role: Role;
   orgName?: string | null;
@@ -26,6 +27,7 @@ export function useCurrentUser(): CurrentUser | null {
         const data = await res.json();
         if (cancelled) return;
         setUser({
+          id: data?.user_id ?? data?.id ?? null,
           email: data?.email ?? null,
           role: (data?.role as Role) || "Viewer",
           orgName: data?.org_name ?? null,

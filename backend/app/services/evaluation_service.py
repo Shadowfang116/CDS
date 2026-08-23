@@ -14,8 +14,10 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from app.models.case import Case
 from app.models.evaluation import EvaluationFinding, EvaluationRun, GoldenCaseExpectation
 from app.models.rules import ConditionPrecedent, Exception_
+from app.services.rule_engine import compute_case_decision
 
 SIMILARITY_THRESHOLD = 0.30
 
@@ -92,6 +94,7 @@ def run_evaluation(
             .filter(ConditionPrecedent.org_id == org_id, ConditionPrecedent.case_id == case_id)
             .all()
         )
+        actual_decision = compute_case_decision(actuals_exc)
 
         findings: list[EvaluationFinding] = []
         matched_exc_ids: set[uuid.UUID] = set()
@@ -238,7 +241,12 @@ def run_evaluation(
         run.matched_count = matched_count
         run.missed_count = missed_count
         run.extra_count = extra_count
+        run.decision = actual_decision
         run.status = "completed"
+
+        case = db.query(Case).filter(Case.id == case_id, Case.org_id == org_id).first()
+        if case:
+            case.decision = actual_decision
 
         db.commit()
         db.refresh(run)

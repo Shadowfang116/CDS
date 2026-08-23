@@ -103,23 +103,26 @@ try {
 }
 Write-Host "[OK] API healthy" -ForegroundColor Green
 
-# Step 1: Dev login
+# Step 1: Cookie login (dev-login was removed)
 Write-Host ""
 Write-Host "[1/7] Authenticating..." -ForegroundColor Yellow
 $loginEmail = if ($Org -eq "OrgA") { "admin@orga.com" } else { "admin@orgb.com" }
 $loginBody = @{
     email = $loginEmail
-    org_name = $Org
-    role = $Role
+    password = "ChangeMe123!"
 } | ConvertTo-Json
+$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
 
 try {
-    $loginResponse = Invoke-WebRequest -Uri "http://localhost:8000/api/v1/auth/dev-login" -Method POST -Body $loginBody -ContentType "application/json" -UseBasicParsing -ErrorAction Stop
-    $loginData = $loginResponse.Content | ConvertFrom-Json
-    $token = $loginData.access_token
-    if (-not $token) {
-        throw "No access token received"
+    $loginResponse = Invoke-WebRequest -Uri "http://localhost:8000/api/v1/auth/login" -Method POST -Body $loginBody -ContentType "application/json" -WebSession $session -UseBasicParsing -ErrorAction Stop
+    if ($loginResponse.StatusCode -ne 200) {
+        throw "Login failed: $($loginResponse.StatusCode)"
     }
+    $cookie = $session.Cookies.GetCookies("http://localhost:8000") | Where-Object { $_.Name -eq "access_token" }
+    if (-not $cookie) {
+        throw "No access_token cookie after login"
+    }
+    $token = $cookie.Value
 } catch {
     Write-Host "[FAIL] Authentication failed: $_" -ForegroundColor Red
     exit 1
@@ -130,7 +133,7 @@ Write-Host "[OK] Authenticated as $loginEmail ($Role)" -ForegroundColor Green
 Write-Host ""
 Write-Host "[2/7] Creating case..." -ForegroundColor Yellow
 $headers = @{
-    "Authorization" = "Bearer $token"
+    "Cookie" = "access_token=$token"
 }
 $caseBody = @{
     title = $Title
@@ -162,7 +165,7 @@ foreach ($file in $validFiles) {
         Write-Host "  Uploading: $($file.Name)..." -ForegroundColor Gray
         
         $curlResponse = curl.exe -s -X POST `
-            -H "Authorization: Bearer $token" `
+            -H "Cookie: access_token=$token" `
             -F "file=@$absolutePath" `
             $uploadUrl
         

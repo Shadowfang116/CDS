@@ -123,7 +123,7 @@ class Settings(BaseSettings):
 
     # OCR service
     OCR_SERVICE_URL: str = "http://localhost:8001"
-    RULEPACK_PATH: str = "/app/backend/rules/diligence_rules.yaml"
+    RULEPACK_PATH: str = "/app/docs/rulepacks/punjab_mortgage_v1.yaml"
     DEMO_MODE: bool = False
 
     # OCR

@@ -1,0 +1,10 @@
+name: poa_02_positive
+base: clean_urban
+pages_add:
+- doc: poa02.pdf
+  page: 1
+  text: The seller relies on a GPA dated 12 January 2024.
+expect_triggered:
+- POA-02
+expect_not_triggered: []
+expected_decision: FAIL

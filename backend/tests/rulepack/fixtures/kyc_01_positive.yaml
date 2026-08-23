@@ -1,0 +1,8 @@
+name: kyc_01_positive
+base: clean_urban
+doc_types_remove:
+- CNIC Copy
+expect_triggered:
+- KYC-01
+expect_not_triggered: []
+expected_decision: FAIL

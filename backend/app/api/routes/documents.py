@@ -339,7 +339,20 @@ async def upload_document(
         entity_id=document.id,
         event_metadata=audit_metadata,
     )
-    
+
+    if document.status in {"Split", "Uploaded"}:
+        try:
+            from app.services.ocr_enqueue import enqueue_ocr_for_document
+
+            enqueue_ocr_for_document(
+                db,
+                document=document,
+                org_id=current_user.org_id,
+                user_id=current_user.user_id,
+            )
+        except Exception:
+            pass
+
     return document
 
 

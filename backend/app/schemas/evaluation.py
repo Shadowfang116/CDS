@@ -77,6 +77,7 @@ class EvaluationRunResponse(BaseModel):
     matched_count: int
     missed_count: int
     extra_count: int
+    decision: str | None = None
     status: str
     created_by: UUID
     error_message: str | None = None
@@ -100,6 +101,7 @@ class EvaluationRunListItem(BaseModel):
     matched_count: int
     missed_count: int
     extra_count: int
+    decision: str | None = None
     status: str
     created_by: UUID
     error_message: str | None = None

@@ -410,22 +410,12 @@ def compute_case_risk_score(
         Exception_.severity == "Low",
     ).scalar() or 0
     
-    # Count hard-stop exceptions (check if rule has is_hard_stop flag)
-    # For now, we'll check if exception title contains "Hard-stop" or check rule metadata
-    # In future, we can add is_hard_stop column to Exception_ model
-    hard_stop_exceptions = db.query(Exception_).filter(
+    hard_stop_count = db.query(func.count(Exception_.id)).filter(
         Exception_.case_id == case_id,
         Exception_.org_id == org_id,
         Exception_.status.in_(["Open", "Pending"]),
-        Exception_.severity == "High",
-    ).all()
-    
-    # Check rule metadata for is_hard_stop (if stored in exception metadata)
-    hard_stop_count = 0
-    for exc in hard_stop_exceptions:
-        # Check if rule_id indicates hard-stop (e.g., LDA_001, REG_001, TPA_CHAIN_GAP_001)
-        if exc.rule_id and any(hs in exc.rule_id for hs in ["LDA_001", "REG_001", "TPA_CHAIN_GAP_001", "TPA_NOTICE_POSSESSION_001", "TPA_CAPACITY_001", "SOC_001", "SOC_002", "RUDA_001", "CANT_001"]):
-            hard_stop_count += 1
+        Exception_.is_hard_stop.is_(True),
+    ).scalar() or 0
     
     # Calculate risk score
     score = (high_exceptions * 10) + (medium_exceptions * 3) + (low_exceptions * 1) + (hard_stop_count * 25)
@@ -482,20 +472,14 @@ def get_case_readiness(
     if open_critical > 0:
         reasons.append(f"{open_critical} open critical exception(s) remaining")
     
-    # Check hard-stop exceptions (P9)
     hard_stop_exceptions = db.query(Exception_).filter(
         Exception_.case_id == case_id,
         Exception_.org_id == org_id,
         Exception_.status.in_(["Open", "Pending"]),
-        Exception_.severity == "High",
+        Exception_.is_hard_stop.is_(True),
     ).all()
-    
-    hard_stop_count = 0
-    hard_stop_rule_ids = []
-    for exc in hard_stop_exceptions:
-        if exc.rule_id and any(hs in exc.rule_id for hs in ["LDA_001", "REG_001", "TPA_CHAIN_GAP_001", "TPA_NOTICE_POSSESSION_001", "TPA_CAPACITY_001", "SOC_001", "SOC_002", "RUDA_001", "CANT_001"]):
-            hard_stop_count += 1
-            hard_stop_rule_ids.append(exc.rule_id)
+    hard_stop_count = len(hard_stop_exceptions)
+    hard_stop_rule_ids = [exc.rule_id for exc in hard_stop_exceptions if exc.rule_id]
     
     if hard_stop_count > 0:
         reasons.append(f"{hard_stop_count} hard-stop exception(s) open: {', '.join(hard_stop_rule_ids[:3])}")
@@ -540,7 +524,12 @@ def get_case_readiness(
         "reasons": reasons if not ready else ["All criteria met"],
         "metrics": {
             "open_critical_exceptions": open_critical,
-            "open_high_exceptions": open_critical,
+            "open_high_exceptions": db.query(func.count(Exception_.id)).filter(
+                Exception_.case_id == case_id,
+                Exception_.org_id == org_id,
+                Exception_.severity == "High",
+                Exception_.status == "Open",
+            ).scalar() or 0,
             "pending_verifications": pending_verifs,
             "cp_completion_pct": round(cp_pct, 1),
             "cp_threshold_pct": cp_threshold_pct,

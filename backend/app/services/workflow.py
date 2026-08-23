@@ -6,6 +6,7 @@ from datetime import datetime
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.core.roles import role_satisfies
 from app.models.case import Case
 from app.models.rules import Exception_
 
@@ -23,7 +24,7 @@ CASE_TRANSITIONS = {
     "New": {"Processing"},
     "Processing": {"Review"},
     "Review": {"PendingDocs", "ReadyForApproval"},
-    "PendingDocs": set(),
+    "PendingDocs": {"Review"},
     "ReadyForApproval": {"Approved", "Rejected"},
     "Approved": {"Closed"},
     "Rejected": {"Closed"},
@@ -91,7 +92,8 @@ def transition_case(
 
 
 def can_generate_export(*, case_status: str, role: str) -> bool:
-    return role == "Approver" and normalize_case_status(case_status) in TERMINAL_CASE_STATUSES
+    _ = case_status
+    return role_satisfies(role, "Reviewer")
 
 
 def audit_case_id_for_entity(

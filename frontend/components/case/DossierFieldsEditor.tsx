@@ -9,10 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CaseTabSkeleton } from '@/components/cases/case-workspace-state';
 import { getDossierFields, patchDossierField, getDossierFieldHistory, listDocuments, getMe, DossierFieldItem, DossierFieldHistoryItem } from '@/lib/api';
+import { urduTextProps } from '@/lib/text-script';
 
 interface DossierFieldsEditorProps {
   caseId: string;
   documents?: any[]; // Passed from parent (single source of truth) - if provided, don't fetch independently
+  focusField?: string | null;
+  oneAtATime?: boolean;
+  onJumpToEvidence?: (documentId: string, page?: number) => void;
 }
 
 const CRITICAL_FIELDS = new Set([
@@ -80,7 +84,13 @@ function getFieldLabel(fieldKey: string): string {
 
   return getFieldLabelMeta(fieldKey).label;
 }
-export function DossierFieldsEditor({ caseId, documents: documentsProp }: DossierFieldsEditorProps) {
+export function DossierFieldsEditor({
+  caseId,
+  documents: documentsProp,
+  focusField,
+  oneAtATime,
+  onJumpToEvidence,
+}: DossierFieldsEditorProps) {
   const router = useRouter();
   const [fields, setFields] = useState<DossierFieldItem[]>([]);
   // Use documents from prop if provided (single source of truth), otherwise fetch independently
@@ -249,11 +259,32 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
   };
 
   const handleEvidenceClick = (docId: string, pageNum: number) => {
+    if (onJumpToEvidence) {
+      onJumpToEvidence(docId, pageNum);
+      return;
+    }
     router.push(getCaseDocumentFocusPath(caseId, docId, pageNum));
   };
 
+  const proposed = fields.filter((field) => field.needs_confirmation);
+  const displayFields = oneAtATime && proposed.length > 0
+    ? fields.filter((field) => field.field_key === (focusField || proposed[0].field_key) || !field.needs_confirmation)
+    : fields;
+
+  useEffect(() => {
+    if (!focusField) return;
+    const match = fields.find((field) => field.field_key === focusField);
+    if (match && !editingField) {
+      handleEdit(match);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusField, fields]);
+
   const groupedFields: Record<string, DossierFieldItem[]> = {};
-  fields.forEach(field => {
+  displayFields.forEach(field => {
+    if (oneAtATime && proposed.length > 0 && field.needs_confirmation && field.field_key !== (focusField || proposed[0].field_key)) {
+      return;
+    }
     const section = getFieldSection(field.field_key);
     if (!groupedFields[section]) {
       groupedFields[section] = [];
@@ -286,7 +317,10 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-stone-100">{getFieldLabel(field.field_key)}</span>
+                      <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+                        {field.needs_confirmation ? "Proposed" : "Confirmed"}
+                      </span>
+                      <span className="text-sm font-medium text-foreground">{getFieldLabel(field.field_key)}</span>
 
                       {CRITICAL_FIELDS.has(field.field_key) && (
                         <Badge variant="destructive" className="text-xs">Critical</Badge>
@@ -298,8 +332,8 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                         </Badge>
                       )}
                     </div>
-                    <div className="mb-2 text-sm text-stone-300">
-                      {field.field_value || <span className="text-stone-500">—</span>}
+                    <div className="cds-extract-text mb-2 text-sm text-foreground" {...urduTextProps(field.field_value)}>
+                      {field.field_value || <span className="text-muted-foreground">—</span>}
                     </div>
                     {field.source_document_id && field.source_page_number && (
                       <button
@@ -312,7 +346,7 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <Button size="sm" variant="outline" onClick={() => handleEdit(field)}>
-                      Edit
+                      {field.needs_confirmation ? "Confirm" : "Edit"}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => handleViewHistory(field.field_key)}>
                       History
@@ -346,7 +380,8 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                   type="text"
                   value={editForm.value}
                   onChange={(e) => setEditForm({ ...editForm, value: e.target.value })}
-                  className="w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-stone-100"
+                  className="cds-extract-text w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-stone-100"
+                  {...urduTextProps(editForm.value)}
                 />
               </div>
 
@@ -394,6 +429,21 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                 </div>
               )}
 
+              {fields.find((field) => field.field_key === editingField)?.needs_confirmation ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="force-confirm"
+                    checked={editForm.force}
+                    onChange={(e) => setEditForm({ ...editForm, force: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <label htmlFor="force-confirm" className="text-sm text-muted-foreground">
+                    Force confirm — OCR confidence is low or the page is incomplete. Reason still required.
+                  </label>
+                </div>
+              ) : null}
+
               {CRITICAL_FIELDS.has(editingField) && userRole === 'Admin' && (
                 <div className="flex items-center gap-2">
                   <input
@@ -419,7 +469,7 @@ export function DossierFieldsEditor({ caseId, documents: documentsProp }: Dossie
                   onClick={handleSave}
                   disabled={saving || editForm.note.trim().length < 5}
                 >
-                  {saving ? 'Saving...' : 'Save'}
+                  {saving ? 'Saving...' : fields.find((field) => field.field_key === editingField)?.needs_confirmation ? 'Confirm' : 'Save'}
                 </Button>
               </div>
             </div>

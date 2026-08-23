@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.document import Document, DocumentPage
 from app.services.audit import log_event
+from app.services.canonical_docs import persist_document_classification
 from app.services.ocr import OCRError, download_page_pdf, pdf_to_image
 from app.services.ocr_pipeline import run_ocr_pipeline
 from app.services.ocr_quality import compute_ocr_quality_signal
@@ -176,6 +177,16 @@ def process_document_ocr(
         else:
             document.status = "Complete"
             document.error_message = None
+            combined_text = "\n".join(
+                (page.corrected_text or page.ocr_text or "")
+                for page in pages
+                if (page.corrected_text or page.ocr_text)
+            )
+            try:
+                persist_document_classification(db, document, combined_text)
+                db.commit()
+            except Exception:
+                logger.exception("[OCR] Failed to persist document classification for %s", document_id)
             run_rules(db, org_uuid, document.case_id, user_uuid)
         db.commit()
 

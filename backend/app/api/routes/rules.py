@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -14,9 +14,20 @@ from app.models.case import Case
 from app.models.cp_evidence import CPEvidenceRef
 from app.models.rules import ConditionPrecedent, Exception_, ExceptionEvidenceRef
 from app.services.audit import log_request_event
+from app.services.exception_waive import exception_is_waivable
 from app.services.rule_engine import run_rules
 
 router = APIRouter(tags=["rules"])
+
+DIRECT_WAIVE_WARNING = (
+    '299 - "Direct exception waive is deprecated; use POST /cases/{id}/workbench/request-waiver (maker/checker)"'
+)
+
+
+def _mark_direct_waive_deprecated(response: Response) -> None:
+    response.headers["Deprecation"] = "true"
+    response.headers["Sunset"] = "Sun, 01 Nov 2026 00:00:00 GMT"
+    response.headers["Warning"] = DIRECT_WAIVE_WARNING
 
 SEVERITY_MAP = {
     "critical": "Critical",
@@ -61,6 +72,8 @@ class ExceptionResponse(BaseModel):
     is_manual: bool
     source_document_id: str | None = None
     source_page: int | None = None
+    is_hard_stop: bool = False
+    waivable: bool = True
     created_at: datetime
     updated_at: datetime
 
@@ -143,6 +156,8 @@ class EvaluateResponse(BaseModel):
     low: int
     total: int
     cps_total: int
+    hard_stop_count: int = 0
+    decision: str | None = None
 
 
 def _normalize_severity(value: str) -> str:
@@ -213,6 +228,10 @@ def _serialize_exception_refs(db: Session, exception_item: Exception_) -> list[d
     ]
 
 
+def _exception_is_waivable(exception_item: Exception_, library: dict[str, Any] | None = None) -> bool:
+    return exception_is_waivable(exception_item, library)
+
+
 def _serialize_exception(db: Session, exception_item: Exception_) -> ExceptionResponse:
     return ExceptionResponse(
         id=str(exception_item.id),
@@ -231,6 +250,8 @@ def _serialize_exception(db: Session, exception_item: Exception_) -> ExceptionRe
         is_manual=bool(exception_item.is_manual),
         source_document_id=str(exception_item.source_document_id) if exception_item.source_document_id else None,
         source_page=exception_item.source_page,
+        is_hard_stop=bool(exception_item.is_hard_stop),
+        waivable=_exception_is_waivable(exception_item),
         created_at=exception_item.created_at,
         updated_at=exception_item.updated_at,
     )
@@ -286,6 +307,8 @@ async def evaluate_case(
         "low": int(raw_counts.get("low", 0)),
         "total": int(raw_counts.get("total", 0)),
         "cps_total": int(raw_counts.get("cps_total", 0)),
+        "hard_stop_count": int(raw_counts.get("hard_stop_count", 0)),
+        "decision": raw_counts.get("decision"),
     }
     log_request_event(
         db,
@@ -432,6 +455,7 @@ async def update_exception_status(
     request: Request,
     exception_id: uuid.UUID,
     body: ExceptionUpdateRequest,
+    response: Response,
     current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
@@ -450,8 +474,12 @@ async def update_exception_status(
         )
     if normalized_status == "Waived" and not role_satisfies(current_user.role, "Approver"):
         raise HTTPException(status_code=403, detail="Approver role required to waive exceptions")
+    if normalized_status == "Waived" and not _exception_is_waivable(exception_item):
+        raise HTTPException(status_code=422, detail="This finding cannot be waived")
     if normalized_status == "Waived" and waiver_reason is None:
         raise HTTPException(status_code=422, detail="waiver_reason is required when waiving an exception")
+    if normalized_status == "Waived":
+        _mark_direct_waive_deprecated(response)
 
     before_json = _serialize_exception(db, exception_item).model_dump(mode="json")
     exception_item.status = normalized_status
@@ -503,21 +531,24 @@ class ExceptionWaiveRequest(BaseModel):
     waiver_reason: str
 
 
-@router.post("/exceptions/{exception_id}/waive", response_model=ExceptionResponse)
+@router.post("/exceptions/{exception_id}/waive", response_model=ExceptionResponse, deprecated=True)
 async def waive_exception(
     request: Request,
     exception_id: uuid.UUID,
     body: ExceptionWaiveRequest,
+    response: Response,
     current_user: CurrentUser = Depends(require_viewer),
     db: Session = Depends(get_db),
 ):
-    """Dedicated waive endpoint — Approver only."""
+    """Deprecated direct waive. ExceptionsPanel still uses this. Workbench uses maker/checker."""
+    _mark_direct_waive_deprecated(response)
     return await update_exception_status(
         request=request,
         exception_id=exception_id,
         body=ExceptionUpdateRequest(action="waived", waiver_reason=body.waiver_reason),
         current_user=current_user,
         db=db,
+        response=response,
     )
 
 

@@ -11,6 +11,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 COPY . .
+RUN mkdir -p public
 
 # Pass API URL at build time so next.config.mjs rewrites bake in the correct destination
 ARG API_INTERNAL_BASE_URL=http://api:8000

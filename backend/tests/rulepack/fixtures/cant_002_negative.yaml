@@ -1,0 +1,10 @@
+name: cant_002_negative
+base: clean_cantonment
+pages_add:
+- doc: cant02-negative.pdf
+  page: 1
+  text: Please review the title summary.
+expect_triggered: []
+expect_not_triggered:
+- CANT_002
+expected_decision: PASS

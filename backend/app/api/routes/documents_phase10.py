@@ -1,4 +1,8 @@
-"""Phase 10: Additional document endpoints for thumbnails and OCR text."""
+"""Phase 10: Additional document endpoints for thumbnails and OCR text.
+
+ADAPTER: live. Frontend DocumentViewer uses GET .../pages/{n}/thumbnail.
+Do not delete.
+"""
 import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Query

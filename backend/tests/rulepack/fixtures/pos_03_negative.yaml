@@ -1,0 +1,6 @@
+name: pos_03_negative
+base: clean_urban
+expect_triggered: []
+expect_not_triggered:
+- POS-03
+expected_decision: PASS

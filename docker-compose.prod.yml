@@ -160,13 +160,14 @@ services:
       APP_SECRET_KEY: ${APP_SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS}
       DEMO_MODE: ${DEMO_MODE:-false}
-      RULEPACK_PATH: ${RULEPACK_PATH:-/app/backend/rules/diligence_rules.yaml}
+      RULEPACK_PATH: ${RULEPACK_PATH:-/app/docs/rulepacks/punjab_mortgage_v1.yaml}
       OCR_SERVICE_URL: http://ocr_service:8001
       HF_EXTRACTOR_URL: http://hf-extractor:8090
     expose:
       - "8000"
     volumes:
       - ./backend/rules:/app/backend/rules:ro
+      - ./docs:/app/docs:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -212,11 +213,12 @@ services:
       APP_ENV: ${APP_ENV:-production}
       APP_SECRET_KEY: ${APP_SECRET_KEY}
       DEMO_MODE: ${DEMO_MODE:-false}
-      RULEPACK_PATH: ${RULEPACK_PATH:-/app/backend/rules/diligence_rules.yaml}
+      RULEPACK_PATH: ${RULEPACK_PATH:-/app/docs/rulepacks/punjab_mortgage_v1.yaml}
       OCR_SERVICE_URL: http://ocr_service:8001
       HF_EXTRACTOR_URL: http://hf-extractor:8090
     volumes:
       - ./backend/rules:/app/backend/rules:ro
+      - ./docs:/app/docs:ro
     depends_on:
       db:
         condition: service_healthy
@@ -260,9 +262,10 @@ services:
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       APP_ENV: ${APP_ENV:-production}
       APP_SECRET_KEY: ${APP_SECRET_KEY}
-      RULEPACK_PATH: ${RULEPACK_PATH:-/app/backend/rules/diligence_rules.yaml}
+      RULEPACK_PATH: ${RULEPACK_PATH:-/app/docs/rulepacks/punjab_mortgage_v1.yaml}
     volumes:
       - ./backend/rules:/app/backend/rules:ro
+      - ./docs:/app/docs:ro
     depends_on:
       db:
         condition: service_healthy

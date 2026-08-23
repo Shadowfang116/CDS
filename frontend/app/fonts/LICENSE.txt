@@ -1,0 +1,7 @@
+Array and Switzer are distributed by Fontshare under the Indian Type Foundry Free Font License (ITF FFL).
+https://www.fontshare.com/licenses/itf-ffl
+
+Source Serif 4 (Adobe) is licensed under the SIL Open Font License 1.1.
+See SOURCE-SERIF-4-OFL.txt. Reserved Font Name: Source.
+
+Vendored here for on-prem self-hosting. Do not resell the font files. Do not load a font CDN at runtime.

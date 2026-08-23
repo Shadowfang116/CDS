@@ -1,0 +1,7 @@
+name: gold_plan_01_negative
+base: clean_urban
+borrower_type: company
+expect_triggered: []
+expect_not_triggered:
+- GOLD-PLAN-01
+expected_decision: PASS

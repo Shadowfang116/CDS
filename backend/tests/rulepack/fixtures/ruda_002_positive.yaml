@@ -1,0 +1,10 @@
+name: ruda_002_positive
+base: clean_ruda
+pages_add:
+- doc: ruda02.pdf
+  page: 1
+  text: The land falls in a notified area subject to RUDA control.
+expect_triggered:
+- RUDA_002
+expect_not_triggered: []
+expected_decision: FAIL

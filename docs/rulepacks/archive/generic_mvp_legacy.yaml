@@ -1,0 +1,87 @@
+# Archived generic MVP KYC rules (photo, salary/income, utility, co-applicant).
+# Not loaded by production RULEPACK_PATH. Kept for tests via docs/05_rulepack_v1.yaml.
+
+version: "1.0"
+description: "Archived generic MVP KYC rules"
+
+rules:
+  - id: "KYC-02"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Borrower photograph must be present"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["Photograph", "Photo", "Passport Photo"]
+    logic:
+      required_doc_types: ["Photograph", "Photo", "Passport Photo"]
+    outputs:
+      title: "Missing Borrower Photograph"
+      exception: "No photograph document found in case files"
+      cp: "Obtain recent passport-size photograph of borrower"
+      evidence_required: "Recent passport-size photograph"
+      resolution_conditions: "Upload photograph matching CNIC"
+
+  - id: "KYC-05"
+    module: "Identity/KYC"
+    severity: "High"
+    evaluator: "missing_evidence"
+    description: "Proof of income must be present"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["Salary Slip", "Income Certificate", "Bank Statement", "Tax Return", "Employment Letter"]
+    logic:
+      required_doc_types: ["Salary Slip", "Income Certificate", "Bank Statement", "Tax Return", "Employment Letter"]
+    outputs:
+      title: "Missing Income Verification"
+      exception: "No income verification document found in case files"
+      cp: "Obtain income verification documents"
+      evidence_required: "Salary slip (last 3 months) OR bank statement (last 6 months)"
+      resolution_conditions: "Upload income verification and verify adequacy"
+
+  - id: "KYC-07"
+    module: "Identity/KYC"
+    severity: "Low"
+    evaluator: "missing_evidence"
+    description: "Utility bill for address verification"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["Utility Bill", "Electricity Bill", "Gas Bill", "Water Bill"]
+    logic:
+      required_doc_types: ["Utility Bill", "Electricity Bill", "Gas Bill", "Water Bill"]
+    outputs:
+      title: "Missing Address Proof"
+      exception: "No utility bill for address verification"
+      cp: "Obtain utility bill not older than 3 months"
+      evidence_required: "Recent utility bill in borrower's name"
+      resolution_conditions: "Upload utility bill matching declared address"
+
+  - id: "KYC-10"
+    module: "Identity/KYC"
+    severity: "Low"
+    evaluator: "missing_evidence"
+    description: "Co-applicant CNIC if applicable"
+    applies_when:
+      borrower_type:
+        - individual
+    inputs:
+      doc_types: ["Co-applicant CNIC", "Guarantor CNIC", "Co-borrower ID"]
+    logic:
+      required_doc_types: ["Co-applicant CNIC", "Guarantor CNIC", "Co-borrower ID"]
+    outputs:
+      title: "Missing Co-applicant Identification"
+      exception: "No co-applicant/guarantor identification found"
+      cp: "Obtain co-applicant/guarantor CNIC if applicable"
+      evidence_required: "Co-applicant CNIC copy"
+      resolution_conditions: "Confirm whether co-applicant exists and upload ID if so"
+
+  # ============================================================
+  # MODULE: Possession & Notice (4 rules)
+  # ============================================================
+

@@ -2,6 +2,8 @@ import './globals.css';
 import { ConditionalAppShell } from '@/components/layout/conditional-app-shell';
 import { ToastProvider } from '@/components/ui/toast';
 import { BRAND } from '@/lib/brand';
+import { array, notoNastaliqUrdu, sourceSerifDisplay, switzer } from './fonts';
+import { cn } from "@/lib/utils";
 
 export const metadata = {
   title: BRAND.short,
@@ -14,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" className={cn("dark", "font-sans", switzer.variable, array.variable, sourceSerifDisplay.variable, notoNastaliqUrdu.variable)} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -22,7 +24,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-[var(--bg-primary)] font-sans antialiased">
+      <body className="min-h-screen bg-background font-sans antialiased" suppressHydrationWarning>
         <ToastProvider>
           <ConditionalAppShell>
             {children}

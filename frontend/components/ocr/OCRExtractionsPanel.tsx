@@ -20,6 +20,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getCaseDocumentFocusPath } from '@/lib/routes';
 import { getFieldLabelMeta } from '@/lib/field-labels';
+import { urduTextProps } from '@/lib/text-script';
 
 interface OCRExtractionsPanelProps {
   caseId: string;
@@ -837,11 +838,15 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                         }
                       }}
                       disabled={savingEdit.has(item.id)}
-                      className="w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(14,18,22,0.72)] px-3 py-2 text-sm text-stone-100 disabled:opacity-50"
+                      className="cds-extract-text w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(14,18,22,0.72)] px-3 py-2 text-sm text-stone-100 disabled:opacity-50"
                       placeholder="Enter value..."
+                      {...urduTextProps(editValues.get(item.id) ?? (item.edited_value || item.proposed_value))}
                     />
                   ) : (
-                    <div className="font-medium text-stone-100">
+                    <div
+                      className="cds-extract-text font-medium text-stone-100"
+                      {...urduTextProps(item.final_value || item.proposed_value)}
+                    >
                       {item.final_value || item.proposed_value}
                     </div>
                   )}
@@ -849,7 +854,10 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                   {/* Evidence snippet preview (prefer evidence_json.snippet, fallback to snippet) */}
                   {(item.evidence_json?.snippet || item.snippet) && (
                     <div className="mt-2 space-y-1">
-                      <p className="line-clamp-2 text-xs italic text-stone-500">
+                      <p
+                        className="cds-extract-text line-clamp-2 text-xs italic text-stone-500"
+                        {...urduTextProps(item.evidence_json?.snippet || item.snippet)}
+                      >
                         "{item.evidence_json?.snippet || item.snippet}"
                       </p>
                       {item.evidence_json && (
@@ -1061,7 +1069,9 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
                 </div>
                 <div>
                   <span className="text-sm font-medium text-slate-400">Proposed Value:</span>
-                  <p className="text-slate-100 font-medium">{item.proposed_value}</p>
+                  <p className="cds-extract-text font-medium text-slate-100" {...urduTextProps(item.proposed_value)}>
+                    {item.proposed_value}
+                  </p>
                 </div>
                 <div>
                   <span className="text-sm font-medium text-slate-400">Source:</span>
@@ -1099,7 +1109,10 @@ export function OCRExtractionsPanel({ caseId, documents = [], onViewDocument }: 
               {evidence.snippet && (
                 <div>
                   <span className="text-sm font-medium text-slate-400">Snippet:</span>
-                  <p className="text-slate-100 bg-slate-800 p-3 rounded mt-1 font-mono text-sm whitespace-pre-wrap">
+                  <p
+                    className="cds-extract-text mt-1 rounded bg-slate-800 p-3 text-sm text-slate-100 whitespace-pre-wrap"
+                    {...urduTextProps(evidence.snippet)}
+                  >
                     {evidence.snippet}
                   </p>
                 </div>

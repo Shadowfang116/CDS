@@ -1,0 +1,11 @@
+name: est_verify_01_positive
+base: clean_urban
+verifications:
+  e_stamp: Pending
+dossier_updates:
+  estamp.number:
+  - EST-123
+expect_triggered:
+- EST-VERIFY-01
+expect_not_triggered: []
+expected_decision: PASS

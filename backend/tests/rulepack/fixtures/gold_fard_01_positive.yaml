@@ -1,0 +1,12 @@
+name: gold_fard_01_positive
+base: clean_urban
+facts:
+  - key: fact.issue_date
+    value: "2026-01-15"
+    doc_type: Fard
+    page: 1
+as_of_note: "stale_document uses date.today(); fixture date is 2026-01-15"
+expect_triggered:
+- GOLD-FARD-01
+expect_not_triggered: []
+expected_decision: PASS

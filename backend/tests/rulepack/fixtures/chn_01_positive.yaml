@@ -1,0 +1,10 @@
+name: chn_01_positive
+base: clean_urban
+pages_add:
+- doc: chn01.pdf
+  page: 1
+  text: Counsel notes a break in chain affecting title continuity.
+expect_triggered:
+- CHN-01
+expect_not_triggered: []
+expected_decision: FAIL

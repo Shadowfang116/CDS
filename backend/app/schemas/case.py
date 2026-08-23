@@ -12,6 +12,8 @@ class CaseResponse(BaseModel):
     org_id: UUID
     title: str
     status: str
+    decision: str | None = None
+    decided_at: datetime | None = None
     assigned_to_user_id: UUID | None = None
     created_at: datetime
     updated_at: datetime

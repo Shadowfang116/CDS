@@ -1,0 +1,9 @@
+name: gold_plan_01_positive
+base: clean_urban
+borrower_type: company
+doc_types_remove:
+- Building Plan
+expect_triggered:
+- GOLD-PLAN-01
+expect_not_triggered: []
+expected_decision: FAIL

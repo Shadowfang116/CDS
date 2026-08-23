@@ -1,0 +1,10 @@
+name: pos_04_positive
+base: clean_urban
+pages_add:
+- doc: pos04.pdf
+  page: 1
+  text: A sublease is recorded for the rear portion of the plot.
+expect_triggered:
+- POS-04
+expect_not_triggered: []
+expected_decision: PASS

@@ -1,0 +1,8 @@
+name: soc_07_positive
+base: clean_urban
+doc_types_remove:
+- Building Plan
+expect_triggered:
+- SOC-07
+expect_not_triggered: []
+expected_decision: PASS

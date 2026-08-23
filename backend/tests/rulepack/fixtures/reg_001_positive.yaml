@@ -1,0 +1,9 @@
+name: reg_001_positive
+base: clean_urban
+doc_types_remove:
+- registry_deed
+expect_triggered:
+- TPA_CHAIN_GAP_001
+- REG_001
+expect_not_triggered: []
+expected_decision: FAIL

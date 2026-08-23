@@ -1,0 +1,10 @@
+name: tpa_capacity_001_positive
+base: clean_urban
+pages_add:
+- doc: tpa_capacity.pdf
+  page: 1
+  text: The recorded transfer concerns a minor beneficiary.
+expect_triggered:
+- TPA_CAPACITY_001
+expect_not_triggered: []
+expected_decision: FAIL

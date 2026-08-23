@@ -106,4 +106,24 @@ it would measure code that does not serve traffic. Phase 0 adds a `POST /ocr` ev
 ## Related services
 
 `hf-extractor` (`docker-compose.yml:45`) is a separate extraction service — not part of
-the OCR path, not investigated. Flagged only so it isn't mistaken for OCR.
+the OCR path. Autofill may call it text-only, capped at 3 pages, for CNIC/plot/scheme
+labels. It is not the party-role path. Flagged so it isn't mistaken for OCR.
+
+## Post-OCR autofill (field extraction)
+
+This runs **after** page OCR is persisted. It does not replace `ocr_service/`.
+
+```
+dossier_autofill.autofill_dossier
+  ├─ get_page_text_with_fallback (persisted OCR ± corrections)
+  ├─ doc_routing.classify_document  → sale_deed | tax | cnic | …
+  ├─ sale_deed_clauses.extract_sale_deed_clauses  (seller/buyer/witness)
+  ├─ party_roles.extract_party_roles_from_document (fallback, no overwrite of clause hits)
+  ├─ regex plot/block/registry (Urdu + English)
+  ├─ candidate_gate + validators (refuse watermarks / boilerplate)
+  └─ ocr_extraction_candidates (Pending)
+        └─ confirm → case_dossier_fields
+```
+
+Party roles only on sale_deed / mutation. Plot/block may corroborate across tax,
+valuation, possession. Confirm is still required for the dossier (D7).

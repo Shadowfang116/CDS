@@ -1,4 +1,5 @@
-import { CaseWorkspace } from '@/components/cases/case-workspace';
+import { Suspense } from 'react';
+import { MatterWorkbench } from '@/components/workbench/matter-workbench';
 
 type CaseDetailPageProps = {
   params: Promise<{ caseId: string }>;
@@ -6,6 +7,9 @@ type CaseDetailPageProps = {
 
 export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
   const { caseId } = await params;
-
-  return <CaseWorkspace caseId={caseId} />;
+  return (
+    <Suspense fallback={<p className="p-6 text-sm text-muted-foreground">Loading matter…</p>}>
+      <MatterWorkbench caseId={caseId} />
+    </Suspense>
+  );
 }

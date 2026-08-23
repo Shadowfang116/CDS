@@ -1,0 +1,11 @@
+name: reg_verify_01_positive
+base: clean_urban
+verifications:
+  registry_rod: Pending
+dossier_updates:
+  registry.number:
+  - R-777
+expect_triggered:
+- REG-VERIFY-01
+expect_not_triggered: []
+expected_decision: PASS

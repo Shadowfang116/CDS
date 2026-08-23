@@ -1,0 +1,14 @@
+name: gold_tax_01_positive
+base: clean_urban
+borrower_type: company
+pages_add:
+- doc: 10_Property_Tax_PT10_Clearance_URDU.pdf
+  page: 1
+  text: Historic tax for previous years remains noted on the PT-10 roll.
+documents:
+  - filename: 10_Property_Tax_PT10_Clearance_URDU.pdf
+    doc_type: Property Tax/PT-10
+expect_triggered:
+- GOLD-TAX-01
+expect_not_triggered: []
+expected_decision: PASS

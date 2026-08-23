@@ -1,4 +1,7 @@
-"""Case insights API endpoint - per-case analytics and timeseries."""
+"""Case insights API endpoint - per-case analytics and timeseries.
+
+FROZEN: case-workspace still calls getCaseInsights. Not required to finish a Matter.
+"""
 from datetime import datetime, timedelta, date
 from typing import List
 from uuid import UUID

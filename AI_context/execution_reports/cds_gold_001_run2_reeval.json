@@ -1,0 +1,155 @@
+{
+  "eval_after_rebuild": {
+    "total": 0,
+    "decision": "PASS"
+  },
+  "exceptions": [],
+  "doc_types": [
+    {
+      "filename": "16_Identity_Name_Confirmation_URDU.pdf",
+      "doc_type": "Identity Confirmation"
+    },
+    {
+      "filename": "15_Prior_Charge_Release_Letter_URDU.pdf",
+      "doc_type": "Charge Release"
+    },
+    {
+      "filename": "14_Development_Charges_Clearance_URDU.pdf",
+      "doc_type": "Dues Clearance"
+    },
+    {
+      "filename": "13_Corrected_Fard_URDU.pdf",
+      "doc_type": "Fard"
+    },
+    {
+      "filename": "12_Approved_Building_Plan_URDU.pdf",
+      "doc_type": "Building Plan"
+    },
+    {
+      "filename": "11_Board_Resolution_URDU.pdf",
+      "doc_type": "Board Resolution"
+    },
+    {
+      "filename": "10_Property_Tax_PT10_Clearance_URDU.pdf",
+      "doc_type": "Property Tax/PT-10"
+    },
+    {
+      "filename": "09_Possession_Letter_URDU.pdf",
+      "doc_type": "Possession Letter"
+    },
+    {
+      "filename": "08_Facility_Approval_URDU.pdf",
+      "doc_type": "Facility Approval"
+    },
+    {
+      "filename": "07_Valuation_Report_URDU.pdf",
+      "doc_type": "Valuation"
+    },
+    {
+      "filename": "06_Title_Search_Report_URDU.pdf",
+      "doc_type": "Search Report"
+    },
+    {
+      "filename": "05_Authority_NOC_Conditional_URDU.pdf",
+      "doc_type": "Society/Authority NOC"
+    },
+    {
+      "filename": "04_Owner_CNIC_SYNTHETIC_URDU.pdf",
+      "doc_type": "CNIC"
+    },
+    {
+      "filename": "03_Fard_Old_URDU.pdf",
+      "doc_type": "Fard"
+    },
+    {
+      "filename": "02_Mutation_Intiqal_URDU.pdf",
+      "doc_type": "Mutation"
+    },
+    {
+      "filename": "01_Registered_Sale_Deed_URDU.pdf",
+      "doc_type": "Sale Deed"
+    }
+  ],
+  "party_fields": [
+    {
+      "field_key": "case.borrower_type",
+      "proposed_value": "company",
+      "document_name": "12_Approved_Building_Plan_URDU.pdf",
+      "extraction_method": null,
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "party.buyer.names",
+      "proposed_value": "اے بی سی ٹیکسٹائلز (پرائیویٹ) لمیٹڈ",
+      "document_name": "01_Registered_Sale_Deed_URDU.pdf",
+      "extraction_method": "clause_urdu",
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "party.seller.names",
+      "proposed_value": "محمد اکرم",
+      "document_name": "01_Registered_Sale_Deed_URDU.pdf",
+      "extraction_method": "clause_urdu",
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "property.block",
+      "proposed_value": "B",
+      "document_name": "12_Approved_Building_Plan_URDU.pdf",
+      "extraction_method": null,
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "property.plot_number",
+      "proposed_value": "82",
+      "document_name": "12_Approved_Building_Plan_URDU.pdf",
+      "extraction_method": null,
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "property.plot_number",
+      "proposed_value": "Area-max",
+      "document_name": "12_Approved_Building_Plan_URDU.pdf",
+      "extraction_method": "hf_extractor",
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "property.plot_number",
+      "proposed_value": "4",
+      "document_name": "12_Approved_Building_Plan_URDU.pdf",
+      "extraction_method": "hf_extractor",
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "case.borrower_type",
+      "proposed_value": "company",
+      "document_name": "01_Registered_Sale_Deed_URDU.pdf",
+      "extraction_method": null,
+      "page_number": 1,
+      "status": "Pending"
+    },
+    {
+      "field_key": "property.block",
+      "proposed_value": "B",
+      "document_name": "01_Registered_Sale_Deed_URDU.pdf",
+      "extraction_method": null,
+      "page_number": 2,
+      "status": "Pending"
+    },
+    {
+      "field_key": "property.plot_number",
+      "proposed_value": "82",
+      "document_name": "01_Registered_Sale_Deed_URDU.pdf",
+      "extraction_method": null,
+      "page_number": 2,
+      "status": "Pending"
+    }
+  ]
+}

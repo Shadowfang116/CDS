@@ -1,0 +1,8 @@
+name: soc_003_positive
+base: clean_urban
+doc_types_remove:
+- society_ndc
+expect_triggered:
+- SOC_003
+expect_not_triggered: []
+expected_decision: PASS

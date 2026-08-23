@@ -1,0 +1,8 @@
+name: kyc_07_positive
+base: clean_urban
+doc_types_remove:
+- Utility Bill
+expect_triggered:
+- KYC-07
+expect_not_triggered: []
+expected_decision: PASS

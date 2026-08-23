@@ -1,0 +1,63 @@
+name: rule-engine
+
+on:
+  pull_request:
+    paths:
+      - "backend/app/models/rules.py"
+      - "backend/app/services/approvals.py"
+      - "backend/app/services/evaluation_service.py"
+      - "backend/app/services/rule_engine.py"
+      - "backend/app/services/rule_schema.py"
+      - "backend/alembic/versions/**"
+      - "backend/tests/rulepack/**"
+      - "docs/05_rulepack_v1.yaml"
+      - "docs/rulepacks/**"
+      - "docs/rule_engine/**"
+      - ".github/workflows/rule-engine.yml"
+  push:
+    paths:
+      - "backend/app/models/rules.py"
+      - "backend/app/services/approvals.py"
+      - "backend/app/services/evaluation_service.py"
+      - "backend/app/services/rule_engine.py"
+      - "backend/app/services/rule_schema.py"
+      - "backend/alembic/versions/**"
+      - "backend/tests/rulepack/**"
+      - "docs/05_rulepack_v1.yaml"
+      - "docs/rulepacks/**"
+      - "docs/rule_engine/**"
+      - ".github/workflows/rule-engine.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  golden-rulepack:
+    name: Golden rulepack
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install backend and test deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e "./backend[dev]"
+
+      - name: Run golden rulepack suite
+        working-directory: backend
+        run: pytest tests/rulepack -v
+

@@ -73,6 +73,10 @@ class DocumentPage(Base):
     ocr_error = Column(Text, nullable=True)
     ocr_started_at = Column(DateTime, nullable=True)
     ocr_finished_at = Column(DateTime, nullable=True)
+    ocr_text_override = Column(Text, nullable=True)
+    ocr_override_updated_at = Column(DateTime, nullable=True)
+    ocr_override_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    ocr_override_reason = Column(String(500), nullable=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     
     __table_args__ = (

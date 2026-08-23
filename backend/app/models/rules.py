@@ -18,6 +18,7 @@ class Exception_(Base):
     rule_id = Column(String, nullable=True)
     module = Column(String, nullable=False)
     severity = Column(String, nullable=False)  # Critical, High, Medium, Low
+    is_hard_stop = Column(Boolean, nullable=False, default=False)
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     evidence_refs = Column(JSONB, nullable=True)
@@ -80,6 +81,7 @@ class ExceptionEvidenceRef(Base):
     note = Column(Text, nullable=True)
     evidence_type = Column(String, nullable=True)  # "ocr_snippet" or None for regular evidence
     snippet_json = Column(JSONB, nullable=True)  # {document_id, page_number, snippet} for OCR snippets
+    is_closing = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     
     __table_args__ = (

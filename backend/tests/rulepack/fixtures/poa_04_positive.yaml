@@ -1,0 +1,8 @@
+name: poa_04_positive
+base: clean_urban
+doc_types_remove:
+- Board Resolution
+expect_triggered:
+- POA-04
+expect_not_triggered: []
+expected_decision: PASS

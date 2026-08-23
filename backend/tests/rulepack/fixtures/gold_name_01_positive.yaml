@@ -1,0 +1,16 @@
+name: gold_name_01_positive
+base: clean_urban
+borrower_type: company
+facts:
+  - key: party.buyer.names
+    value: اے بی سی ٹیکسٹائلز (پرائیویٹ) لمیٹڈ
+    doc_type: Sale Deed
+    page: 1
+  - key: fact.owner_name
+    value: ABC Textile Pvt Ltd
+    doc_type: Mutation
+    page: 1
+expect_triggered:
+- GOLD-NAME-01
+expect_not_triggered: []
+expected_decision: PASS

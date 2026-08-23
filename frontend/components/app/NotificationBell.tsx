@@ -128,10 +128,10 @@ export function NotificationBell() {
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative rounded-md border border-transparent p-2 transition-colors hover:border-[rgba(82,90,99,0.35)] hover:bg-[rgba(34,39,45,0.9)]"
+        className="cds-icon-btn relative"
         aria-label="Notifications"
       >
-        <BellIcon className="h-5 w-5 text-stone-400" />
+        <BellIcon className="h-3.5 w-3.5 text-muted-foreground" />
         {unreadCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[rgba(151,70,67,0.98)] text-[10px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}

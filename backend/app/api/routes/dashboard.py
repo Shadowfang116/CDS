@@ -1,4 +1,9 @@
-"""Dashboard API endpoint - aggregated KPIs, work queue, activity, and timeseries."""
+"""Dashboard API endpoint - aggregated KPIs, work queue, activity, and timeseries.
+
+FROZEN for CDS backend simplification: still registered because the frontend
+governance/analytics surfaces call it. Do not grow this surface. Completing a
+Matter does not require it.
+"""
 import uuid
 import csv
 import io
@@ -473,6 +478,7 @@ async def get_dashboard(
         kpis=DashboardKPIs(
             active_cases=active_cases,
             open_high_exceptions=open_high_exceptions,
+            open_cps=cp_open,
             cp_completion_pct=round(cp_completion_pct, 1),
             verification_completion_pct=round(verification_completion_pct, 1),
             pending_verifications=pending_count,

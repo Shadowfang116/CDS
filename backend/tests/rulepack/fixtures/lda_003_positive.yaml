@@ -1,0 +1,12 @@
+name: lda_003_positive
+base: clean_urban
+regime: LDA
+doc_types_remove:
+- commercialization_letter
+dossier_updates:
+  property.use_type:
+  - commercial
+expect_triggered:
+- LDA_003
+expect_not_triggered: []
+expected_decision: PASS

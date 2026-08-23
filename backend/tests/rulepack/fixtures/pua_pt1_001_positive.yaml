@@ -1,0 +1,11 @@
+name: pua_pt1_001_positive
+base: clean_urban
+doc_types_remove:
+- pt1
+dossier_updates:
+  policy_requires_pt1:
+  - 'true'
+expect_triggered:
+- PUA_PT1_001
+expect_not_triggered: []
+expected_decision: PASS

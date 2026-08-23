@@ -57,3 +57,90 @@ how that happened; not repeating them is how it stops.
 
 **Consequence:** Phase 0 is blocking. Estimated causal weights in `02_findings.md` are
 labelled as estimates and stay that way until measured.
+
+---
+
+### D5 — `AI_context/` is the in-repo working folder · 2026-08-17
+
+**Decision:** Working memory lives at `bank-diligence-platform/AI_context/`. Update it in
+the same session as any OCR, extraction, or autofill change.
+
+**Why:** D2 placed the folder outside git as a sibling of `CDS/`. The copy that is
+actually used now sits inside the inner repo. Path follows the files that exist;
+whether the folder is committed remains a later choice. Do not push unless asked.
+
+**Supersedes:** D2's filesystem location only. D2's "don't leak working notes into
+history by accident" still applies if you choose not to commit this folder.
+
+---
+
+### D6 — Autofill stays rules-first · 2026-08-17
+
+**Decision:** No LLM for dossier autofill. Pakistani sale-deed recitals are parsed with
+a clause grammar (`sale_deed_clauses.py`). Regex remains for plot/block/registry/CNIC.
+
+**Why:** Test case 1 already had the correct names in OCR. The miss was window/marker
+logic, not language understanding.
+
+---
+
+### D7 — Autofill writes candidates; confirm writes the dossier · 2026-08-17
+
+**Decision:** `autofill_dossier` persists `ocr_extraction_candidates` only. Confirm (or
+a manual dossier edit) upserts `case_dossier_fields`. Do not auto-confirm.
+
+**Why:** Bank-grade review. F8's earlier "bad pages get auto-filled into the dossier"
+wording was incorrect; garbage could still become high-confidence *candidates* (F10).
+
+---
+
+### D8 — Candidates are per source; rules have applicability · 2026-08-17
+
+**Decision:** A dossier field is a set of Pending candidates keyed by
+`(case_id, field_key, document_id)`, not one row per field. A later document must not
+silently replace a better candidate. Conflicting values stay and are marked for review.
+
+Rules carry `applies_when` (`borrower_type`, `transaction_type`, `regime`). Unspecified
+borrower defaults to `individual`; unspecified transaction defaults to `mortgage`.
+Company mortgages therefore skip photograph / salary-slip / utility / co-applicant
+requirements unless policy says otherwise.
+
+Canonical `doc_type` is persisted before rule evaluation. Filename may hint; OCR
+content classifies when present. Protected filename types (Fard, Search Report,
+Valuation, PT-10, Possession, etc.) are not overridden by a stray mutation keyword
+in the OCR text.
+
+**Why:** CDS-GOLD-001 RUN 1 showed the second autofill destroying sale-deed names and
+the 28-rule MVP pack producing 24–25 generic exceptions instead of 6–8 legal findings.
+
+---
+
+### D9 — Inferred case context may be written to the dossier · 2026-08-17
+
+**Decision:** `case.borrower_type` and `case.transaction_type` are system-inferred
+fields (same pattern as `property.regime`). Autofill and `run_rules` upsert them
+onto `case_dossier_fields` so `applies_when` can see them. Party names, area, and
+other legal facts remain candidates until confirm (D7). A reviewer-confirmed
+borrower type is not overwritten.
+
+**Why:** RUN 2 hybrid (`4802e8f7-…`) inferred company from `لمیٹڈ` but stored it
+only as an OCR candidate. The rule engine reads dossier fields, defaulted to
+`individual`, and still raised photograph / salary-slip / LDA / society-transfer
+noise.
+
+---
+
+### D10 — Upload time is not a legal issue date · 2026-08-17
+
+**Decision:** Document `created_at` may be used only to decide which instrument is
+the newest *on file*. Freshness, staleness, and “current Fard” are computed from a
+parseable `fact.issue_date`. If the newest Fard has no issue date, raise
+unconfirmed rather than treating today’s upload as current.
+
+**Why:** A Fard uploaded today can have been issued months earlier. RUN 2 cleared
+GOLD-FARD-01 from upload time; that is not production-legal.
+
+**Also:** Waived exceptions are preserved across `run_rules`. A later evaluate must
+not reopen a dual-control waiver.
+
+---

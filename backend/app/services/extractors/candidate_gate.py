@@ -47,6 +47,18 @@ def normalize_and_validate_candidate(field_key: str, value: str) -> Tuple[bool, 
         value = v
     
     value = normalize_whitespace(value)
+
+    if field_key in (
+        "party.seller.names",
+        "party.buyer.names",
+        "party.witness.names",
+        "party.name.raw",
+    ):
+        from app.services.extractors.validators import is_extraction_garbage
+        role = "seller" if "seller" in field_key else ("buyer" if "buyer" in field_key else "witness")
+        is_garbage, garbage_reason = is_extraction_garbage(value, role=role)
+        if is_garbage:
+            return False, None, garbage_reason
     
     # General checks: mojibake/corruption (apply to all fields)
     is_corrupted, corruption_reason = is_text_corrupted(value, expected_urdu=False)
@@ -58,7 +70,13 @@ def normalize_and_validate_candidate(field_key: str, value: str) -> Tuple[bool, 
         return False, None, f"corrupted_mojibake: ratio={mojibake_ratio:.3f} count={mojibake_count}/{total_chars}"
     
     # General check: sentence punctuation (indicates narrative)
-    if ';' in value:
+    party_name_fields = (
+        "party.seller.names",
+        "party.buyer.names",
+        "party.witness.names",
+        "party.name.raw",
+    )
+    if ';' in value and field_key not in party_name_fields:
         return False, None, "contains_semicolon_narrative"
     if value.count('.') > 2 or value.count(':') > 1:
         return False, None, "contains_too_many_punctuation_marks"

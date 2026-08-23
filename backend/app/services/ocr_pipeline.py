@@ -9,6 +9,9 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Production OCR path: Celery → this HTTP client → ocr_service → DocumentPage.
+# Do not route new traffic through Stack B engine modules.
+
 HIGH_RISK_FIELDS = {
     "owner_name",
     "property_area",

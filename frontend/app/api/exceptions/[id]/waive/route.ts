@@ -9,6 +9,7 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> }
 ) {
   const { id } = await ctx.params;
+  // Deprecated BFF: keep until ExceptionsPanel has zero callers. Workbench uses dual-control.
   const body = await req.json().catch(() => ({}));
   const cookie = req.headers.get("cookie");
   const auth = req.headers.get("authorization");

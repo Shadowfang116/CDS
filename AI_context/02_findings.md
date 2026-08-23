@@ -22,6 +22,9 @@ references below — they drift as soon as anyone edits these files.
 | F7 | 🔴 open | blocks all verification | `scripts/dev/eval_urdu_ocr.py:16` |
 | F8 | 🔴 open | affects trust, not raw CER | `ocr_service/quality.py:38-43` |
 | F9 | 🟢 fixed (2026-08-16) | medium | `backend/app/core/config.py`, `ocr_service/preprocessing.py` |
+| F10 | 🟢 fixed (2026-08-17) | field accuracy (names) | `backend/app/services/extractors/party_roles.py`, `sale_deed_clauses.py` |
+| F11 | 🟢 fixed (2026-08-17) | candidate overwrite + noisy rules | `dossier_autofill.py`, `canonical_docs.py`, `docs/05_rulepack_v1.yaml` |
+| F12 | 🟢 fixed (2026-08-17) | gold area / fard date / historic tax | `document_facts.py`, `rule_engine.py`, `docs/05_rulepack_v1.yaml` |
 
 Status values: 🔴 open · 🟡 in progress · 🟢 fixed (date + commit) · ⚪ won't fix (reason).
 **Update this table in the same session you change the code.**
@@ -334,10 +337,13 @@ quality_score = (word_count_score * 0.45) + (avg_chars_score * 0.35) + (mean_box
 well. Only 20% comes from engine confidence. **A page of hallucinated noise scores
 *higher* than a correctly-read sparse page.**
 
-This matters because the score drives auto-fill: `ocr_pipeline.py:142` sets
-`autofill_eligible=quality_level in {"good", "fair"}`, and `quality_level` is `"fair"`
-at `quality_score >= 0.45` and `"good"` at `>= 0.7` (`quality.py:63-68`). Both
-thresholds are guesses. **Bad pages get auto-filled into the dossier.**
+This matters because the score drives whether a page is marked `autofill_eligible`
+(`ocr_pipeline.py:142`: `quality_level in {"good", "fair"}`). Thresholds are guesses.
+
+> **Correction (2026-08-17):** autofill does **not** write `case_dossier_fields`.
+> It writes `ocr_extraction_candidates` (Pending). Dossier upsert happens on
+> **confirm**. Bad OCR can still produce garbage *candidates*; it does not silently
+> fill the customer dossier. See D7.
 
 Two more bugs in the same area:
 - `mean_box_confidence` **defaults to `0.5`** when no confidences exist
@@ -385,6 +391,104 @@ grep -rn "osd\|OSD\|image_to_osd" ocr_service/ | head
 
 ---
 
+## F10. Party-role extractors assume labelled forms; sale deeds are running clauses
+
+`backend/app/services/extractors/party_roles.py`, `sale_deed_clauses.py`
+
+Test case 1 (`01_Registered_Sale_Deed_URDU.pdf`) OCR already contained the real names:
+
+- seller `محمد اکرم ولد محمد یوسف`
+- buyer `اے بی سی ٹیکسٹائلز (پرائیویٹ) لمیٹڈ`
+
+Autofill instead wrote:
+
+- seller = clause leftover starting `ایک جانب, اور خریدار کمپنی…`
+- buyer = `درج ذیل شرائط پر متفق ہوئے۔`
+- witness = watermark `CDS-GOLD-001 | فرضی تربیتی` at confidence 0.85
+
+Cause: labelled-form extractors (`فروخت کنندہ` + colon + next line). Pakistani recitals
+have no colon. Evidence `find(snippet)` missed and fell back to **page start**.
+`مالک` was treated as a seller marker. Plot `82` / block `B` were already correct.
+
+**Fix (2026-08-17):** clause parser first (`clause_urdu`); doc-class routing; garbage
+blocklist; real char offsets (no page-0 fallback); method confidence; labelled paths
+must not overwrite a clause hit. Pytest: `backend/tests/test_contextual_autofill.py`.
+
+**Re-verify:**
+```bash
+cd backend
+python -m pytest tests/test_contextual_autofill.py -q
+```
+**Still broken if:** seller is not `محمد اکرم`, buyer is not the textile company,
+witness is non-empty on the recital fixture, or plot/block are not `82` / `B`.
+
+---
+
+## F11. RUN 1 persistence destroyed better party candidates; rules were the wrong 28
+
+CDS-GOLD-001 RUN 1 (`4673c7f2-5f39-4ebb-8f4a-4406fab0decc`) proved the remaining
+defects were product semantics, not OCR:
+
+1. Autofill looked up the first Pending row by `field_key` and overwrote it, including
+   `document_id`. Sale-deed `clause_urdu` names became mutation labels
+   (`رجسٹریشن حوالہ`, `/ منتقل الیہ`).
+2. `detect_sale_deed` treated a single `خریدار` / `فروخت` as enough; mutation entered
+   the party-role path.
+3. `doc_type` was not a stable canonical vocabulary, so REG_001 / POS-01 fired while
+   the sale deed and possession letter were on the matter.
+4. The MVP 28-rule pack has no applicability. A company mortgage was hit with
+   photograph / salary-slip / utility-bill / co-applicant rules. Gold legal facts
+   (area, stale fard, name variant) were not extracted or evaluated.
+
+**Fix (2026-08-17, branch `fix/cds-gold-001-semantics`):** source-aware arbitration;
+mutation-label refusal; canonical `doc_type` persisted before `run_rules`; document
+facts (area/date/owner/dues/charge); gold rules GOLD-AREA-01 … GOLD-TAX-01;
+`applies_when` on retail KYC/SOC/LDA/society-transfer rules; inferred
+`case.borrower_type` written like regime (D9); worker rulepack path
+`/app/docs/05_rulepack_v1.yaml`.
+
+**RUN 2** `5bcdb8eb-75bc-440b-9bcb-3a963b574360`: 5 gold findings on the initial
+batch (not 24–25 generic cards); seller/buyer not overwritten; additional evidence
+cleared plan/dues/encumbrance/name. Remaining gaps moved to F12.
+
+**Re-verify:**
+```bash
+cd backend
+python -m pytest tests/test_contextual_autofill.py tests/test_cds_gold_001_semantics.py tests/test_rule_engine_mvp.py -q
+```
+
+Keep RUN 1 as contaminated evidence. Do not design Findings UX against it.
+
+---
+
+## F12. RUN 2 did not extract the remaining gold legal facts
+
+Tesseract already had the gold strings. Extractors missed the real spellings:
+
+1. Area unit is `کنال` (noon). OCR often reads it as Latin `JUS`. Totals are on
+   `کل رقبہ` lines. Khasra fragments (`1 کنال 10 مرلہ`) were stored instead of
+   4 Kanal / 3 Kanal 18 Marla, so GOLD-AREA-01 never had two comparable facts.
+2. Corrected Fard `تاریخ اجرا 8 گست 2026` (`گست` = OCR of `اگست`) was not parsed.
+   Stale-document then treated `created_at` as the issue date, so a Fard uploaded
+   today looked current.
+3. PT-10 historic-tax wording is `تاریخی paper receipt` / `20-2019` / `Waiver scenario`,
+   not `previous year`. GOLD-TAX-01 never opened, so the waiver path was untested.
+4. Re-running rules after a waiver recreated an Open GOLD-TAX row because Waived
+   exceptions were not preserved.
+
+**Fix (2026-08-17):** prefer `کل رقبہ` totals; treat `کنال|کانال|kanal|jus` as kanal;
+parse `گست` without rewriting `اگست`; do not use upload time as issue date
+(missing date → unconfirmed); expand GOLD-TAX keywords; skip recreating Waived
+rules. E2E script is RUN 3 (waiver + bank pack).
+
+**Re-verify:**
+```bash
+cd backend
+python -m pytest tests/test_cds_gold_001_semantics.py -q
+```
+
+---
+
 ## Estimated causal weight
 
 **These are estimates from code reading, not measurements.** Nothing in this table has
@@ -400,4 +504,5 @@ ordering as a hypothesis to test in Phase 0, not as a result.
 | F6 | PDF text-layer path dead (native-text PDFs re-OCR'd) | medium, document-mix dependent |
 | F5 | Urdu post-correction dead | small-medium (post-processing) |
 | F8 | Quality gate lets bad pages through | affects trust, not raw accuracy |
+| F10 | Party extractors grab boilerplate on Urdu recitals | field accuracy (names) — fixed 2026-08-17 |
 | F7 | No measurement | blocks all verification |

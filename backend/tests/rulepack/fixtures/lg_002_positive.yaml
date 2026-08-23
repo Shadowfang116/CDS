@@ -1,0 +1,10 @@
+name: lg_002_positive
+base: clean_urban
+pages_add:
+- doc: lg02.pdf
+  page: 1
+  text: The premises were sealed under the last municipal action.
+expect_triggered:
+- LG_002
+expect_not_triggered: []
+expected_decision: FAIL

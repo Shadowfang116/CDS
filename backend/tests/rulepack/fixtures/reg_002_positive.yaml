@@ -1,0 +1,15 @@
+name: reg_002_positive
+base: clean_urban
+dossier_updates:
+  registry.registry_number:
+  - '12345'
+  - '54321'
+  registry.registry_date:
+  - '2024-01-15'
+  - '2024-02-16'
+expect_evidence_for:
+- REG_002
+expect_triggered:
+- REG_002
+expect_not_triggered: []
+expected_decision: FAIL

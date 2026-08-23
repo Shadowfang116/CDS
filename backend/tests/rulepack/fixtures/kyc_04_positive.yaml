@@ -1,0 +1,10 @@
+name: kyc_04_positive
+base: clean_urban
+pages_add:
+- doc: kyc04.pdf
+  page: 1
+  text: The borrower signs as an alias in this affidavit.
+expect_triggered:
+- KYC-04
+expect_not_triggered: []
+expected_decision: PASS

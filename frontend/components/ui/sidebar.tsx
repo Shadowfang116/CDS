@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-const SIDEBAR_WIDTH = "16rem"
-const SIDEBAR_WIDTH_ICON = "3.5rem"
+const SIDEBAR_WIDTH = "24rem"
+const SIDEBAR_WIDTH_ICON = "4rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 const SIDEBAR_STORAGE_KEY = "brp.sidebar.open"
 
@@ -179,7 +179,7 @@ const Sidebar = React.forwardRef<
           data-mobile="true"
           aria-label="Primary navigation"
           className={cn(
-            "group peer fixed inset-y-0 z-50 h-svh w-[--sidebar-width] border-r border-sidebar-border bg-[linear-gradient(180deg,rgba(15,18,22,0.98),rgba(12,16,19,0.98))] backdrop-blur-md transition-transform duration-200 ease-out motion-reduce:transition-none data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0",
+            "group peer fixed inset-y-0 z-50 h-svh w-[--sidebar-width] border-r border-sidebar-border bg-sidebar transition-transform duration-200 ease-out motion-reduce:transition-none data-[state=closed]:-translate-x-full data-[state=open]:translate-x-0",
             className
           )}
           ref={ref}
@@ -208,7 +208,7 @@ const Sidebar = React.forwardRef<
       data-variant={variant}
       data-mobile="false"
       className={cn(
-        "group peer sticky top-0 flex h-screen w-[--sidebar-width] shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-[linear-gradient(180deg,rgba(15,18,22,0.98),rgba(12,16,19,0.98))] shadow-[inset_-1px_0_0_rgba(255,255,255,0.02)] backdrop-blur-md transition-[width] duration-200 ease-out motion-reduce:transition-none data-[collapsible=icon]:w-[--sidebar-width-icon]",
+        "group peer sticky top-0 flex h-screen w-[--sidebar-width] shrink-0 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-out motion-reduce:transition-none data-[collapsible=icon]:w-[--sidebar-width-icon]",
         className
       )}
       {...props}
@@ -477,7 +477,7 @@ const SidebarMenuItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-xl border border-transparent px-2.5 py-2 text-left text-[13px] font-medium text-sidebar-foreground/78 outline-none ring-sidebar-ring transition-[width,height,padding,color,background-color,border-color,box-shadow] duration-150 hover:bg-[rgba(34,39,45,0.9)] hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:border-[rgba(135,145,156,0.26)] data-[active=true]:bg-[linear-gradient(180deg,rgba(39,46,51,0.98),rgba(30,36,40,0.98))] data-[active=true]:text-sidebar-accent-foreground data-[active=true]:shadow-[inset_0_0_0_1px_rgba(186,197,208,0.06),0_10px_24px_rgba(0,0,0,0.2)] data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:[&>span:last-child]:hidden [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded border border-transparent px-2.5 py-2 text-left text-[13px] font-medium text-sidebar-foreground outline-none ring-sidebar-ring transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 data-[active=true]:border-l data-[active=true]:border-foreground data-[active=true]:bg-transparent data-[active=true]:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-9 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:[&>span:last-child]:hidden [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {

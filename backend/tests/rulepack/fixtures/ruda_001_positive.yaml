@@ -1,0 +1,8 @@
+name: ruda_001_positive
+base: clean_ruda
+doc_types_remove:
+- ruda_noc
+expect_triggered:
+- RUDA_001
+expect_not_triggered: []
+expected_decision: FAIL

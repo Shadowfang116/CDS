@@ -1,34 +1,30 @@
-# AI_context — OCR accuracy effort on `CDS`
+# AI_context — OCR + field extraction on `CDS`
 
-Working context for the OCR accuracy work. Kept **outside** the git repo
-(`Fahad Proj/CDS`) so nothing here is committed by accident.
+Working context for OCR accuracy and post-OCR autofill. Lives at
+`bank-diligence-platform/AI_context/` (in-repo; see D5). Update it in the **same
+session** as any OCR/extraction/autofill change.
 
 **If you are an AI session starting here: read this file, then `02_findings.md`.
 Everything else is reference.**
 
 ---
 
-## Current state (updated 2026-08-15)
+## Current state (updated 2026-08-18)
 
 | | |
 |---|---|
-| **Phase** | WS0 / WS1 in progress |
-| **Code changed** | `ocr_service/Dockerfile`, `eval_urdu_ocr.py`, `config.py`, `ocr_domain_ur.py`, `ocr_text.py`, `test_ocr_domain_ur.py`, `ci.yml`, `eval_ocr_service.py` |
-| **Branch** | `feat/ocr-accuracy-improvements` |
-| **Findings** | 8 open, 1 fixed (F5), 1 in progress (F6) |
-| **Measurement** | Pending sample PDFs (Q1) |
-| **Blocked on** | Sample documents (Q1) |
+| **Phase** | Backend freeze-and-delete cleanup. Workbench gold findings already landed. |
+| **Code changed this session** | workbench service/routes, Matter `load()`, rulepacks, `.bak` deletes, waive deprecation, OCR deprecation notes |
+| **Branch** | `refactor/cds-backend-core` |
+| **Findings** | F10 🟢, F11 🟢, F12 🟢. Open: F7 (samples), F8 (quality.py). In progress: F3 (Surya), F6 (settings/text-layer follow-up). |
+| **Measurement** | No CER. |
+| **Blocked on (OCR claims)** | Q1 sample PDFs + ground truth |
+| **Next action** | Live walk RUN 2 then RUN 3 waiver + pack on the workbench once the stack is up. |
 
 **The 65% accuracy figure is unverified and unreproducible from this repo.**
 No accuracy claim gets made until Phase 0 produces a measured baseline.
 
-**Nothing in CI touches the OCR system** — no Python tests, `ocr_service` never built or
-started, the accuracy gate never wired in. A contributor can break OCR completely and CI
-stays green. See `08_master_plan.md` §1 before contributing anything.
-
-**Start here if you're picking up work:** `08_master_plan.md` §5 (H1 — a 30-second
-Docker check that may be the highest-value fix in the plan), then units 0.1–0.4.
-None need user input.
+**Start here if you're picking up work:** Gold workbench is in the Matter page and now reads `GET /cases/{id}/workbench`. Walk RUN 2 `5bcdb8eb-…` and RUN 3 `38e6069e-…`. Do not use RUN 1. Cleanup notes: `AI_context/backend_simplification/`. Next OCR step is still Q1 samples.
 
 ---
 
@@ -41,7 +37,8 @@ None need user input.
    microservice, not the backend `ocr_*.py` stack. An eval that exercises Stack B
    is measuring dead code.
 3. **Every change re-runs the eval**, and the before/after numbers go in the worklog.
-4. **This folder stays outside the repo.** Never `git add` it.
+   Field-extraction changes that cannot produce CER still get a pytest + worklog entry.
+4. **Update this folder in the same session** as the code (D5). Do not push unless asked.
 5. **Findings carry a status.** When you fix one, update the table in
    `02_findings.md` in the same session — not later.
 
@@ -52,7 +49,7 @@ None need user input.
 | File | What it is | Read when |
 |---|---|---|
 | `01_repo_map.md` | Where OCR code lives; the real production request path | Orienting in the codebase |
-| `02_findings.md` | The 9 findings, each with evidence + a re-verify command | Always — this is the core |
+| `02_findings.md` | Findings F1–F10, each with evidence + a re-verify command | Always — this is the core |
 | `03_plan.md` | Phased plan, and what "99%" realistically means | Deciding what to do next |
 | `04_worklog.md` | Current state + dated log of changes and measurements | Resuming work |
 | `05_decisions.md` | Decisions taken, with rationale and date | Before re-litigating anything |
@@ -64,20 +61,17 @@ None need user input.
 
 ## Repo / branch state
 
-- Repo root: `/Users/itsmibrahim/Documents/Fahad Proj/CDS`
-- Remote: `https://github.com/Shadowfang116/CDS`
-- Branch: **`feat/ocr-accuracy-improvements`** (off `master` @ `b94bb10`), created locally.
-  Working tree was clean when cut. Push access to the remote **has not been tested** —
-  if push is rejected, fall back to fork + PR.
-- Other remote branches exist (`codex/*`, `feat/rule-engine-hardening`); none touched.
+- Inner repo: `bank-diligence-platform/` (`origin` = `https://github.com/Shadowfang116/CDS.git`)
+- Gold workbench and CDS-GOLD-001 semantics are on `fix/cds-gold-001-semantics`. OCR WS0/WS1 landed earlier on `feat/ocr-accuracy-improvements`.
+- Do not push unless asked.
 
-## Local toolchain (verified 2026-08-15)
+## Local toolchain (verified 2026-08-17)
 
-Nothing OCR-related is installed on the host — no `cv2`, `numpy`, `PIL`,
-`pytesseract`, `surya`, `paddleocr`, `pdf2image`; no `tesseract` binary.
-Docker is installed (29.2.1) but **not running**.
-`datasets/urdu_ocr/samples/` does not exist (gitignored, never populated).
+Docker is in use for the full stack. Field-extraction tests run on the host:
 
-**Consequence:** accuracy cannot be measured on this machine as-is. See `07_runbook.md`
-for how to get to a measurable state. All changes must be verified in Docker against
-real sample PDFs + ground truth before any accuracy number is claimed.
+```bash
+cd backend
+python -m pytest tests/test_contextual_autofill.py -q
+```
+
+`datasets/urdu_ocr/samples/` still does not exist (Q1). No CER may be claimed until that is populated and `04_worklog.md` records a run.

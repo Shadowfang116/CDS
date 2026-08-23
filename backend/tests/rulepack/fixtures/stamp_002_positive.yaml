@@ -1,0 +1,13 @@
+name: stamp_002_positive
+base: clean_urban
+dossier_updates:
+  transaction.consideration_amount:
+  - '10000000'
+  stamp.stamp_basis_amount:
+  - '8000000'
+expect_evidence_for:
+- STAMP_002
+expect_triggered:
+- STAMP_002
+expect_not_triggered: []
+expected_decision: PASS

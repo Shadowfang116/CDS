@@ -1,0 +1,8 @@
+name: soc_001_positive
+base: clean_urban
+doc_types_remove:
+- society_transfer
+expect_triggered:
+- SOC_001
+expect_not_triggered: []
+expected_decision: FAIL

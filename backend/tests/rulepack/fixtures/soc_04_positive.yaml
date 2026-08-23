@@ -1,0 +1,10 @@
+name: soc_04_positive
+base: clean_urban
+pages_add:
+- doc: soc04.pdf
+  page: 1
+  text: The title remains subject to prior hypothecation in favour of another lender.
+expect_triggered:
+- SOC-04
+expect_not_triggered: []
+expected_decision: PASS

@@ -1,0 +1,14 @@
+name: gold_encumb_01_positive
+base: clean_urban
+borrower_type: company
+pages_add:
+- doc: 07_Search_Report_URDU.pdf
+  page: 1
+  text: Title search notes a prior charge CHG-T-2019-77 still recorded against the property.
+documents:
+  - filename: 07_Search_Report_URDU.pdf
+    doc_type: Search Report
+expect_triggered:
+- GOLD-ENCUMB-01
+expect_not_triggered: []
+expected_decision: FAIL

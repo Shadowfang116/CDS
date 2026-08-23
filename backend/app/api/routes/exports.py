@@ -276,7 +276,12 @@ def _load_case_data(db: Session, case_id: uuid.UUID, org_id: uuid.UUID):
         })
     
     return {
-        "case": {"id": str(case.id), "title": case.title, "status": case.status},
+        "case": {
+            "id": str(case.id),
+            "title": case.title,
+            "status": case.status,
+            "decision": getattr(case, "decision", None),
+        },
         "org": {"id": str(org.id), "name": org.name} if org else {"id": str(org_id), "name": "Organization"},
         "dossier": dossier,
         "exceptions": exceptions_list,
@@ -292,7 +297,7 @@ def _ensure_export_role(case: Case, role: str) -> None:
     if not can_generate_export(case_status=case.status, role=role):
         raise HTTPException(
             status_code=403,
-            detail="Exports require an Approver role and a case in Approved, Rejected, or Closed status.",
+            detail="Draft and issued packs require a Reviewer (or higher) role.",
         )
 
 
@@ -672,7 +677,17 @@ async def generate_bank_pack(
         return _export_response(existing, user_id=current_user.user_id, request_id=request_id)
 
     from datetime import datetime
-    filename = f"BANK_PACK__CASE_{case_id}__{datetime.utcnow().strftime('%Y%m%d')}__v1.pdf"
+    if case.status != "Approved" and getattr(case, "decision", None) != "FAIL":
+        filename = f"DRAFT_BANK_PACK__CASE_{case_id}__{datetime.utcnow().strftime('%Y%m%d')}__v1.pdf"
+    elif getattr(case, "decision", None) == "FAIL":
+        filename = f"FAIL_REVIEW_PACK__CASE_{case_id}__{datetime.utcnow().strftime('%Y%m%d')}__v1.pdf"
+    else:
+        prior = (
+            db.query(Export)
+            .filter(Export.org_id == org_id, Export.case_id == case_id, Export.export_type == "bank_pack_pdf")
+            .count()
+        )
+        filename = f"CDS-BP-{str(case_id)[:8].upper()}__V{prior + 1}__APPROVED.pdf"
     export = Export(
         org_id=org_id,
         case_id=case_id,

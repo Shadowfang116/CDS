@@ -10,7 +10,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse bg-slate-700/50 rounded',
+        'animate-pulse rounded bg-muted',
         className
       )}
     />
@@ -19,7 +19,7 @@ export function Skeleton({ className }: SkeletonProps) {
 
 export function SkeletonText({ className, lines = 1 }: SkeletonProps & { lines?: number }) {
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn('flex flex-col gap-2', className)}>
       {Array.from({ length: lines }).map((_, i) => (
         <Skeleton
           key={i}
@@ -35,7 +35,7 @@ export function SkeletonText({ className, lines = 1 }: SkeletonProps & { lines?:
 
 export function SkeletonCard({ className }: SkeletonProps) {
   return (
-    <div className={cn('bg-slate-800/50 rounded-xl border border-slate-700/50 p-5', className)}>
+    <div className={cn('rounded-xl border border-border bg-card p-5', className)}>
       <Skeleton className="h-4 w-1/3 mb-3" />
       <Skeleton className="h-8 w-1/2 mb-2" />
       <Skeleton className="h-3 w-2/3" />
@@ -45,7 +45,7 @@ export function SkeletonCard({ className }: SkeletonProps) {
 
 export function SkeletonRow({ className }: SkeletonProps) {
   return (
-    <div className={cn('flex items-center gap-4 p-4 bg-slate-800/30 rounded-lg', className)}>
+    <div className={cn('flex items-center gap-4 rounded-lg p-4', className)}>
       <Skeleton className="h-10 w-10 rounded-full flex-shrink-0" />
       <div className="flex-1 space-y-2">
         <Skeleton className="h-4 w-3/4" />

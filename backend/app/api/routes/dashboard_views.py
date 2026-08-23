@@ -1,4 +1,7 @@
-"""Saved dashboard views API routes with sharing support."""
+"""Saved dashboard views API routes with sharing support.
+
+FROZEN: frontend still hits /dashboard/views. Leave registered; do not expand.
+"""
 from typing import List
 from uuid import UUID
 from datetime import datetime

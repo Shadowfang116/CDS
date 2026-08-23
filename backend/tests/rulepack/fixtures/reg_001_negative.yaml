@@ -1,0 +1,6 @@
+name: reg_001_negative
+base: clean_urban
+expect_triggered: []
+expect_not_triggered:
+- REG_001
+expected_decision: PASS

@@ -1,4 +1,4 @@
-﻿"""Phase 9: OCR evaluation metrics for Urdu OCR regression testing."""
+﻿"""DEV-ONLY OCR evaluation metrics used by scripts/dev/eval_*.py. Not on the production path."""
 import logging
 import re
 from typing import Dict, Any, Optional

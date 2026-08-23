@@ -1,0 +1,8 @@
+name: cant_001_positive
+base: clean_cantonment
+doc_types_remove:
+- cantonment_noc
+expect_triggered:
+- CANT_001
+expect_not_triggered: []
+expected_decision: FAIL

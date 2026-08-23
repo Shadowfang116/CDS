@@ -1,0 +1,11 @@
+name: dha_03_positive
+base: clean_constructed
+regime: DHA
+doc_types_remove:
+- approved_map
+doc_types_add:
+- map
+expect_triggered:
+- DHA-03
+expect_not_triggered: []
+expected_decision: PASS

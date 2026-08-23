@@ -39,16 +39,20 @@ class PageOCR:
     text: str
 
 
-# Sale deed indicators (English and Urdu)
+# Strong sale-deed indicators only. Broad words such as buyer/seller/خریدار/فروخت
+# are not sufficient — a mutation form can contain those without being a deed.
 SALE_DEED_KEYWORDS_EN = [
     "sale deed", "deed of sale", "sale agreement", "agreement of sale",
-    "vendor", "vendee", "purchaser", "seller", "buyer",
-    "consideration", "sold to", "purchased from", "transfer deed"
+    "conveyance deed", "registered sale deed",
 ]
-
 SALE_DEED_KEYWORDS_URDU = [
-    "بیع نامہ", "فروخت نامہ", "فروخت کنندہ", "خریدار", "گواہ",
-    "بیع", "فروخت", "خریداری", "فروخت کنندگان", "خریداران"
+    "بیع نامہ", "فروخت نامہ", "فروخت کنندہ",
+]
+SALE_DEED_WEAK_EN = ["vendor", "vendee", "purchaser", "seller", "buyer", "consideration"]
+SALE_DEED_WEAK_URDU = ["خریدار", "فروخت", "بیع", "خریداری"]
+MUTATION_PENALTY_MARKERS = [
+    "mutation", "intiqal", "انتقال", "منتقل کنندہ", "منتقل الیہ",
+    "رجسٹریشن حوالہ",
 ]
 
 # Stopwords for names (English and Urdu)
@@ -93,25 +97,24 @@ LEADING_LABELS_EN = [
 ]
 
 
-def detect_sale_deed(text: str) -> bool:
-    """
-    Detect if OCR text contains strong sale deed indicators.
-    
-    Returns True if text contains sale deed keywords (English or Urdu).
-    """
-    text_normalized = normalize_whitespace(text.lower())
-    
-    # Check English keywords
-    for keyword in SALE_DEED_KEYWORDS_EN:
-        if keyword.lower() in text_normalized:
-            return True
-    
-    # Check Urdu keywords (case-insensitive matching not needed for Urdu)
-    for keyword in SALE_DEED_KEYWORDS_URDU:
-        if keyword in text:
-            return True
-    
-    return False
+def detect_sale_deed(text: str, filename: str = "", doc_type: Optional[str] = None) -> bool:
+    """True only when the document is a Sale Deed, not a mutation with a buyer keyword."""
+    from app.services.canonical_docs import canonical_key, classify_document_type
+
+    classified, _source = classify_document_type(filename, text or "", doc_type)
+    key = canonical_key(classified or doc_type)
+    if key == "sale_deed":
+        return True
+    if key in {"mutation", "fard", "property_tax", "search_report", "possession_letter"}:
+        return False
+
+    blob = f"{filename or ''}\n{text or ''}"
+    blob_lower = blob.lower()
+    if any(marker in blob or marker in blob_lower for marker in MUTATION_PENALTY_MARKERS):
+        return False
+    strong = any(keyword.lower() in blob_lower for keyword in SALE_DEED_KEYWORDS_EN)
+    strong = strong or any(keyword in blob for keyword in SALE_DEED_KEYWORDS_URDU)
+    return bool(strong)
 
 
 def name_quality_score(s: str) -> float:
@@ -139,7 +142,11 @@ def name_quality_score(s: str) -> float:
         "signature", "witness", "attesting", "property", "schedule", "hereby",
         # Urdu label-only tokens
         "نام", "ولدیت", "شناختی کارڈ نمبر", "شناختی", "کارڈ", "نمبر",
-        "ساکن", "رہائشی", "ضلع", "تحصیل", "پتہ", "مکان", "پلاٹ"
+        "ساکن", "رہائشی", "ضلع", "تحصیل", "پتہ", "مکان", "پلاٹ",
+        "cds-gold", "sample", "not a real document",
+        "فرضی تربیتی", "حقیقی دستاویز", "ایک جانب", "دوسری جانب",
+        "درج ذیل شرائط", "متفق ہوئے", "جسے آئندہ",
+        "رجسٹریشن حوالہ", "منتقل الیہ", "منتقل کنندہ",
     ]
     for token in blacklist_tokens:
         if token in s_lower or token in s_norm:
@@ -560,7 +567,7 @@ def extract_urdu_labelled_roles_from_page(lines: List[str], page_no: int, doc_id
                 normalized_lines.append(line_norm)
     
     # Urdu section markers (tolerant patterns)
-    seller_markers = ["بائع", "فروشندہ", "نام بائع", "نامِ بائع", "نام مالک", "مالک", "فروخت کنندہ"]
+    seller_markers = ["بائع", "فروشندہ", "نام بائع", "نامِ بائع", "فروخت کنندہ"]
     buyer_markers = ["مشتری", "خریدار", "نام مشتری", "نامِ مشتری", "نام خریدار"]
     witness_markers = ["گواہ", "گواہان", "نام گواہ", "گواہ نمبر", "شاہد"]
     
@@ -783,7 +790,7 @@ def detect_section_markers(lines: List[str]) -> List[Tuple[int, str]]:
     # Seller markers (Urdu + English) - use normalized matching
     # Prioritize Urdu markers and section headings, not boilerplate
     seller_markers_urdu = [
-        "بائع", "فروخت کنندہ", "بیچنے والا", "مالک", "نام مالک"
+        "بائع", "فروخت کنندہ", "بیچنے والا"
     ]
     seller_markers_en = [
         "seller:", "vendor:", "first party:"
@@ -1092,7 +1099,7 @@ def extract_urdu_structured_roles(lines_by_page: List[Tuple[int, List[str]]]) ->
     # Expanded Urdu section markers (exact and tolerant variants)
     # Note: OCR may distort characters, so we use substring matching with normalization
     seller_section_markers = [
-        "بائع", "فریقِ اوّل", "فریق اول", "فریقِ اول", "مالک", "نام مالک",
+        "بائع", "فریقِ اوّل", "فریق اول", "فریقِ اول",
         "فروخت کنندہ", "فروشندہ", "بیچنے والا", "vendor", "seller"
     ]
     buyer_section_markers = [
@@ -1324,7 +1331,7 @@ def extract_labelled_fields(lines_by_page: List[Tuple[int, List[str]]]) -> Dict[
     }
     
     # Urdu section markers
-    seller_section_markers = ["بائع", "فروخت کنندہ", "مالک", "نام مالک"]
+    seller_section_markers = ["بائع", "فروخت کنندہ"]
     buyer_section_markers = ["مشتری", "خریدار", "خرید کنندہ", "نام مشتری"]
     witness_section_markers = ["گواہان", "گواہ", "گواہ نمبر", "نام گواہ", "شاہد"]
     
@@ -1704,8 +1711,14 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
     
     combined_text = '\n'.join(all_lines)
     
-    # Check if this is a sale deed
-    is_sale_deed = detect_sale_deed(combined_text)
+    evidence_snippet = None
+    evidence_page = pages[0].page_number if pages else 1
+    evidence_doc_id = pages[0].document_id if pages else ""
+    original_filename = pages[0].document_name if pages else ""
+
+    from app.services.extractors.doc_routing import classify_document, allows_party_roles
+    doc_class = classify_document(original_filename, combined_text)
+    is_sale_deed = allows_party_roles(doc_class)
     
     # Debug: detect which keywords matched
     matched_keywords = []
@@ -1720,10 +1733,7 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
     seller_names = []
     buyer_names = []
     witness_names = []
-    evidence_snippet = None
-    evidence_page = pages[0].page_number if pages else 1
-    evidence_doc_id = pages[0].document_id if pages else ""
-    original_filename = pages[0].document_name if pages else ""
+    role_spans = {}
     
     # Initialize result lists for debug logging
     seller_results = []
@@ -1763,8 +1773,28 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
             current_lines.append(line_text)
         if current_page is not None:
             lines_by_page.append((current_page, current_lines))
+
+        from app.services.extractors.sale_deed_clauses import extract_sale_deed_clauses
+        clause_hits = extract_sale_deed_clauses(pages)
+        for role, hit in clause_hits.items():
+            role_method[role] = hit.method
+            role_spans[role] = {
+                "page_number": hit.page_number,
+                "char_start": hit.char_start,
+                "char_end": hit.char_end,
+                "method": hit.method,
+            }
+            if role == "seller":
+                seller_names = [hit.value]
+            elif role == "buyer":
+                buyer_names = [hit.value]
+            elif role == "witness":
+                witness_names = [hit.value]
+            if not evidence_snippet:
+                evidence_snippet = hit.value
+                evidence_page = hit.page_number
         
-        # P21: 0) Page-by-page Urdu labelled-field extraction (HIGHEST PRIORITY)
+        # P21: 0) Page-by-page Urdu labelled-field extraction (after clause parse)
         # Scan each page individually BEFORE any other method
         for page_num, page_lines in lines_by_page:
             if seller_names and buyer_names and witness_names:
@@ -1783,7 +1813,7 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
         
         # P21: 0.5) Urdu-first assignment: Check for Urdu anchors and assign CNIC blocks accordingly
         # This runs BEFORE labelled-field extraction to prioritize Urdu section markers
-        urdu_seller_markers = ["فروشندہ", "بائع", "فروخت کنندہ", "مالک"]
+        urdu_seller_markers = ["فروشندہ", "بائع", "فروخت کنندہ"]
         urdu_buyer_markers = ["مشتری", "خریدار", "خرید کنندہ"]
         urdu_witness_markers = ["گواہان", "گواہ", "گواہ نمبر", "شاہد"]
         
@@ -1925,7 +1955,7 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
                         f"name=\"{name}\" page={page_num} label=\"{label[:50]}\""
                     )
         
-        if labelled_fields["seller"]:
+        if labelled_fields["seller"] and not seller_names:
             seller_names = [name for name, _, _ in labelled_fields["seller"]]
             role_method["seller"] = "label_urdu"
             # Set evidence from first match
@@ -1933,14 +1963,14 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
                 _, evidence_page, label = labelled_fields["seller"][0]
                 evidence_snippet = f"Label: {label}"
         
-        if labelled_fields["buyer"]:
+        if labelled_fields["buyer"] and not buyer_names:
             buyer_names = [name for name, _, _ in labelled_fields["buyer"]]
             role_method["buyer"] = "label_urdu"
             if not evidence_snippet and labelled_fields["buyer"]:
                 _, evidence_page, label = labelled_fields["buyer"][0]
                 evidence_snippet = f"Label: {label}"
         
-        if labelled_fields["witness"]:
+        if labelled_fields["witness"] and not witness_names:
             witness_names = [name for name, _, _ in labelled_fields["witness"][:3]]
             role_method["witness"] = "label_urdu"
             if not evidence_snippet and labelled_fields["witness"]:
@@ -1976,7 +2006,7 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
                 )
         
         # Filter to only Urdu section markers (not English boilerplate)
-        urdu_marker_keywords = ["بائع", "مشتری", "گواہان", "گواہ", "فروخت کنندہ", "خریدار", "مالک"]
+        urdu_marker_keywords = ["بائع", "مشتری", "گواہان", "گواہ", "فروخت کنندہ", "خریدار"]
         urdu_markers = []
         for m in section_markers:
             if m[0] < len(all_lines):
@@ -2062,11 +2092,7 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
             if not buyer_names and len(valid_blocks) >= 2:
                 buyer_names = [valid_blocks[1].best_name]
                 role_method["buyer"] = "cnic_fallback"
-            if not witness_names and len(valid_blocks) >= 3:
-                witness_candidates = [b.best_name for b in valid_blocks[2:] if b.best_name and is_plausible_person_name(b.best_name)]
-                witness_names = witness_candidates[:3]
-                if witness_names:
-                    role_method["witness"] = "cnic_fallback"
+            # Witness: empty is better than a positional CNIC guess.
         
         # 5) English anchor extraction (LAST, only if candidate passes strict plausibility)
         # Only run if we still don't have all roles
@@ -2074,7 +2100,7 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
             # Seller anchors
             seller_pattern = re.compile(
                 r'(?:^|\s)(?:seller|vendor|first\s+party|Vendor|Seller|First\s+Party|'
-                r'فروخت\s*کنندہ|بائع|فروشندہ|فریق\s*اول|پہلا\s*فریق|مالک|نام\s*مالک)(?:\s|:|،|$)',
+                r'فروخت\s*کنندہ|بائع|فروشندہ|فریق\s*اول|پہلا\s*فریق)(?:\s|:|،|$)',
                 re.IGNORECASE
             )
             seller_results = extract_names_near_anchor(all_lines, seller_pattern, lookahead=5)
@@ -2148,7 +2174,7 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
         # This will be logged by that function, but we can check by scanning pages
         for page_num, page_lines in lines_by_page:
             page_text_normalized = normalize_for_matching('\n'.join(page_lines))
-            seller_markers = ["بائع", "فروشندہ", "نام بائع", "نامِ بائع", "نام مالک", "مالک", "فروخت کنندہ"]
+            seller_markers = ["بائع", "فروشندہ", "نام بائع", "نامِ بائع", "فروخت کنندہ"]
             buyer_markers = ["مشتری", "خریدار", "نام مشتری", "نامِ مشتری", "نام خریدار"]
             witness_markers = ["گواہ", "گواہان", "نام گواہ", "گواہ نمبر", "شاہد"]
             for marker_list in [seller_markers, buyer_markers, witness_markers]:
@@ -2277,16 +2303,16 @@ def extract_party_roles_from_document(pages: List[PageOCR]) -> Dict[str, any]:
             )
     
     # Always return evidence if we have any extracted names or metadata
-    evidence_dict = None
-    if seller_names_deduped or buyer_names_deduped or witness_names_deduped or role_method:
-        evidence_dict = {
-            "document_id": evidence_doc_id,
-            "page_number": evidence_page,
-            "snippet": evidence_snippet or "",
-            "role_method": role_method,
-            "cnic_count": cnic_count,
-            "anchors_hit": anchors_hit,
-        }
+    evidence_dict = {
+        "document_id": evidence_doc_id,
+        "page_number": evidence_page,
+        "snippet": evidence_snippet or "",
+        "role_method": role_method,
+        "role_spans": role_spans,
+        "cnic_count": cnic_count,
+        "anchors_hit": anchors_hit,
+        "doc_class": doc_class,
+    }
     
     # P23: Normalize final return values (before validation and returning)
     seller_names_normalized = normalize_party_role_value("; ".join(seller_names_deduped)) if seller_names_deduped else ""

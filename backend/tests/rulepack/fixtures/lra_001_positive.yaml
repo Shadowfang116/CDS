@@ -1,0 +1,8 @@
+name: lra_001_positive
+base: clean_revenue
+doc_types_remove:
+- fard
+expect_triggered:
+- LRA_001
+expect_not_triggered: []
+expected_decision: PASS

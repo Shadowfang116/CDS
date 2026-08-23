@@ -1,0 +1,6 @@
+name: kyc_10_negative
+base: clean_urban
+expect_triggered: []
+expect_not_triggered:
+- KYC-10
+expected_decision: PASS

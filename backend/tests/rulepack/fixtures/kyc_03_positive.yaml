@@ -1,0 +1,12 @@
+name: kyc_03_positive
+base: clean_urban
+dossier_updates:
+  party.cnic:
+  - 35202-1234567-1
+  - '3520212345672'
+expect_evidence_for:
+- KYC-03
+expect_triggered:
+- KYC-03
+expect_not_triggered: []
+expected_decision: PASS

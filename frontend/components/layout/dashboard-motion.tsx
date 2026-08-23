@@ -1,78 +1,41 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { gsap, useGSAP } from '@/lib/gsap';
 
 export function DashboardMotion() {
   const pathname = usePathname();
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+  useGSAP(
+    () => {
+      if (typeof window === 'undefined') {
+        return;
+      }
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reducedMotion) {
-      return;
-    }
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reducedMotion) {
+        return;
+      }
 
-    gsap.registerPlugin(ScrollTrigger);
+      const reveals = gsap.utils.toArray<HTMLElement>('[data-dashboard-reveal]');
+      if (reveals.length === 0) {
+        return;
+      }
 
-    const ctx = gsap.context(() => {
       gsap.fromTo(
-        '[data-dashboard-reveal]',
-        { autoAlpha: 0, y: 24 },
+        reveals,
+        { autoAlpha: 0, y: 12 },
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.8,
+          duration: 0.45,
           ease: 'power3.out',
-          stagger: 0.08,
+          stagger: 0.06,
         }
       );
-
-      gsap.utils.toArray<HTMLElement>('[data-dashboard-section]').forEach((section) => {
-        gsap.fromTo(
-          section,
-          { autoAlpha: 0, y: 34 },
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.9,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: section,
-              start: 'top 88%',
-            },
-          }
-        );
-      });
-
-      gsap.to('[data-dashboard-drift="slow"]', {
-        xPercent: 6,
-        yPercent: -4,
-        duration: 18,
-        ease: 'sine.inOut',
-        repeat: -1,
-        yoyo: true,
-      });
-
-      gsap.to('[data-dashboard-drift="fast"]', {
-        xPercent: -4,
-        yPercent: 6,
-        duration: 14,
-        ease: 'sine.inOut',
-        repeat: -1,
-        yoyo: true,
-      });
-    });
-
-    return () => {
-      ctx.revert();
-    };
-  }, [pathname]);
+    },
+    { dependencies: [pathname], revertOnUpdate: true }
+  );
 
   return null;
 }

@@ -6,7 +6,7 @@ const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto rounded-lg border border-[rgba(82,90,99,0.45)] bg-[rgba(24,28,32,0.88)]">
+  <div className="relative w-full overflow-auto">
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
@@ -20,7 +20,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("bg-[rgba(31,36,41,0.96)] [&_tr]:border-b [&_tr]:border-[rgba(82,90,99,0.4)]", className)} {...props} />
+  <thead ref={ref} className={cn("sticky top-0 bg-background [&_tr]:border-b [&_tr]:border-border", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -43,7 +43,7 @@ const TableFooter = React.forwardRef<
   <tfoot
     ref={ref}
     className={cn(
-      "border-t border-[rgba(82,90,99,0.4)] bg-[rgba(31,36,41,0.96)] font-medium [&>tr]:last:border-b-0",
+      "border-t border-border bg-background font-medium [&>tr]:last:border-b-0",
       className
     )}
     {...props}
@@ -58,7 +58,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b border-[rgba(82,90,99,0.28)] transition-colors hover:bg-[rgba(44,50,57,0.46)] data-[state=selected]:bg-[rgba(44,50,57,0.56)]",
+      "h-12 border-b border-border transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted/50",
       className
     )}
     {...props}
@@ -73,7 +73,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-11 px-4 text-left align-middle text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500 [&:has([role=checkbox])]:pr-0",
+      "h-12 px-4 text-left align-middle text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground [&:has([role=checkbox])]:pr-0",
       className
     )}
     {...props}

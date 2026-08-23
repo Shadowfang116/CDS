@@ -1,0 +1,10 @@
+name: poa_01_positive
+base: clean_urban
+pages_add:
+- doc: poa01.pdf
+  page: 1
+  text: The sale is being executed by an authorized representative of the owner.
+expect_triggered:
+- POA-01
+expect_not_triggered: []
+expected_decision: FAIL

@@ -5,7 +5,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PRODUCT_WALKTHROUGH_STEPS } from "@/config/product-walkthrough";
-import { HELP_OPEN_EVENT } from "@/lib/help";
+import { HELP_OPEN_EVENT, startOnboarding } from "@/lib/help";
 
 const EXTRA_SECTIONS = [
   {
@@ -54,9 +54,21 @@ export function HelpDialog() {
         </DialogHeader>
         <p className="text-sm leading-relaxed text-muted-foreground">{current.description}</p>
         <div className="flex justify-between gap-2">
-          <Button type="button" variant="ghost" disabled={index === 0} onClick={() => setIndex((value) => value - 1)}>
-            Previous
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" disabled={index === 0} onClick={() => setIndex((value) => value - 1)}>
+              Previous
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setOpen(false);
+                startOnboarding();
+              }}
+            >
+              Restart tour
+            </Button>
+          </div>
           <Button type="button" onClick={() => (last ? setOpen(false) : setIndex((value) => value + 1))}>
             {last ? "Close" : "Next"}
           </Button>

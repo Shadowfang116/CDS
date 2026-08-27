@@ -31,6 +31,10 @@ Covenant Diligence Systems is an on-prem, bank-ready diligence platform for Paki
 - `scripts/`: dev, backup, and ops helpers
 - `templates/`: export templates and document assets
 
+## Start Here For A Pilot
+
+New bank and legal teams should begin with the [First-Day Onboarding Guide](docs/ONBOARDING_GUIDE.md), then run the authenticated smoke checklist in [Release Checklist](docs/ops/RELEASE_CHECKLIST.md). It explains the role boundaries, evidence-first review path, and the local pilot setup without requiring production credentials.
+
 ## Environment Setup
 
 Copy the root example file before running Docker Compose:

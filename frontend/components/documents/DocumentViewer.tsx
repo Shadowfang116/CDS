@@ -14,6 +14,7 @@ import {
   DocumentOcrStatus,
   OCRTextResponse,
   listDocuments,
+  getPageRenderUrl,
   getPageThumbnailUrl,
   getOcrText,
   getOcrStatus,
@@ -33,6 +34,7 @@ import { useRouter } from 'next/navigation';
 import { getCaseTabPath } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import { urduTextProps } from '@/lib/text-script';
+import { formatDocumentType as formatType, formatQualityLabel, getQualityToneClass } from './document-viewer-format';
 
 type PageQualityMeta = {
   quality_level?: string | null;
@@ -69,33 +71,6 @@ function getDocumentStage(status?: string | null): DocumentStage {
   return DOCUMENT_STAGE_MAP[normalizedStatus] ?? { label: 'Processing', progress: 40 };
 }
 
-function formatType(value?: string | null): string {
-  return value ? value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : '';
-}
-
-function normalizeQualityLevel(value?: string | null): string {
-  return (value ?? '').trim().toLowerCase();
-}
-
-function formatQualityLabel(value?: string | null): string {
-  return formatType(normalizeQualityLevel(value));
-}
-
-function getQualityToneClass(value?: string | null): string {
-  switch (normalizeQualityLevel(value)) {
-    case 'good':
-      return 'border-[rgba(111,140,115,0.34)] bg-[rgba(111,140,115,0.16)] text-[rgb(187,205,189)]';
-    case 'fair':
-      return 'border-[rgba(184,151,95,0.34)] bg-[rgba(184,151,95,0.16)] text-[rgb(219,194,137)]';
-    case 'poor':
-      return 'border-[rgba(171,118,77,0.34)] bg-[rgba(171,118,77,0.16)] text-[rgb(220,180,147)]';
-    case 'unusable':
-      return 'border-[rgba(189,90,86,0.34)] bg-[rgba(189,90,86,0.16)] text-[rgb(219,156,153)]';
-    default:
-      return 'border-[rgba(82,90,99,0.45)] bg-[rgba(34,39,45,0.85)] text-stone-300';
-  }
-}
-
 function isTerminalDocumentStatus(status?: string | null): boolean {
   const normalizedStatus = normalizeStatusValue(status);
   return normalizedStatus === 'complete' || normalizedStatus === 'completed' || normalizedStatus === 'failed' || normalizedStatus === 'needs_review';
@@ -114,6 +89,8 @@ interface DocumentViewerProps {
   highlightValue?: string | null;
   onOpenFullViewer?: () => void;
   onUseAsFact?: (text: string) => void;
+  evidenceMode?: "source" | "text" | "split";
+  showHighlightPanel?: boolean;
 }
 
 export function DocumentViewer({
@@ -129,6 +106,8 @@ export function DocumentViewer({
   highlightValue,
   onOpenFullViewer,
   onUseAsFact,
+  evidenceMode = "split",
+  showHighlightPanel = true,
 }: DocumentViewerProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -149,6 +128,7 @@ export function DocumentViewer({
   const [selectedDoc, setSelectedDoc] = useState<CaseDocumentItem | null>(null);
   const [selectedPage, setSelectedPage] = useState<number>(1);
   const [pageImageUrl, setPageImageUrl] = useState<string | null>(null);
+  const [pageRenderMode, setPageRenderMode] = useState<'pdf' | 'image'>('image');
   const [ocrText, setOcrText] = useState<string>('');
   const [ocrTextData, setOcrTextData] = useState<OCRTextResponse | null>(null);
   const [ocrMode, setOcrMode] = useState<'effective' | 'raw' | 'corrected'>('effective');
@@ -294,9 +274,16 @@ export function DocumentViewer({
     
     setPageLoading(true);
     try {
-      // Load page image
-      const imageResult = await getPageThumbnailUrl(documentId, selectedPage);
-      setPageImageUrl(imageResult.url);
+      // Use a review-sized PNG render so the page stays crisp and visible in every
+      // browser, including embedded browser surfaces that do not render PDF frames.
+      try {
+        setPageImageUrl(getPageRenderUrl(documentId, selectedPage));
+        setPageRenderMode('image');
+      } catch {
+        const imageResult = await getPageThumbnailUrl(documentId, selectedPage);
+        setPageImageUrl(imageResult.url);
+        setPageRenderMode('image');
+      }
 
       // Load OCR text (P14: use new API with corrections support)
       try {
@@ -568,7 +555,7 @@ export function DocumentViewer({
                   setDocumentToDelete(doc);
                   setDeleteDocDialogOpen(true);
                 }}
-                className="absolute right-1.5 top-1.5 hidden h-6 w-6 items-center justify-center rounded border border-[rgba(189,90,86,0.4)] bg-[rgba(189,90,86,0.12)] text-[rgb(219,156,153)] opacity-0 transition-opacity hover:bg-[rgba(189,90,86,0.24)] group-hover:flex group-hover:opacity-100"
+                className="cds-hit-target absolute right-1.5 top-1.5 hidden h-6 w-6 items-center justify-center rounded border border-[rgba(189,90,86,0.4)] bg-[rgba(189,90,86,0.12)] text-[rgb(219,156,153)] opacity-0 transition-opacity hover:bg-[rgba(189,90,86,0.24)] group-hover:flex group-hover:opacity-100"
               >
                 <Trash2 className="size-3.5" />
               </button>
@@ -581,7 +568,7 @@ export function DocumentViewer({
       )}
 
       {/* Middle: Page Thumbnails */}
-      {selectedDoc && (
+      {selectedDoc && evidenceMode !== "text" && (
         <div className={compact
           ? "w-[76px] shrink-0 overflow-y-auto border-r border-border bg-[hsl(var(--canvas))] px-0 py-[18px]"
           : "w-32 overflow-y-auto border-r border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.58)]"
@@ -677,13 +664,14 @@ export function DocumentViewer({
             </div>
             {compact ? null : (
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>
-                -
+              <Button size="sm" variant="outline" aria-label="Zoom out" onClick={() => setZoom(Math.max(0.5, zoom - 0.25))}>
+                −
               </Button>
               <span className="w-12 text-center text-xs text-stone-400">{Math.round(zoom * 100)}%</span>
-              <Button size="sm" variant="outline" onClick={() => setZoom(Math.min(2, zoom + 0.25))}>
+              <Button size="sm" variant="outline" aria-label="Zoom in" onClick={() => setZoom(Math.min(2, zoom + 0.25))}>
                 +
               </Button>
+              <Button size="sm" variant="ghost" onClick={() => setZoom(1)}>Fit</Button>
               {onAttachEvidence && selectedDoc && (
                 <Button
                   size="sm"
@@ -746,23 +734,36 @@ export function DocumentViewer({
         )}
 
         {/* Page Image */}
-        <div className={compact ? "flex min-h-0 flex-1 gap-3.5 overflow-hidden bg-[hsl(var(--canvas))] p-[18px]" : "flex flex-1 items-center justify-center overflow-auto bg-[rgba(14,18,22,0.92)] p-4"}>
+        <div className={cn(compact ? "flex min-h-0 flex-1 gap-3.5 overflow-hidden bg-[hsl(var(--canvas))] p-[18px]" : "flex flex-1 items-center justify-center overflow-auto bg-[rgba(14,18,22,0.92)] p-4", evidenceMode === "text" && "hidden")}>
           <div className={compact
             ? "relative flex min-h-0 flex-1 items-start justify-center overflow-auto"
             : "relative flex h-full w-full items-center justify-center rounded-lg border border-[rgba(82,90,99,0.24)] bg-[rgba(18,22,27,0.52)] p-4"
           }>
             {pageImageUrl ? (
               <>
-                <img
-                  src={pageImageUrl}
-                  alt={`Page ${selectedPage}`}
-                  className={compact
-                    ? "h-auto max-h-full border border-[#b2b2ad] bg-[#f2f0e5] object-contain shadow-none transition-opacity duration-150"
-                    : "h-auto max-w-full rounded-md border border-[rgba(82,90,99,0.22)] shadow-[0_18px_44px_rgba(0,0,0,0.24)] transition-opacity duration-150"
-                  }
-                  style={{ transform: `scale(${zoom})`, opacity: pageLoading ? 0.72 : 1 }}
-                  onDoubleClick={() => onOpenFullViewer?.()}
-                />
+                {pageRenderMode === 'pdf' ? (
+                  <iframe
+                    src={pageImageUrl}
+                    title={`Page ${selectedPage} of ${selectedDoc?.original_filename || 'document'}`}
+                    className={compact
+                      ? "h-full min-h-[520px] w-full border border-border bg-[#f2f0e5] shadow-none transition-opacity duration-150"
+                      : "h-full min-h-[620px] w-full rounded-md border border-[rgba(82,90,99,0.22)] bg-[#f2f0e5] shadow-[0_18px_44px_rgba(0,0,0,0.24)] transition-opacity duration-150"
+                    }
+                    style={{ transform: `scale(${zoom})`, transformOrigin: 'center center', opacity: pageLoading ? 0.72 : 1 }}
+                    onDoubleClick={() => onOpenFullViewer?.()}
+                  />
+                ) : (
+                  <img
+                    src={pageImageUrl}
+                    alt={`Page ${selectedPage}`}
+                    className={compact
+                      ? "h-auto max-h-full border border-[#b2b2ad] bg-[#f2f0e5] object-contain shadow-none transition-opacity duration-150"
+                      : "h-auto max-w-full rounded-md border border-[rgba(82,90,99,0.22)] shadow-[0_18px_44px_rgba(0,0,0,0.24)] transition-opacity duration-150"
+                    }
+                    style={{ transform: `scale(${zoom})`, opacity: pageLoading ? 0.72 : 1 }}
+                    onDoubleClick={() => onOpenFullViewer?.()}
+                  />
+                )}
                 {pageLoading ? (
                   <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/24">
                     <div className="rounded-md border border-[rgba(82,90,99,0.36)] bg-[rgba(24,28,32,0.92)] px-3 py-2 text-xs text-stone-200">
@@ -777,7 +778,7 @@ export function DocumentViewer({
               <div className="text-stone-400">No image available</div>
             )}
           </div>
-          {compact && (selectedSnippetText || highlightLabel) ? (
+          {compact && showHighlightPanel && (selectedSnippetText || highlightLabel) ? (
             <aside className={variant === "evidence"
               ? "flex w-[270px] shrink-0 flex-col gap-2.5 rounded-[5px] border border-border bg-[hsl(var(--surface))] p-3.5"
               : "flex w-[130px] shrink-0 flex-col gap-2"
@@ -838,11 +839,11 @@ export function DocumentViewer({
         </div>
 
         {/* OCR Text Panel - P14: Correction Support */}
-        <div className={compact
-          ? "h-[150px] shrink-0 overflow-y-auto border-t border-border bg-[hsl(var(--surface))] px-4 py-3.5"
-          : "h-64 overflow-y-auto border-t border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.82)] p-4"
+        {evidenceMode !== "source" ? <div className={compact
+          ? cn("flex shrink-0 flex-col overflow-hidden border-t border-border bg-[hsl(var(--surface))] px-4 py-3.5", evidenceMode === "text" ? "min-h-0 flex-1" : "h-[clamp(190px,26vh,280px)] min-h-[190px]")
+          : "flex h-64 flex-col overflow-hidden border-t border-[rgba(82,90,99,0.34)] bg-[rgba(18,22,27,0.82)] p-4"
         }>
-          <div className="flex justify-between items-center mb-2">
+          <div className="-mx-1 mb-3 flex shrink-0 items-center justify-between gap-3 bg-[hsl(var(--surface))] px-1 pb-2">
             <div className="flex items-center gap-2">
               <h4 className={compact ? "cds-meta" : "text-sm font-medium text-stone-100"}>
                 {variant === "evidence" ? "OCR / Native text" : compact ? "Extracted text" : "OCR Text"}
@@ -971,6 +972,7 @@ export function DocumentViewer({
             </div>
           </div>
 
+          <div className="min-h-0 flex-1 overflow-y-auto">
           {editingOcr ? (
             <div className="space-y-3">
               <div className="bg-amber-900/20 border border-amber-700 rounded p-2 text-xs text-amber-200">
@@ -1066,7 +1068,7 @@ export function DocumentViewer({
               className={cn(
                 "cds-extract-text select-text whitespace-pre-wrap",
                 compact
-                  ? "text-[12px] text-foreground"
+                  ? "max-w-none text-[13px] leading-7 text-foreground"
                   : "rounded-md border border-[rgba(82,90,99,0.22)] bg-[rgba(14,18,22,0.5)] px-3 py-2 text-xs text-stone-300"
               )}
               {...urduTextProps(ocrText)}
@@ -1094,7 +1096,8 @@ export function DocumentViewer({
             ) : null}
             </>
           )}
-        </div>
+          </div>
+        </div> : null}
 
         {/* Snippet Attachment Modal */}
         {showSnippetModal && (

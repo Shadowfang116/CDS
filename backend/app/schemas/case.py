@@ -5,6 +5,8 @@ from datetime import datetime
 
 class CaseCreate(BaseModel):
     title: str
+    property_type: str | None = None
+    property_regime: str | None = None
 
 
 class CaseResponse(BaseModel):

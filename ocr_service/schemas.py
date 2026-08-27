@@ -12,7 +12,8 @@ class WordBox(BaseModel):
 class OcrRequest(BaseModel):
     document_id: str
     pages: list[str]
-    engine: Literal["surya", "tesseract"] = "surya"
+    # Kept as a string for compatibility with older callers; the service always runs Tesseract.
+    engine: str = "tesseract"
 
 
 class OcrPageResult(BaseModel):

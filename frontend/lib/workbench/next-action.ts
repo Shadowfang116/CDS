@@ -11,13 +11,16 @@ export type NextActionInput = {
 };
 
 export function clientNextAction(input: NextActionInput): string {
-  if (input.hardStopTitle) return `Clear hard-stop: ${input.hardStopTitle}`;
-  if (input.missingRequiredCausingHigh) return `Attach required evidence: ${input.missingRequiredCausingHigh}`;
+  const status = (input.status ?? "").trim().toLowerCase();
+  if (input.hardStopTitle) return `Resolve blocking issue: ${input.hardStopTitle}`;
+  if (input.missingRequiredCausingHigh) return `Add required proof: ${input.missingRequiredCausingHigh}`;
   if (input.unconfirmedKeyField) return `Confirm ${input.unconfirmedKeyField}`;
-  if (input.openHighTitle) return `Review high exception: ${input.openHighTitle}`;
-  if (input.blockingCpText) return `Clear CP: ${input.blockingCpText}`;
+  if (input.openHighTitle) return `Review high-priority issue: ${input.openHighTitle}`;
+  if (input.blockingCpText) return `Complete approval requirement: ${input.blockingCpText}`;
   if (input.pendingVerification) return `Complete verification: ${input.pendingVerification}`;
-  if (input.openMediumTitle) return `Review exception: ${input.openMediumTitle}`;
-  if (input.openLowTitle) return `Review exception: ${input.openLowTitle}`;
-  return input.status === "Approved" ? "Issue bank pack" : "Submit for approval";
+  if (input.openMediumTitle) return `Review issue: ${input.openMediumTitle}`;
+  if (input.openLowTitle) return `Review issue: ${input.openLowTitle}`;
+  if (status === "approved") return "Issue bank pack";
+  if (status === "new") return "Review matter readiness";
+  return "Submit for approval";
 }

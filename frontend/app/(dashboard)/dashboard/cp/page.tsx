@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { WorkspaceIndex } from "@/components/dashboard/workspace-index";
 
 export default function GlobalCpRedirectPage() {
-  redirect("/dashboard");
+  return <WorkspaceIndex surface="requirements" />;
 }

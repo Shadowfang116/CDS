@@ -90,7 +90,7 @@ export function EvidencePeek({ open, onClose, title, severity, refs }: EvidenceP
             ) : null}
             <button
               type="button"
-              className="mt-auto self-start text-sm text-muted-foreground transition-colors duration-[180ms] hover:text-foreground"
+              className="cds-hit-target mt-auto self-start text-sm text-muted-foreground transition-colors duration-[180ms] hover:text-foreground"
               onClick={onClose}
             >
               Close
@@ -101,8 +101,11 @@ export function EvidencePeek({ open, onClose, title, severity, refs }: EvidenceP
         <ResizablePanel defaultSize="58%" minSize="36%">
           <div className="flex h-full items-center justify-center bg-secondary p-4">
             {thumbnail ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={thumbnail} alt="" className="max-h-full max-w-full object-contain" />
+              <img
+                src={thumbnail}
+                alt={`Evidence page ${primary?.page_number ?? ''} preview`}
+                className="max-h-full max-w-full object-contain"
+              />
             ) : (
               <p className="text-sm text-muted-foreground">No page image for this reference.</p>
             )}

@@ -26,9 +26,9 @@ const TABS = [
   { id: "portfolio", label: "Portfolio" },
 ] as const;
 
-export function GovernanceView() {
+export function GovernanceView({ fixedTab, title = "Governance" }: { fixedTab?: "users" | "audit" | "integrations" | "portfolio"; title?: string } = {}) {
   const searchParams = useSearchParams();
-  const tab = searchParams.get("tab") || "users";
+  const tab = fixedTab ?? searchParams.get("tab") ?? "users";
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [audit, setAudit] = useState<AuditLogEntry[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([]);
@@ -61,18 +61,20 @@ export function GovernanceView() {
 
   return (
     <div className="space-y-6 px-6 py-6">
-      <SetPageChrome title="Governance" subtitle="Users, audit, integrations, and portfolio reports" />
-      <nav className="flex gap-4 border-b border-border pb-2 text-sm">
-        {TABS.map((item) => (
-          <Link
-            key={item.id}
-            href={`/governance?tab=${item.id}`}
-            className={tab === item.id ? "text-foreground" : "text-muted-foreground"}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <SetPageChrome title={title} subtitle="Review recorded actions and system activity." />
+      {fixedTab ? null : (
+        <nav className="flex gap-4 border-b border-border pb-2 text-sm">
+          {TABS.map((item) => (
+            <Link
+              key={item.id}
+              href={`/governance?tab=${item.id}`}
+              className={tab === item.id ? "text-foreground" : "text-muted-foreground"}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      )}
       {error ? <p className="text-sm text-foreground">{error}</p> : null}
 
       {tab === "users" ? (

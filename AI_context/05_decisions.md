@@ -144,3 +144,17 @@ GOLD-FARD-01 from upload time; that is not production-legal.
 not reopen a dual-control waiver.
 
 ---
+
+### D11 — Tesseract is the only served OCR engine · 2026-08-26
+
+**Decision:** The production OCR contract uses Tesseract only. The request field is
+retained as a compatibility string, but engine selection, health output, response
+metadata, compose defaults, and documentation all identify Tesseract. Surya is not a
+fallback or a supported runtime dependency.
+
+**Why:** Caller search found no active caller that required Surya, while the prior
+configuration named Surya even though the service was already producing Tesseract
+output. Removing the decorative path makes the runtime honest and reduces dependency
+and startup risk without changing the OCR response shape.
+
+---

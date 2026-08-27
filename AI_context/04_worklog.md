@@ -4,17 +4,32 @@
 
 | | |
 |---|---|
-| **Last updated** | 2026-08-19 |
+| **Last updated** | 2026-08-25 |
 | **Phase** | Matter Workbench product phase — Phase 1 shell |
 | **Branch** | `refactor/cds-backend-core` |
 | **Live case** | RUN 3 flagship `38e6069e-4c3d-4a41-94c8-8b9ecc92e069`. Visual corpus RUN 2 `5bcdb8eb-…`. Do not use RUN 1 `4673c7f2-…`. |
 | **Findings** | F10 🟢, F11 🟢, F12 🟢. Open: F7, F8. In progress: F3, F6. |
 | **Baseline CER/WER/F1** | ❌ pending sample PDFs (Q1) |
-| **Next action** | Walk RUN 2/3 on the Phase 1 Decision Strip. Do not start Inbox. |
+| **Next action** | Backend gold gaps re-verified by focused pytest. No backend patch needed from current evidence; next backend proof should be a fresh live RUN 3 only if new end-to-end evidence is required. |
 
 ---
 
 ## Log — append new entries at the top
+
+### 2026-08-25 — Backend gold verification only (no backend code changes)
+
+Scope was limited to backend files, backend tests, and AI context evidence for the
+remaining CDS original master plan gold gaps named after RUN 2.
+
+- Reviewed `AI_context/02_findings.md` and `AI_context/execution_reports/CDS_GOLD_001_RUN2_EXPLANATION_AND_NEXT_STEPS.md` against the current backend tests.
+- Re-ran focused backend proof only:
+  `python -m pytest backend/tests/test_cds_gold_001_semantics.py backend/tests/test_contextual_autofill.py backend/tests/test_exception_waivable.py backend/tests/test_next_action.py -q`
+- Result: `32 passed, 1 warning in 2.63s`. The warning is the existing default `APP_SECRET_KEY` config warning from `backend/app/core/config.py`.
+- Verified current tests still cover the named gold gaps:
+  sale deed area extraction/comparison, explicit Fard issue date parsing, historical-tax evidence detection, and waiver preservation / next-action behavior.
+- Because the focused proof is already green, no backend code change was justified in this pass.
+
+Evidence record: `AI_context/execution_reports/05_cds_gold_backend_verification_2026-08-25.md`.
 
 ### 2026-08-19 — Matter Workbench Phase 1 shell
 
@@ -288,3 +303,11 @@ fall back to fork + PR.
 
 **Next action when unblocked:** Phase 0 — repair the eval harness and produce a real
 baseline number.
+
+### 2026-08-26 — Runtime OCR/workbench verification
+
+- Docker OCR health endpoint returned 200 and identified `ocr_service` as healthy.
+- Startup logs show `requested_backend=surya` and `effective_backend=tesseract`; Surya is unavailable in the image and the service falls back to Tesseract.
+- On seeded `PILOT DEMO CASE`, authenticated workbench extraction returned 200 and evaluation returned 200 with findings and a blocked `FAIL` decision.
+- The workbench then reported one source document, findings, and `readiness=False`.
+- No OCR accuracy percentage is claimed: representative ground-truth samples remain unavailable, and the Surya fallback is an explicit release limitation.

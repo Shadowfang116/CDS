@@ -433,10 +433,13 @@ export async function updateCP(cpId: string, status: string, waiverReason?: stri
   });
 }
 
-export async function createCase(title: string): Promise<any> {
+export async function createCase(
+  title: string,
+  propertyContext?: { property_type?: string; property_regime?: string }
+): Promise<any> {
   return fetchApi('/cases', {
     method: 'POST',
-    body: JSON.stringify({ title }),
+    body: JSON.stringify({ title, ...propertyContext }),
   });
 }
 
@@ -552,6 +555,10 @@ export async function getPageDownloadUrl(documentId: string, pageNumber: number)
 
 export async function getPageThumbnailUrl(documentId: string, pageNumber: number): Promise<{ url: string; expires_in_seconds: number }> {
   return fetchApi(`/documents/${documentId}/pages/${pageNumber}/thumbnail`);
+}
+
+export function getPageRenderUrl(documentId: string, pageNumber: number): string {
+  return `/api/v1/documents/${documentId}/pages/${pageNumber}/render`;
 }
 
 export async function getPageOcrText(documentId: string, pageNumber: number): Promise<{ page_number: number; ocr_text: string; ocr_status: string; ocr_confidence: number | null }> {

@@ -1,10 +1,25 @@
 # Production Deployment Runbook
 
-Deploy Covenant Diligence Systems for on-prem pilots and bank IT. Copy/paste-friendly.
+Deploy Covenant Diligence Systems on a bank-controlled private Linux VM or on-prem server. Copy/paste-friendly.
 
 ---
 
-## 1. Prerequisites
+## 1. Recommended host profile
+
+Use a private Linux VM or on-prem server that the bank controls end to end. That is the safest default for this stack because it keeps PostgreSQL, MinIO, OCR output, audit data, and internal approval workflows inside a private network boundary.
+
+Minimum host profile:
+
+- Linux host with Docker Engine and Docker Compose v2
+- Enough CPU and RAM for the OCR and extraction services
+- Private network placement for Postgres, Redis, MinIO, API, worker, beat, and OCR services
+- Public exposure limited to the reverse proxy only
+- DNS and TLS ownership controlled by the deployment operator
+- Off-host backup storage with a tested restore path
+
+Do not use a public cloud deployment until the data residency, object storage, key management, backup, and network design are explicitly reviewed and approved.
+
+## 2. Prerequisites
 
 - **Docker** and **Docker Compose** (v2+)
 - **Disk sizing (guidance):**
@@ -23,12 +38,14 @@ Ensure these ports are free or map them via your reverse proxy.
 
 ---
 
-## 2. One-command start
+## 3. Preflight and start
 
 ```powershell
 # From repo root
 cp .env.production.example .env.production
 # Edit .env.production: replace all placeholder secrets (see ENVIRONMENT_MATRIX.md)
+
+.\scripts\ops\preflight_prod.ps1
 
 docker compose -f docker-compose.prod.yml up -d --build
 ```
@@ -36,10 +53,11 @@ docker compose -f docker-compose.prod.yml up -d --build
 - The **migrate** service runs first (after `db` is healthy) and runs `alembic upgrade head`.
 - The **api** starts only after **migrate** has completed successfully.
 - If migration fails, the API does not start.
+- The preflight script checks for missing, placeholder, and short required secrets and verifies that `docker compose -f docker-compose.prod.yml config` renders successfully before the stack is started.
 
 ---
 
-## 3. Health verification
+## 4. Health verification
 
 - **API deep health:**  
   `GET https://<host>:8000/api/v1/health/deep`  
@@ -58,7 +76,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ---
 
-## 4. TLS / Reverse proxy (TLS-ready)
+## 5. TLS / Reverse proxy (TLS-ready)
 
 TLS is not mandatory for internal pilots; for production-facing deployments use a reverse proxy.
 
@@ -104,14 +122,31 @@ YOUR_PUBLIC_HOSTNAME {
 
 ---
 
-## 5. Access model
+## 6. Backups
+
+- Back up PostgreSQL and MinIO before each release.
+- Store backups off-host or in a separate protected storage target.
+- Test at least one full restore before first production go-live and after any major storage or migration change.
+- Keep the restore commands from [BACKUP_AND_RESTORE.md](./BACKUP_AND_RESTORE.md) available on the operator workstation.
+
+## 7. Rollback
+
+Rollback is code rollback plus data restore when needed.
+
+- Revert to the previous git tag or image revision.
+- If the schema is incompatible with the new code, restore the Postgres snapshot taken before the release.
+- Restore MinIO if object paths or storage layout changed.
+- Re-run migrations only if the restored code expects them.
+- Validate the health endpoint and one representative workflow before declaring the rollback complete.
+
+## 8. Access model
 
 - **Roles:** Admin, Reviewer, Approver, Viewer (see product docs).
 - **Tenant isolation:** All data is scoped by **org_id**. The **org_id** is never taken from the client; it is derived from the authenticated user session (JWT and server-side role mapping). Client-supplied org is ignored for authorization.
 
 ---
 
-## 6. Daily operations
+## 9. Daily operations
 
 - **Backups:** See [BACKUP_AND_RESTORE.md](./BACKUP_AND_RESTORE.md) for Postgres (pg_dump custom) and MinIO (mc mirror / volume).
 - **Retention:** Runs automatically daily at 2:00 UTC (Celery beat). Manual trigger and dry-run are documented in BACKUP_AND_RESTORE.md.
@@ -119,7 +154,7 @@ YOUR_PUBLIC_HOSTNAME {
 
 ---
 
-## 7. Upgrade procedure
+## 10. Upgrade procedure
 
 1. **Pre-upgrade:** Take backups (Postgres + MinIO). See [BACKUP_AND_RESTORE.md](./BACKUP_AND_RESTORE.md).
 2. Pull new version (e.g. `git pull` or pull new image tags).
@@ -131,11 +166,11 @@ YOUR_PUBLIC_HOSTNAME {
 
 ---
 
-## 8. Preflight and diagnostics
+## 11. Preflight and diagnostics
 
 - **Preflight (before start):**  
   `.\scripts\ops\preflight_prod.ps1`  
-  Checks Docker, Compose, `.env.production`, required vars, and warns on placeholders/short secrets.
+  Checks Docker, Compose, `.env.production`, required secrets, and renders the production Compose config.
 
 - **Collect diagnostics (during incidents):**  
   `.\scripts\ops\collect_diagnostics.ps1`  

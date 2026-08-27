@@ -1,17 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 const CHECKLIST_STORAGE_KEY = 'bdp_checklist';
 
 const CHECKLIST_STEPS = [
-  { id: 'open_demo_case', label: 'Open demo case' },
-  { id: 'review_documents', label: 'Review documents' },
-  { id: 'verify_ocr_fields', label: 'Verify OCR fields' },
-  { id: 'review_exceptions', label: 'Review exceptions' },
-  { id: 'check_cp_list', label: 'Check CP list' },
-  { id: 'generate_bank_pack', label: 'Generate bank pack' },
+  { id: 'open_demo_case', label: 'Create or open a matter' },
+  { id: 'review_documents', label: 'Review required evidence' },
+  { id: 'verify_ocr_fields', label: 'Confirm extracted fields' },
+  { id: 'review_exceptions', label: 'Resolve risks and missing information' },
+  { id: 'check_cp_list', label: 'Complete conditions precedent' },
+  { id: 'generate_bank_pack', label: 'Prepare the bank pack for review' },
 ] as const;
 
 type ChecklistState = {
@@ -58,7 +58,6 @@ function persistChecklist(state: ChecklistState): void {
 
 export function OnboardingChecklist() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [open, setOpen] = useState(true);
   const [completed, setCompleted] = useState<Record<string, boolean>>({});
 
@@ -69,7 +68,7 @@ export function OnboardingChecklist() {
   }, []);
 
   useEffect(() => {
-    const tab = searchParams.get('tab');
+    const tab = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('tab');
     const updates: Record<string, boolean> = {};
 
     if (isCaseDetailPath(pathname)) {
@@ -105,7 +104,7 @@ export function OnboardingChecklist() {
       persistChecklist({ open, completed: merged });
       return merged;
     });
-  }, [open, pathname, searchParams]);
+  }, [open, pathname]);
 
   const completion = useMemo(() => {
     const done = CHECKLIST_STEPS.filter((step) => completed[step.id]).length;

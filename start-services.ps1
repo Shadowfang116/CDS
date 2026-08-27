@@ -17,9 +17,17 @@ if (-not (Test-Path ".env")) {
 
 Write-Host "Starting the full local stack..." -ForegroundColor Green
 docker compose up -d --build
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Docker Compose could not start the local stack. Make sure Docker Desktop's Linux engine is running, then try again." -ForegroundColor Red
+    exit $LASTEXITCODE
+}
 
 Write-Host "Applying database migrations..." -ForegroundColor Green
 docker compose exec -T api alembic upgrade head
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Database migrations failed. Check the API container logs before trying again." -ForegroundColor Red
+    exit $LASTEXITCODE
+}
 
 Write-Host ""
 Write-Host "Local stack is up." -ForegroundColor Green

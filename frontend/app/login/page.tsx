@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { BRAND } from '@/lib/brand';
 import { ApiError, getMe, login } from '@/lib/api';
 import { Atmosphere } from '@/components/cds/atmosphere';
+import { RetropcAscii } from '@/components/cds/retropc-ascii';
 
 const LOGIN_FIELD_CLASS =
   'h-11 rounded-[2px] border-border bg-transparent shadow-none transition-[border-color] duration-[180ms] ease-out focus-visible:border-foreground focus-visible:ring-0 focus-visible:ring-offset-0';
@@ -22,6 +23,7 @@ function LoginPageContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [serviceMessage, setServiceMessage] = useState('');
   const [lockMessage, setLockMessage] = useState('');
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,8 +38,10 @@ function LoginPageContent() {
         if (mounted) {
           router.replace(currentUser?.must_change_password ? '/change-password' : nextPath);
         }
-      } catch {
-        // Stay on the login page when there is no valid session.
+      } catch (sessionError) {
+        if (sessionError instanceof ApiError && sessionError.status === 503 && mounted) {
+          setServiceMessage('The CDS API is unavailable. You can still enter your credentials, but sign-in will not complete until the service is running.');
+        }
       }
     };
 
@@ -64,6 +68,7 @@ function LoginPageContent() {
 
     setLoading(true);
     setError('');
+    setServiceMessage('');
     setLockMessage('');
     setForgotPasswordMessage('');
 
@@ -71,7 +76,11 @@ function LoginPageContent() {
       const user = await login(normalizedEmail, password);
       router.replace(user?.must_change_password ? '/change-password' : nextPath);
     } catch (loginError: unknown) {
-      setError('Invalid credentials. Please try again.');
+      if (loginError instanceof ApiError && loginError.status === 503) {
+        setServiceMessage('The CDS API is unavailable. Start the local API service and try again.');
+      } else {
+        setError('Invalid credentials. Please try again.');
+      }
       if (loginError instanceof ApiError) {
         const lockedUntil =
           loginError.originalError?.detail?.locked_until
@@ -91,16 +100,18 @@ function LoginPageContent() {
   return (
     <div className="relative min-h-screen bg-background text-foreground" data-page="login" data-surface="atmosphere">
       <Atmosphere enabled behind />
+      <RetropcAscii />
       <div className="relative z-10 mx-auto flex min-h-screen max-w-[1440px] flex-col px-8 py-8 sm:px-10 lg:px-16 lg:py-10">
         <header className="flex items-baseline justify-between gap-6">
           <p className="cds-meta text-muted-foreground">{BRAND.short}</p>
           <p className="cds-meta tabular text-muted-foreground">01 / Secure access</p>
         </header>
 
-        <main className="cds-login-stack mt-8 flex flex-col lg:mt-10">
+        <main className="cds-login-stack relative mt-8 flex w-full max-w-[520px] flex-col lg:mt-10">
+          <div className="pointer-events-none absolute -inset-6 -z-10 rounded-[2px] border border-border/60 bg-background/[.9] shadow-2xl backdrop-blur-md sm:-inset-8" aria-hidden="true" />
           <div className="space-y-4">
             <h1 className="cds-login-display">
-              <span className="block whitespace-nowrap">Covenant Diligence</span>
+              <span className="block break-words sm:whitespace-nowrap">Covenant Diligence</span>
               <span className="block">Systems</span>
             </h1>
             <p className="cds-login-subtitle max-w-md text-sm leading-6">
@@ -145,9 +156,10 @@ function LoginPageContent() {
                 className={LOGIN_FIELD_CLASS}
               />
             </div>
-            {error ? <p className="text-sm text-primary">{error}</p> : null}
+            {error ? <p role="alert" className="text-sm text-primary">{error}</p> : null}
             {lockMessage ? <p className="text-sm text-muted-foreground">{lockMessage}</p> : null}
             {forgotPasswordMessage ? <p className="text-sm text-muted-foreground">{forgotPasswordMessage}</p> : null}
+            {serviceMessage ? <p role="status" className="text-sm text-muted-foreground">{serviceMessage}</p> : null}
             <Button type="submit" className={LOGIN_BUTTON_CLASS} loading={loading}>
               <span>{loading ? 'Signing in' : 'Sign in'}</span>
               {loading ? null : <ArrowRight className="cds-login-cta-arrow" />}

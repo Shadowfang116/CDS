@@ -22,29 +22,29 @@ import { TimeseriesEntry, ExceptionsBySeverity } from '@/lib/api';
 
 // Centralized color palette for dark theme
 export const chartPalette = {
-  primary: '#7a856f',
-  secondary: '#948167',
-  tertiary: '#ab764d',
-  high: '#bd5a56',
-  medium: '#b8975f',
-  low: '#6f8c73',
-  muted: '#4a525b',
-  background: '#1d2227',
-  text: '#eceff2',
-  textMuted: '#a7afb7',
-  selected: '#f5f1e8',
+  primary: 'hsl(var(--sage))',
+  secondary: 'hsl(var(--gold))',
+  tertiary: 'hsl(26 40% 40%)',
+  high: 'hsl(var(--status-high))',
+  medium: 'hsl(var(--status-medium))',
+  low: 'hsl(var(--status-low))',
+  muted: 'hsl(var(--status-neutral))',
+  background: 'hsl(var(--surface))',
+  text: 'hsl(var(--foreground))',
+  textMuted: 'hsl(var(--muted-foreground))',
+  selected: 'hsl(var(--paper))',
 };
 
 // Status colors for bar chart
 const statusColors: Record<string, string> = {
-  New: '#7a856f',
-  Processing: '#6e7a65',
-  Review: '#b8975f',
-  'Pending Docs': '#ab764d',
-  'Ready for Approval': '#6f8c73',
-  Approved: '#6f8c73',
-  Rejected: '#bd5a56',
-  Closed: '#6a737d',
+  New: 'hsl(var(--sage))',
+  Processing: 'hsl(var(--status-neutral))',
+  Review: 'hsl(var(--status-medium))',
+  'Pending Docs': 'hsl(26 40% 40%)',
+  'Ready for Approval': 'hsl(var(--status-good))',
+  Approved: 'hsl(var(--status-good))',
+  Rejected: 'hsl(var(--status-high))',
+  Closed: 'hsl(var(--status-neutral))',
 };
 
 // Severity type

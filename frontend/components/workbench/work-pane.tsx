@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DossierFieldsEditor } from "@/components/case/DossierFieldsEditor";
 import { FindingsList } from "@/components/workbench/findings-list";
 import { CdsPill, severityTone } from "@/components/ui/cds-pill";
@@ -10,7 +10,6 @@ import { FindingRow, pendingWaiverExceptionIds, canonicalDocType } from "@/lib/w
 import { acknowledgementsComplete, canSelfApprove, submitBlocker, submitEnabled } from "@/lib/workbench/submit-gate";
 
 type WorkMode = "findings" | "dossier" | "decide";
-type FindingFilter = "all" | "exception" | "cp";
 
 export type WorkbenchExport = {
   id: string;
@@ -25,6 +24,8 @@ type WorkPaneProps = {
   findings: FindingRow[];
   selectedFindingId: string | null;
   focusField: string | null;
+  openEditor?: boolean;
+  initialMode?: WorkMode;
   pendingWaiverIds?: Iterable<string>;
   nextAction?: string | null;
   onSelectFinding: (item: FindingRow) => void;
@@ -52,6 +53,7 @@ type WorkPaneProps = {
   busy?: boolean;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  showDecisionDock?: boolean;
 };
 
 function compareCards(item: FindingRow, documents: any[]) {
@@ -88,6 +90,8 @@ export function WorkPane({
   findings,
   selectedFindingId,
   focusField,
+  openEditor = false,
+  initialMode,
   pendingWaiverIds,
   nextAction,
   onSelectFinding,
@@ -115,10 +119,14 @@ export function WorkPane({
   busy,
   collapsed,
   onToggleCollapse,
+  showDecisionDock = false,
 }: WorkPaneProps) {
-  const [mode, setMode] = useState<WorkMode>(focusField ? "dossier" : "findings");
-  const [filter, setFilter] = useState<FindingFilter>("all");
+  const [mode, setMode] = useState<WorkMode>(initialMode ?? (focusField ? "dossier" : "findings"));
   const [acked, setAcked] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (initialMode) setMode(initialMode);
+  }, [initialMode]);
 
   const gate = {
     ready: Boolean(readiness?.ready),
@@ -170,31 +178,20 @@ export function WorkPane({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[hsl(var(--surface))]">
-      <div className="flex h-[52px] items-center gap-[22px] border-b border-border px-4 text-[11px]">
-        {(["findings", "dossier", "decide"] as const).map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={mode === item ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}
-            onClick={() => setMode(item)}
-          >
-            {item === "findings" ? "Findings" : item === "dossier" ? "Confirm" : "Decide"}
+      {onToggleCollapse ? (
+        <div className="flex h-[52px] items-center justify-end border-b border-border px-4 text-[11px]">
+          <button type="button" className="cds-meta text-muted-foreground" onClick={onToggleCollapse} aria-label="Close review panel">
+            Close
           </button>
-        ))}
-        <span className="flex-1" />
-        {onToggleCollapse ? (
-          <button type="button" className="cds-meta text-muted-foreground" onClick={onToggleCollapse} aria-label="Collapse work pane">
-            Collapse
-          </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {mode === "findings" ? (
         <div className="min-h-0 flex-1 overflow-y-auto px-[18px] py-4">
           {selected ? (
             <div className="flex flex-col gap-2.5">
               <p className="cds-meta">
-                {selected.rule_id ?? (selected.kind === "cp" ? "CP" : "Finding")}
+                {selected.rule_id ?? (selected.kind === "cp" ? "Approval requirement" : "Issue")}
                 {selected.module ? ` · ${selected.module}` : selected.kind === "exception" ? " · Title / Property" : ""}
               </p>
               <div className="flex flex-wrap items-center gap-2">
@@ -233,7 +230,7 @@ export function WorkPane({
               ) : null}
               {selected.cp_text ? (
                 <>
-                  <p className="cds-meta">Proposed CP</p>
+                  <p className="cds-meta">Proposed approval requirement</p>
                   <p className="text-[11px] leading-4 text-muted-foreground">{selected.cp_text}</p>
                 </>
               ) : null}
@@ -248,11 +245,11 @@ export function WorkPane({
                     onClick={onOpenEvidence ?? onAttachEvidence}
                     disabled={busy}
                   >
-                    Attach evidence
+                    Link source page as proof
                   </button>
                   {selected.kind === "exception" ? (
                     <button type="button" className="cds-btn cds-btn-ghost" onClick={() => onResolve(selected)} disabled={busy}>
-                      Resolve
+                      Mark issue resolved
                     </button>
                   ) : (
                     <button type="button" className="cds-btn cds-btn-ghost" onClick={() => onSatisfyCp(selected)} disabled={busy}>
@@ -274,6 +271,7 @@ export function WorkPane({
             caseId={caseId}
             documents={documents}
             focusField={focusField}
+            openEditor={openEditor}
             oneAtATime
             onJumpToEvidence={onJumpToEvidence}
           />
@@ -282,16 +280,9 @@ export function WorkPane({
 
       {mode === "decide" ? (
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 text-sm">
-          <div className="flex gap-3 border-b border-border pb-2 text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
-            {(["all", "exception", "cp"] as const).map((item) => (
-              <button key={item} type="button" className={filter === item ? "text-foreground" : undefined} onClick={() => setFilter(item)}>
-                {item === "all" ? "All" : item === "exception" ? "Exceptions" : "Conditions precedent"}
-              </button>
-            ))}
-          </div>
           <FindingsList
             items={findings}
-            filter={filter}
+            filter="all"
             selectedId={selectedFindingId}
             pendingWaiverIds={waiverIds}
             onSelect={onSelectFinding}
@@ -418,14 +409,14 @@ export function WorkPane({
         </div>
       ) : null}
 
-      {mode !== "decide" ? (
+      {showDecisionDock ? (
         <div className="shrink-0 border-t border-border bg-[hsl(var(--header))] px-[18px] py-4">
-          <p className="cds-meta">Decision readiness</p>
+          <p className="cds-meta">Ready to submit?</p>
           <p className="mt-2 text-[16px] font-semibold leading-[23px] text-foreground">
             {readiness?.ready ? "Ready for approval" : "Not ready for approval"}
           </p>
           <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
-            {highOpen} blocking High findings · {openCps} CPs open
+            {highOpen} high-priority issues · {openCps} approval requirements open
           </p>
           <div className="relative mt-2.5 h-1.5 w-full rounded-[3px] bg-border">
             <div

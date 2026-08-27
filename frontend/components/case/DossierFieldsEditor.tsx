@@ -15,6 +15,7 @@ interface DossierFieldsEditorProps {
   caseId: string;
   documents?: any[]; // Passed from parent (single source of truth) - if provided, don't fetch independently
   focusField?: string | null;
+  openEditor?: boolean;
   oneAtATime?: boolean;
   onJumpToEvidence?: (documentId: string, page?: number) => void;
 }
@@ -88,6 +89,7 @@ export function DossierFieldsEditor({
   caseId,
   documents: documentsProp,
   focusField,
+  openEditor = false,
   oneAtATime,
   onJumpToEvidence,
 }: DossierFieldsEditorProps) {
@@ -272,13 +274,13 @@ export function DossierFieldsEditor({
     : fields;
 
   useEffect(() => {
-    if (!focusField) return;
+    if (!openEditor || !focusField) return;
     const match = fields.find((field) => field.field_key === focusField);
     if (match && !editingField) {
       handleEdit(match);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusField, fields]);
+  }, [focusField, fields, openEditor]);
 
   const groupedFields: Record<string, DossierFieldItem[]> = {};
   displayFields.forEach(field => {

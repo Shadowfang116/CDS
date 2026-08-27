@@ -29,6 +29,37 @@ import {
   processState,
   processStateLabel,
 } from "./required-evidence";
+import {
+  dashboardSectionFromPath,
+  findingNextStep,
+  findingRequestLabel,
+  isDashboardNavActive,
+  ocrReviewNotice,
+  ocrStatusLabel,
+  requirementNextStep,
+  summarizeInboxItem,
+} from "../cds-review-ui";
+import { resolveApiBaseUrl } from "../runtime-config";
+import { formatDocumentType, getQualityToneClass } from "../../components/documents/document-viewer-format";
+
+assert.equal(
+  resolveApiBaseUrl({ API_INTERNAL_BASE_URL: undefined, API_BASE_URL: undefined, NODE_ENV: "development" }),
+  "http://localhost:8000"
+);
+assert.equal(dashboardSectionFromPath("/dashboard"), "dashboard");
+assert.equal(dashboardSectionFromPath("/dashboard/documents"), "documents");
+assert.equal(dashboardSectionFromPath("/dashboard/cp"), "cp");
+assert.equal(isDashboardNavActive("/dashboard/cases/case-1", "/dashboard/cases"), true);
+assert.equal(isDashboardNavActive("/dashboard", "/dashboard"), true);
+assert.equal(ocrStatusLabel("complete"), "Text extracted");
+assert.match(ocrReviewNotice("complete", 96) ?? "", /provisional/i);
+assert.match(ocrReviewNotice("failed", null) ?? "", /manual review/i);
+assert.equal(
+  resolveApiBaseUrl({ API_INTERNAL_BASE_URL: "http://api:8000", API_BASE_URL: "http://localhost:8000", NODE_ENV: "production" }),
+  "http://api:8000"
+);
+assert.equal(formatDocumentType("REGISTERED_SALE_DEED"), "REGISTERED SALE DEED".replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()));
+assert.equal(getQualityToneClass("good"), "cds-quality-good");
 
 const grouped = groupFindings(
   [
@@ -46,7 +77,7 @@ assert.equal(canSelfApprove("u1", "u1"), true);
 assert.equal(canSelfApprove("u1", "u2"), false);
 assert.equal(canWaiveFinding({ id: "e3", kind: "exception", severity: "High", status: "Open", title: "X", waivable: false }), false);
 assert.equal(
-  clientNextAction({ hardStopTitle: "Title chain", unconfirmedKeyField: "party.name.borrower" }).startsWith("Clear hard-stop"),
+  clientNextAction({ hardStopTitle: "Title chain", unconfirmedKeyField: "party.name.borrower" }).startsWith("Resolve blocking issue"),
   true
 );
 
@@ -65,15 +96,17 @@ assert.equal(canProposeWaiver(goldTax, ["tax-1"]), false);
 assert.deepEqual(pendingWaiverExceptionIds([{ request_type: "exception_waive", payload_json: { exception_id: "tax-1" } }]), ["tax-1"]);
 assert.equal(
   clientNextAction({ openLowTitle: "Historical property tax" }),
-  "Review exception: Historical property tax"
+  "Review issue: Historical property tax"
 );
 assert.equal(
   clientNextAction({
     openLowTitle: "Historical property tax",
     missingRequiredCausingHigh: isKycNoiseLabel("Salary slip") ? null : "Salary slip",
   }),
-  "Review exception: Historical property tax"
+  "Review issue: Historical property tax"
 );
+assert.equal(clientNextAction({ status: "NEW" }), "Review matter readiness");
+assert.equal(findingRequestLabel(goldTax), "Request Property Tax / PT-10");
 assert.equal(isKycNoiseLabel("Salary slip"), true);
 assert.equal(isKycNoiseLabel("Approved building plan"), false);
 assert.equal(submitEnabled({ ready: true, blockedReasons: [], decision: "FAIL" }), false);
@@ -166,6 +199,42 @@ const oldFard = fileDoc({
   doc_type: "Fard",
   created_at: "2026-01-15T00:00:00Z",
 });
+assert.match(
+  requirementNextStep({
+    id: "sale_deed",
+    label: "Registered Sale Deed",
+    legalState: "missing",
+    preferred: null,
+    prior: [],
+    requiredByFinding: false,
+    section: "required",
+  }),
+  /Upload Registered Sale Deed/i
+);
+assert.match(
+  requirementNextStep({
+    id: "current_fard",
+    label: "Current Fard",
+    legalState: "weak",
+    preferred: oldFard,
+    prior: [],
+    requiredByFinding: true,
+    section: "required",
+  }),
+  /Replace or confirm/i
+);
+assert.match(
+  findingNextStep(
+    toExceptionFinding({
+      id: "plan-1",
+      rule_id: "GOLD-PLAN-01",
+      status: "Open",
+      title: "Approved building plan missing",
+      resolution_conditions: "Approved building plan is required before submission",
+    })
+  ),
+  /approved building plan/i
+);
 const staleView = buildFileCompleteness([oldFard], [staleFardFinding], companyFields);
 const staleFardRow = staleView.required.find((row) => row.id === "current_fard");
 assert.equal(staleFardRow?.legalState, "weak");
@@ -241,5 +310,25 @@ assert.equal(classifiedPlanView.required.find((row) => row.id === "building_plan
 const selectedPlanView = buildFileCompleteness([], [planFinding], companyFields, "plan-1");
 assert.equal(selectedPlanView.required.find((row) => row.id === "building_plan")?.requiredByFinding, true);
 assert.equal(selectedPlanView.required.find((row) => row.id === "current_fard")?.requiredByFinding, false);
+
+const hardStopSummary = summarizeInboxItem({
+  open_hard_stop: 1,
+  open_high: 1,
+  open_medium: 0,
+  open_cps: 0,
+  next_action: "Clear hard-stop: Title chain",
+});
+assert.equal(hardStopSummary.label, "Hard-stop open");
+assert.match(hardStopSummary.action, /Clear hard-stop/i);
+
+const missingInfoSummary = summarizeInboxItem({
+  open_hard_stop: 0,
+  open_high: 1,
+  open_medium: 0,
+  open_cps: 0,
+  next_action: "Attach required evidence: Dues Clearance",
+});
+assert.equal(missingInfoSummary.label, "Missing information");
+assert.match(missingInfoSummary.action, /Dues Clearance/i);
 
 console.log("workbench unit tests passed");

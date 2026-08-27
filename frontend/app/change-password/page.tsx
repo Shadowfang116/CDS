@@ -76,7 +76,7 @@ export default function ChangePasswordPage() {
     <div className="min-h-screen bg-[rgba(15,18,22,0.98)] px-4 py-10 text-stone-100 sm:px-6">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-[1100px] items-center justify-center">
         <div className="grid w-full gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <section className="rounded-[28px] border border-[rgba(127,138,149,0.18)] bg-[linear-gradient(180deg,rgba(19,23,28,0.98),rgba(13,16,20,0.98))] p-8 shadow-[0_26px_70px_rgba(0,0,0,0.24)]">
+          <section className="rounded-xl border border-[rgba(127,138,149,0.18)] bg-[linear-gradient(180deg,rgba(19,23,28,0.98),rgba(13,16,20,0.98))] p-8 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <div className="space-y-6">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[rgba(127,138,149,0.24)] bg-[rgba(28,34,38,0.96)] font-display text-[1.75rem] font-semibold tracking-[-0.06em] text-stone-100">
                 {BRAND.short}
@@ -92,7 +92,7 @@ export default function ChangePasswordPage() {
                   Admin-created accounts remain restricted until the temporary password is replaced. Your session will open the dashboard after a successful reset.
                 </p>
               </div>
-              <div className="rounded-2xl border border-[rgba(127,138,149,0.16)] bg-[rgba(24,28,32,0.72)] p-4 text-sm text-[rgba(198,204,210,0.76)]">
+              <div className="rounded-lg border border-[rgba(127,138,149,0.16)] bg-[rgba(24,28,32,0.72)] p-4 text-sm text-[rgba(198,204,210,0.76)]">
                 <p>{email || 'Authenticated account'}</p>
                 <p className="mt-2 text-[rgba(167,175,183,0.72)]">
                   Use a unique password reserved for this diligence system.
@@ -101,13 +101,14 @@ export default function ChangePasswordPage() {
             </div>
           </section>
 
-          <section className="rounded-[28px] border border-[rgba(127,138,149,0.18)] bg-[rgba(22,27,32,0.98)] p-8 shadow-[0_26px_70px_rgba(0,0,0,0.24)]">
+          <section className="rounded-xl border border-[rgba(127,138,149,0.18)] bg-[rgba(22,27,32,0.98)] p-8 shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-[rgba(167,175,183,0.72)]">
+                <label htmlFor="current-password" className="text-[11px] font-medium uppercase tracking-[0.18em] text-[rgba(167,175,183,0.72)]">
                   Current Password
                 </label>
                 <Input
+                  id="current-password"
                   type="password"
                   value={currentPassword}
                   onChange={(event) => setCurrentPassword(event.target.value)}
@@ -118,10 +119,11 @@ export default function ChangePasswordPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-[rgba(167,175,183,0.72)]">
+                <label htmlFor="new-password" className="text-[11px] font-medium uppercase tracking-[0.18em] text-[rgba(167,175,183,0.72)]">
                   New Password
                 </label>
                 <Input
+                  id="new-password"
                   type="password"
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
@@ -132,10 +134,11 @@ export default function ChangePasswordPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-[rgba(167,175,183,0.72)]">
+                <label htmlFor="confirm-password" className="text-[11px] font-medium uppercase tracking-[0.18em] text-[rgba(167,175,183,0.72)]">
                   Confirm New Password
                 </label>
                 <Input
+                  id="confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(event) => setConfirmPassword(event.target.value)}
@@ -146,7 +149,7 @@ export default function ChangePasswordPage() {
               </div>
 
               {error ? (
-                <p className="rounded-lg border border-[rgba(170,88,84,0.42)] bg-[rgba(88,34,33,0.32)] px-3 py-2 text-sm text-[rgba(255,211,208,0.9)]">
+                <p role="alert" className="rounded-lg border border-[rgba(170,88,84,0.42)] bg-[rgba(88,34,33,0.32)] px-3 py-2 text-sm text-[rgba(255,211,208,0.9)]">
                   {error}
                 </p>
               ) : null}

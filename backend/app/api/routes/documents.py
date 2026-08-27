@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status, UploadFile, File
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.session import get_db
@@ -21,6 +21,7 @@ from app.services.pdf_splitter import split_pdf, PDFSplitError
 from app.services.doc_convert import convert_docx_bytes_to_pdf, DocConvertError
 from app.core.middleware import sanitize_filename
 from app.services.rule_engine import infer_doc_type_from_filename
+from app.services.documents.pdf_render import get_page_image_bytes
 
 router = APIRouter(tags=["documents"])
 
@@ -566,6 +567,37 @@ async def download_page(
     )
     
     return PresignedUrlResponse(url=url, expires_in_seconds=DOWNLOAD_URL_EXPIRES_SECONDS)
+
+
+@router.get("/documents/{document_id}/pages/{page_number}/render")
+async def render_page(
+    document_id: uuid.UUID,
+    page_number: int,
+    org_id: uuid.UUID = Depends(require_tenant_scope),
+    _current_user: CurrentUser = Depends(require_viewer),
+    db: Session = Depends(get_db),
+):
+    """Render a review-sized PNG for the in-app evidence viewer."""
+    document = db.query(Document).filter(
+        Document.id == document_id,
+        Document.org_id == org_id,
+    ).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    page = db.query(DocumentPage).filter(
+        DocumentPage.document_id == document_id,
+        DocumentPage.org_id == org_id,
+        DocumentPage.page_number == page_number,
+    ).first()
+    if not page:
+        raise HTTPException(status_code=404, detail="Page not found")
+
+    image_bytes = get_page_image_bytes(page.minio_key_page_pdf)
+    if not image_bytes:
+        raise HTTPException(status_code=404, detail="Page render unavailable")
+
+    return Response(content=image_bytes, media_type="image/png", headers={"Cache-Control": "private, max-age=300"})
 
 
 

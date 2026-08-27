@@ -6,14 +6,14 @@ import { Moon, Sun } from 'lucide-react'
 const THEME_KEY = 'bdp_theme'
 
 function getStoredTheme(): 'dark' | 'light' {
-  if (typeof window === 'undefined') return 'dark'
+  if (typeof window === 'undefined') return 'light'
   try {
     const v = localStorage.getItem(THEME_KEY)
-    if (v === 'light') return 'light'
+    if (v === 'dark') return 'dark'
   } catch {
     // ignore
   }
-  return 'dark'
+  return 'light'
 }
 
 function applyTheme(theme: 'dark' | 'light') {
@@ -33,7 +33,7 @@ function applyTheme(theme: 'dark' | 'light') {
 }
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const [theme, setTheme] = React.useState<'dark' | 'light'>('dark')
+  const [theme, setTheme] = React.useState<'dark' | 'light'>('light')
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -57,7 +57,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggle}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
       className={[
-        'flex size-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
+        'cds-hit-target flex size-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
         className ?? '',
       ].join(' ')}
     >

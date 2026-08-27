@@ -147,7 +147,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-xs font-medium text-stone-400 hover:text-stone-200"
+                className="cds-hit-target px-2 text-xs font-medium text-stone-400 hover:text-stone-200"
               >
                 Mark all read
               </button>
@@ -215,7 +215,7 @@ export function NotificationBell() {
                 setIsOpen(false);
                 router.push('/approvals');
               }}
-              className="text-xs font-medium text-stone-400 hover:text-stone-200"
+              className="cds-hit-target px-2 text-xs font-medium text-stone-400 hover:text-stone-200"
             >
               View all activity
             </button>

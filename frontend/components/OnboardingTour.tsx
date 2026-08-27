@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 import {
-  ONBOARDING_OPEN_EVENT,
   ONBOARDING_STEPS,
   ONBOARDING_STORAGE_KEY,
   type OnboardingStep,
 } from '@/lib/onboarding-steps';
+import { ONBOARDING_OPEN_EVENT } from '@/lib/help';
 
 type OnboardingTourProps = {
   steps?: OnboardingStep[];
@@ -45,6 +46,7 @@ function writeStorage(key: string, value: string): void {
 }
 
 export function OnboardingTour({ steps = ONBOARDING_STEPS }: OnboardingTourProps) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<RectLike | null>(null);
@@ -52,7 +54,7 @@ export function OnboardingTour({ steps = ONBOARDING_STEPS }: OnboardingTourProps
   const currentStep = steps[stepIndex];
 
   useEffect(() => {
-    if (readStorage(ONBOARDING_STORAGE_KEY) !== 'true') {
+    if (pathname === '/dashboard' && readStorage(ONBOARDING_STORAGE_KEY) !== 'true') {
       setOpen(true);
       setStepIndex(0);
     }
@@ -66,7 +68,7 @@ export function OnboardingTour({ steps = ONBOARDING_STEPS }: OnboardingTourProps
     return () => {
       window.removeEventListener(ONBOARDING_OPEN_EVENT, handleOpen);
     };
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open || !currentStep) {

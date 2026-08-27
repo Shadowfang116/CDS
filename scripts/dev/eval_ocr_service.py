@@ -27,7 +27,7 @@ def evaluate_ocr_service(
     manifest_path: Path,
     samples_dir: Path,
     output_dir: Path,
-    engine: str = "surya",
+    engine: str = "tesseract",
 ) -> Dict[str, Any]:
     """Evaluates the running ocr_service microservice against golden samples."""
     if not manifest_path.exists():
@@ -120,7 +120,7 @@ def main():
     parser.add_argument("--manifest", default="datasets/urdu_ocr/manifests/manifest.json", help="Manifest JSON path")
     parser.add_argument("--samples", default="datasets/urdu_ocr/samples", help="Samples directory path")
     parser.add_argument("--out", default="datasets/urdu_ocr/reports", help="Output report directory")
-    parser.add_argument("--engine", default="surya", help="OCR engine to request")
+    parser.add_argument("--engine", default="tesseract", help="OCR engine to request; the service runs Tesseract")
     args = parser.parse_args()
 
     project_root = Path(__file__).resolve().parent.parent.parent

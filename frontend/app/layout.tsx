@@ -16,11 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("dark", "font-sans", switzer.variable, array.variable, sourceSerifDisplay.variable, notoNastaliqUrdu.variable)} suppressHydrationWarning>
+    <html lang="en" className={cn("light", "font-sans", switzer.variable, array.variable, sourceSerifDisplay.variable, notoNastaliqUrdu.variable)} suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('bdp_theme');if(t==='light'){document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}else{document.documentElement.classList.add('dark');}}catch(e){}})();`,
+          __html: `(function(){try{var t=localStorage.getItem('bdp_theme');if(t==='dark'){document.documentElement.classList.remove('light');document.documentElement.classList.add('dark');}else{document.documentElement.classList.remove('dark');document.documentElement.classList.add('light');}}catch(e){}})();`,
           }}
         />
       </head>

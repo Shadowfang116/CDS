@@ -5,19 +5,24 @@ stop on an unanswered question unless the default is marked ⛔ BLOCKING.
 
 When one is answered, move it to `05_decisions.md` with the date and delete it here.
 
+Current status: the previously blocking corpus/ground-truth question is answered by the
+local Urdu corpus at `C:\Users\fahad\Downloads\CDS_GOLD_001_URDU_PDF_CORPUS`. Its gold
+truth was used for separate 12-file initial and 5-file additional runs on 2026-08-26.
+
 ---
 
-### Q1 — Sample documents + ground truth ⛔ BLOCKING
+### Q1 — Sample documents + ground truth (historical; resolved 2026-08-26)
 
-**Asked:** 2026-08-15 · **Status:** open
+**Asked:** 2026-08-15 · **Status:** resolved by external local corpus
 
-Need ~20-30 representative pages with ground-truth text in
+Originally needed ~20-30 representative pages with ground-truth text in
 `datasets/urdu_ocr/samples/`. Format is specified in `datasets/urdu_ocr/README.md`;
 the existing manifest expects `sample1.pdf` + `sample1.page1.txt` + `sample1.page2.txt`
 and none of those files are in the repo.
 
-**Default if unanswered:** ⛔ none. There is no substitute. Without ground truth there
-is no baseline, no proof of improvement, and no way to confirm the 65% figure.
+**Resolution:** the external corpus supplies 17 synthetic PDFs, `gold_truth.yaml`,
+`README_TEST_CASE.md`, and `SOURCE_BASIS.md`; the execution report is recorded in
+`AI_context/execution_reports/cds_gold_001_e2e_20260826-165739.json`.
 
 **Partial unblock:** synthetic or public-domain Urdu documents would let the *harness*
 be built and smoke-tested (Phase 0.1–0.4), but cannot produce a meaningful accuracy

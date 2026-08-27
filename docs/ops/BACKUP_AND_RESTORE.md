@@ -2,6 +2,8 @@
 
 This runbook covers **PostgreSQL** and **MinIO** backup/restore for Covenant Diligence Systems in production. Use the scripts under `scripts/ops/` (Windows PowerShell) or run the equivalent commands manually.
 
+For production, pair these backups with a bank-controlled private Linux VM or on-prem host, off-host backup storage, and a tested restore target. Backups are only useful if the restore path is exercised before go-live and after major storage or migration changes.
+
 ---
 
 ## 1. PostgreSQL backup (pg_dump custom format)
@@ -174,3 +176,5 @@ docker compose -f docker-compose.prod.yml exec -T worker python -c "from app.wor
 - Retention (Phase 9) deletes **Closed** cases older than `RETENTION_DAYS`; backups may still contain that data until the next backup.
 - Keep backups for at least as long as your compliance requires (e.g. ≥ RETENTION_DAYS).
 - Encrypt backups at rest where required by policy.
+- Store at least one backup copy off the production host.
+- Test restore on a separate target before relying on a backup policy in production.

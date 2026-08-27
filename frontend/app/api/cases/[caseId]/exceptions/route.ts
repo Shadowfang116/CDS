@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
-
-const API_INTERNAL_BASE_URL = (
-  process.env.API_INTERNAL_BASE_URL || process.env.API_BASE_URL || "http://localhost:8000"
-).replace(/\/+$/, "");
+import { resolveApiBaseUrl } from "@/lib/runtime-config";
 
 export async function GET(
   req: Request,
   context: { params: Promise<{ caseId: string }> }
 ) {
   const { caseId } = await context.params;
-  const upstream = `${API_INTERNAL_BASE_URL}/api/v1/cases/${caseId}/exceptions`;
+  const upstream = `${resolveApiBaseUrl(process.env).replace(/\/+$/, "")}/api/v1/cases/${caseId}/exceptions`;
 
   const cookie = req.headers.get("cookie");
   const headers: Record<string, string> = { "content-type": "application/json" };

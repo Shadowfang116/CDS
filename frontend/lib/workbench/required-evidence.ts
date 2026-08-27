@@ -158,7 +158,7 @@ export function processStateLabel(doc?: FileDocument | null): string | null {
   if (state === "failed") return "Failed";
   if (state === "processing") return "Processing";
   if (state === "uploaded") return "Uploaded";
-  if (state === "ocr_complete") return "OCR complete";
+  if (state === "ocr_complete") return "Text extracted";
   return "Ready";
 }
 
@@ -261,6 +261,7 @@ export function buildFileCompleteness(
   _fields: Array<{ field_key?: string | null; field_value?: string | null }> = [],
   selectedFindingId: string | null = null
 ): FileCompletenessView {
+  void _fields;
   const selectedFinding = findings.find((item) => item.id === selectedFindingId) ?? null;
   const usable = documents.filter((doc) => !isKycNoiseDocument(doc));
 

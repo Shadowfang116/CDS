@@ -73,7 +73,7 @@ services:
     ports:
       - "8001:8001"
     environment:
-      OCR_ENGINE: ${OCR_ENGINE:-surya}
+      OCR_ENGINE: ${OCR_ENGINE:-tesseract}
       OCR_MAX_CONCURRENT_PAGES: ${OCR_MAX_CONCURRENT_PAGES:-2}
       OCR_MAX_WORKERS: ${OCR_MAX_WORKERS:-1}
       OMP_NUM_THREADS: ${OMP_NUM_THREADS:-1}

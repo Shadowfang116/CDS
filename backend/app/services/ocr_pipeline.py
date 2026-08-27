@@ -87,7 +87,7 @@ def _aggregate_quality(pages: list[PageResult]) -> tuple[float | None, str]:
 async def run_ocr_pipeline(
     document_id: str,
     page_images: list[str],
-    engine: str = "surya",
+    engine: str = "tesseract",
 ) -> OcrPipelineResult:
     service_url = getattr(settings, "OCR_SERVICE_URL", "http://localhost:8001").rstrip("/")
     request_payload = {

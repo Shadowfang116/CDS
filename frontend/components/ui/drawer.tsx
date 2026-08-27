@@ -133,7 +133,7 @@ export function Drawer({
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-2 text-stone-400 transition-colors hover:bg-[rgba(34,39,45,0.9)] hover:text-stone-100"
+              className="cds-hit-target rounded-lg p-2 text-stone-400 transition-colors hover:bg-[rgba(34,39,45,0.9)] hover:text-stone-100"
               aria-label="Close drawer"
             >
               <svg

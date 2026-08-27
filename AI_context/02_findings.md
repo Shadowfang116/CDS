@@ -506,3 +506,12 @@ ordering as a hypothesis to test in Phase 0, not as a result.
 | F8 | Quality gate lets bad pages through | affects trust, not raw accuracy |
 | F10 | Party extractors grab boilerplate on Urdu recitals | field accuracy (names) — fixed 2026-08-17 |
 | F7 | No measurement | blocks all verification |
+
+## Verification update — 2026-08-26
+
+The earlier F3 diagnosis is now closed for the served OCR service: the active default
+is Tesseract, Surya imports/fallback branches are gone, the unneeded `surya-ocr`
+dependency and zero-caller `surya_engine.py` were removed, and Docker `/health` plus
+default/explicit `/ocr` smoke requests reported Tesseract. The remaining OCR modules
+under `backend/app/services/ocr_*` are not assumed dead wholesale; they remain until
+their individual callers and compatibility fixtures are retired safely.

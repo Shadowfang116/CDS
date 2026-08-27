@@ -1,5 +1,14 @@
 # Repo map — where OCR lives
 
+## Current implementation note — 2026-08-26
+
+The served OCR microservice is now explicitly Tesseract-only. `surya_engine.py` and
+the `surya-ocr` dependency were removed after repository-wide caller search showed no
+remaining active callers. The request compatibility field remains a string so older
+clients can send it, but the service normalizes every request to Tesseract and reports
+that engine in response metadata. The legacy Stack-B helpers remain classified by
+caller and were not deleted because autofill/tests still reach parts of that stack.
+
 Verified against `CDS` @ **`b94bb10`**. Line counts are a snapshot and will drift —
 regenerate rather than trusting them:
 
@@ -10,7 +19,7 @@ ls backend/app/services/ocr*.py | xargs wc -l | sort -n
 
 ---
 
-## Two separate OCR stacks exist. Only the weaker one runs.
+## Two OCR stacks remain in the repository; only the Tesseract microservice path is served.
 
 ### Stack A — `ocr_service/` microservice (THIS IS WHAT RUNS IN PRODUCTION)
 
@@ -21,15 +30,14 @@ ocr_service/
 ├── quality.py           79   heuristic quality score (word count / chars-per-word)
 ├── schemas.py           31   OcrRequest / OcrPageResult / WordBox
 └── engines/
-    ├── surya_engine.py 188   calls surya.ocr.run_ocr(...)
     └── tesseract_engine.py 92  pytesseract, "--oem 1 --psm 6 -l urd+eng"
 ```
 
 **~648 lines total.** No DPI handling, no orientation detection, no script detection,
 no ensemble, no post-correction.
 
-Deployed as its own compose service (`docker-compose.yml:70-84`), port 8001,
-`OCR_ENGINE` defaults to `surya` — which never actually loads (F3).
+Deployed as its own compose service (`docker-compose.yml:70-84`), port 8001.
+`OCR_ENGINE` defaults to `tesseract`; compatibility requests are normalized to it.
 
 ### Stack B — `backend/app/services/ocr_*.py` (WRITTEN, ALMOST ENTIRELY UNREACHABLE)
 
@@ -68,9 +76,8 @@ POST /documents/{id}/ocr
             └─ HTTP POST {OCR_SERVICE_URL}/ocr    ← leaves the backend entirely
                  │  (page as base64 PNG inside a JSON body)
                  └─ ocr_service/main.py :: _process_page_sync()
-                      ├─ preprocessing.preprocess_page()   ← binarizes the page (F1/F2)
-                      ├─ engines.surya_engine.run_surya()  ← fails (F3)
-                      └─ engines.tesseract_engine.run_tesseract()  ← produces the text (F4)
+                      ├─ preprocessing.preprocess_page()   ← binarizes the page
+                      └─ engines.tesseract_engine.run_tesseract()  ← produces the text
        └─ writes page.ocr_text / ocr_confidence / ocr_quality_signal
 ```
 

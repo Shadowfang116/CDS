@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveApiBaseUrl } from '@/lib/runtime-config';
 
 function upstream() {
-  return (
-    process.env.API_INTERNAL_BASE_URL ||
-    process.env.API_BASE_URL ||
-    'http://localhost:8000'
-  ).replace(/\/+$/, '');
+  return resolveApiBaseUrl(process.env).replace(/\/+$/, '');
 }
 
 async function proxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {

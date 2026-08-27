@@ -19,9 +19,12 @@ from app.core.roles import role_satisfies
 from app.db.session import get_db
 from app.models.audit_log import AuditLog
 from app.models.case import Case
+from app.models.document import CaseDossierField
+from app.core.regimes import Regime, normalize_regime
 from app.schemas.audit import AuditLogResponse
 from app.schemas.case import CaseAssignmentUpdate, CaseCreate, CaseListResponse, CaseResponse, CaseStatusUpdate
 from app.services.audit import log_request_event
+from app.services.dossier_versions import upsert_dossier_field
 from app.services.workflow import CASE_TRANSITIONS, normalize_case_status, transition_case
 
 router = APIRouter(prefix="/cases", tags=["cases"])
@@ -126,10 +129,43 @@ async def create_case(
     current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
+    regime = normalize_regime(case_data.property_regime)
+    if case_data.property_regime and (regime is None or regime == Regime.UNKNOWN):
+        raise HTTPException(
+            status_code=422,
+            detail="Choose a supported property regime before creating the matter.",
+        )
+
     case = Case(org_id=org_id, title=case_data.title, status="New")
     db.add(case)
     db.commit()
     db.refresh(case)
+
+    intake_fields = {
+        "property.type": case_data.property_type,
+        "property.regime": regime.value if regime else None,
+    }
+    for field_key, field_value in intake_fields.items():
+        if field_value is None:
+            continue
+        field = CaseDossierField(
+            org_id=org_id,
+            case_id=case.id,
+            field_key=field_key,
+            field_value=field_value,
+            needs_confirmation=False,
+        )
+        db.add(field)
+        upsert_dossier_field(
+            case,
+            key=field_key,
+            value=field_value,
+            source="manual",
+            locked=True,
+            actor_id=str(current_user.user_id),
+            summary="Set at new matter intake",
+        )
+    db.commit()
 
     log_request_event(
         db,
@@ -140,7 +176,12 @@ async def create_case(
         entity_type="case",
         entity_id=case.id,
         case_id=case.id,
-        after_json={"title": case.title, "status": normalize_case_status(case.status)},
+        after_json={
+            "title": case.title,
+            "status": normalize_case_status(case.status),
+            "property_type": case_data.property_type,
+            "property_regime": regime.value if regime else None,
+        },
     )
     return case
 

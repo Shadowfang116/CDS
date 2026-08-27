@@ -236,10 +236,10 @@ export function CaseWorkspace(props: { caseId: string }) {
   const [autofilling, setAutofilling] = useState(false);
   const [autofillResult, setAutofillResult] = useState<any>(null);
   const [generatedDrafts, setGeneratedDrafts] = useState<any[]>([]);
-  const [insights, setInsights] = useState<CaseInsightsResponse | null>(null);
-  const [insightsDays, setInsightsDays] = useState(30);
+  const [, setInsights] = useState<CaseInsightsResponse | null>(null);
+  const [insightsDays] = useState(30);
   const [peek, setPeek] = useState<{ title: string; severity: string; refs: Array<{ document_id?: string | null; page_number?: number | null; note?: string | null; snippet?: string | null }> } | null>(null);
-  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [, setInsightsLoading] = useState(false);
   const [dossierLoading, setDossierLoading] = useState(false);
   const [exceptionsLoading, setExceptionsLoading] = useState(false);
   const [exportsLoading, setExportsLoading] = useState(false);

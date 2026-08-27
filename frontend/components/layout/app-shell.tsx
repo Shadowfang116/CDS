@@ -17,12 +17,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 import { ThemeToggle } from "./theme-toggle"
 import { PageChromeProvider, usePageChrome } from "./page-chrome"
 import { HelpDialog } from "@/components/help/help-dialog"
 import { openHelp } from "@/lib/help"
+import { OnboardingChecklist } from "@/components/OnboardingChecklist"
+import { OnboardingTour } from "@/components/OnboardingTour"
 
 interface AppShellProps {
   children: React.ReactNode
@@ -242,44 +244,44 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-30 h-[58px] border-b border-border bg-[hsl(var(--header))]">
         <div className="flex h-[58px] items-center justify-between gap-4 px-5">
           <div className="flex min-w-0 flex-1 items-center gap-3">
+            <SidebarTrigger className="shrink-0" aria-label="Open navigation" />
             {isOverview ? (
               <p className="cds-meta">Inbox</p>
             ) : isMatter ? (
               <p className="cds-meta">Matter</p>
             ) : (
             <div className="min-w-0 flex-1">
-              {breadcrumbs.length > 0 ? (
-                <nav
-                  aria-label="Breadcrumb"
-                  className="mb-1 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-muted-foreground"
-                >
-                  {breadcrumbs.map((crumb, index) => {
-                    const isLast = index === breadcrumbs.length - 1
-                    return (
-                      <React.Fragment key={`${crumb.label}-${index}`}>
-                        {crumb.href && !isLast ? (
-                          <Link
-                            href={crumb.href}
-                            className="max-w-[10rem] truncate transition-colors hover:text-foreground"
-                          >
-                            {crumb.label}
-                          </Link>
-                        ) : (
-                          <span className={isLast ? "truncate text-foreground/80" : "truncate"}>
-                            {crumb.label}
-                          </span>
-                        )}
-                        {!isLast ? <span className="text-muted-foreground/60">/</span> : null}
-                      </React.Fragment>
-                    )
-                  })}
-                </nav>
-              ) : null}
-
-              <div className="min-w-0">
-                <h1 className="truncate text-xl font-medium tracking-[-0.03em] text-foreground sm:text-2xl">{displayTitle}</h1>
-                <p className="truncate text-sm text-muted-foreground">{displaySubtitle}</p>
+              <div className="flex min-w-0 items-baseline gap-2">
+                {breadcrumbs.length > 0 && breadcrumbs.at(-1)?.label !== displayTitle ? (
+                  <nav
+                    aria-label="Breadcrumb"
+                    className="flex max-w-[40%] shrink-0 items-center gap-1.5 overflow-hidden text-xs text-muted-foreground"
+                  >
+                    {breadcrumbs.map((crumb, index) => {
+                      const isLast = index === breadcrumbs.length - 1
+                      return (
+                        <React.Fragment key={`${crumb.label}-${index}`}>
+                          {crumb.href && !isLast ? (
+                            <Link
+                              href={crumb.href}
+                              className="max-w-[10rem] truncate transition-colors hover:text-foreground"
+                            >
+                              {crumb.label}
+                            </Link>
+                          ) : (
+                            <span className={isLast ? "truncate text-foreground/80" : "truncate"}>
+                              {crumb.label}
+                            </span>
+                          )}
+                          {!isLast ? <span className="text-muted-foreground/60">/</span> : null}
+                        </React.Fragment>
+                      )
+                    })}
+                  </nav>
+                ) : null}
+                <h1 className="min-w-0 truncate text-xl font-medium tracking-[-0.03em] text-foreground sm:text-2xl">{displayTitle}</h1>
               </div>
+              <p className="truncate text-sm text-muted-foreground">{displaySubtitle}</p>
             </div>
             )}
           </div>
@@ -305,6 +307,8 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
         <div className={isOverview ? "mx-auto max-w-[1600px]" : isMatter ? "h-full w-full" : "mx-auto max-w-[1480px]"}>{children}</div>
       </main>
       <HelpDialog />
+      <OnboardingTour />
+      <OnboardingChecklist />
     </SidebarInset>
   )
 }

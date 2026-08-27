@@ -210,19 +210,19 @@ function CasesPageContent() {
   return (
     <>
       <SetPageChrome
-        title="Cases"
-        breadcrumbs={[{ label: "Cases" }]}
+        title="Matters"
+        breadcrumbs={[{ label: "Matters" }]}
         actions={null}
       />
 
       <Dialog open={newCaseOpen} onOpenChange={handleNewCaseClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>New Case</DialogTitle>
+            <DialogTitle>New matter</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2">
             <Input
-              placeholder="Case title"
+              placeholder="Matter name"
               value={newCaseTitle}
               onChange={(e) => setNewCaseTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !creating) handleCreateCase(); }}
@@ -244,14 +244,14 @@ function CasesPageContent() {
       </Dialog>
 
       <div className="flex flex-col gap-6" data-dashboard-reveal>
-        <section className="rounded-lg border border-[rgba(82,90,99,0.4)] bg-[rgba(24,28,32,0.9)] px-5 py-4" data-dashboard-section>
+        <section className="border border-border bg-card px-5 py-4" data-dashboard-section>
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">
-                Case Operations
+              <div className="text-xs font-medium text-muted-foreground">
+                Matter queue
               </div>
-              <div className="text-sm text-stone-400">
-                New, in-flight, review, pending documents, approval-ready, and closed files in one operations queue.
+              <div className="text-sm text-muted-foreground">
+                Open a matter to upload documents, review extracted information, resolve issues, and submit it for approval.
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -259,10 +259,10 @@ function CasesPageContent() {
                 size="sm"
                 onClick={() => { setNewCaseTitle(""); setCreateError(null); setNewCaseOpen(true); }}
               >
-                New Case
+                New matter
               </Button>
-              <span className="rounded-md border border-[rgba(82,90,99,0.4)] bg-[rgba(34,39,45,0.85)] px-3 py-2 text-stone-300">
-                {total} case{total !== 1 ? "s" : ""}
+              <span className="border border-border bg-muted px-3 py-2 text-sm text-foreground">
+                {total} matter{total !== 1 ? "s" : ""}
               </span>
               <select
                 value={pageSize}
@@ -272,7 +272,7 @@ function CasesPageContent() {
                     page: 1,
                   })
                 }
-                className="h-9 rounded-md border border-[rgba(82,90,99,0.55)] bg-[rgba(22,26,30,0.92)] px-3 text-sm text-stone-200"
+                className="h-9 rounded-md border-border bg-background px-3 text-sm text-foreground"
               >
                 {PAGE_SIZE_OPTIONS.map((n) => (
                   <option key={n} value={n}>
@@ -293,7 +293,7 @@ function CasesPageContent() {
                 onChange={(e) => onSearchChange(e.target.value)}
                 className="max-w-md"
               />
-              <div className="text-sm text-stone-500">
+              <div className="text-sm text-muted-foreground">
                 Sorted by {params.sort.replace("_", " ")} · {params.order}
               </div>
             </div>
@@ -360,12 +360,12 @@ export default function CasesPage() {
     <React.Suspense
       fallback={
         <div className="space-y-4">
-          <section className="rounded-lg border border-[rgba(82,90,99,0.4)] bg-[rgba(24,28,32,0.9)] px-5 py-4">
-            <div className="text-sm text-stone-400">Loading cases…</div>
+          <section className="border border-border bg-card px-5 py-4">
+            <div className="text-sm text-muted-foreground">Loading matters…</div>
           </section>
           <Card>
             <CardContent className="p-5">
-              <div className="text-sm text-stone-400">Preparing operations queue…</div>
+            <div className="text-sm text-muted-foreground">Preparing matter queue…</div>
             </CardContent>
           </Card>
         </div>

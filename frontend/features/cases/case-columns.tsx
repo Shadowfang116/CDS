@@ -31,7 +31,7 @@ function formatUpdated(iso: string | null | undefined): string {
 export const caseColumns: ColumnDef<CaseListItem>[] = [
   {
     id: "ref_title",
-    header: "Case ref / Title",
+    header: "Matter / reference",
     cell: ({ row }) => {
       const c = row.original;
       const ref = shortRef(c.id);
@@ -73,7 +73,7 @@ export const caseColumns: ColumnDef<CaseListItem>[] = [
       return (
         <div className="flex justify-end">
           <Button variant="outline" size="sm" asChild>
-            <Link href={getCaseDetailPath(String(id))}>View</Link>
+            <Link href={getCaseDetailPath(String(id))}>Open matter</Link>
           </Button>
         </div>
       );

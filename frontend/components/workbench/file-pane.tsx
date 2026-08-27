@@ -23,6 +23,7 @@ type FilePaneProps = {
   fields?: DossierFieldItem[];
   selectedFindingId: string | null;
   onSelectFinding: (item: FindingRow) => void;
+  onOpenDocument: (documentId: string, page?: number) => void;
   onUpload: (files: FileList) => void;
   onRequestDocument: (instrument?: string | null) => void;
   onExtract?: () => void;
@@ -34,21 +35,29 @@ type FilePaneProps = {
   busy?: boolean;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  showReviewSummary?: boolean;
 };
 
 function RequirementRow({
   row,
   onFocus,
+  onOpenDocument,
 }: {
   row: FileRequirementRow;
   onFocus?: () => void;
+  onOpenDocument?: (documentId: string, page?: number) => void;
 }) {
+  const preferredDocumentId = row.preferred?.id;
   return (
     <button
       type="button"
-      onClick={onFocus}
+      onClick={() => {
+        onFocus?.();
+        if (preferredDocumentId) onOpenDocument?.(preferredDocumentId, 1);
+      }}
+      aria-label={preferredDocumentId ? `Open ${row.preferred?.original_filename || row.label}` : row.label}
       className={cn(
-        "flex w-full flex-col gap-0.5 rounded px-1 py-1.5 text-left outline-none focus-visible:ring-1 focus-visible:ring-ring",
+        "group flex w-full flex-col gap-0.5 rounded border border-transparent px-2 py-2 text-left outline-none transition-colors hover:border-border hover:bg-[hsl(var(--pill))] focus-visible:ring-1 focus-visible:ring-ring",
         row.requiredByFinding && "bg-[hsl(var(--pill))]"
       )}
     >
@@ -84,6 +93,7 @@ export function FilePane({
   fields = [],
   selectedFindingId,
   onSelectFinding,
+  onOpenDocument,
   onUpload,
   onRequestDocument,
   onExtract,
@@ -95,6 +105,7 @@ export function FilePane({
   busy,
   collapsed,
   onToggleCollapse,
+  showReviewSummary = true,
 }: FilePaneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [focusedRequirement, setFocusedRequirement] = useState<string | null>(null);
@@ -117,7 +128,7 @@ export function FilePane({
         aria-label="Expand file pane"
       >
         <span className="cds-meta" style={{ writingMode: "vertical-rl" }}>
-          File
+          Documents
         </span>
       </button>
     );
@@ -127,7 +138,7 @@ export function FilePane({
     <div className="flex h-full min-h-0 flex-col bg-[hsl(var(--surface))]">
       <div className="flex shrink-0 flex-col gap-2.5 border-b border-border p-3.5">
         <div className="flex items-center justify-between gap-2">
-          <p className="cds-meta">File</p>
+          <p className="cds-meta">Documents</p>
           {onToggleCollapse ? (
             <button type="button" className="cds-meta text-muted-foreground" onClick={onToggleCollapse} aria-label="Collapse file pane">
               Collapse
@@ -140,18 +151,18 @@ export function FilePane({
             className="cds-btn cds-btn-primary"
             onClick={() => inputRef.current?.click()}
             disabled={uploading || busy}
-            aria-label="Add evidence"
+            aria-label="Upload documents"
           >
-            {uploading ? "Uploading…" : "Add evidence"}
+            {uploading ? "Uploading…" : "Upload documents"}
           </button>
           <button
             type="button"
             className="cds-btn cds-btn-ghost"
             onClick={onExtract ?? onEvaluate}
             disabled={!onExtract && !onEvaluate || processBusy}
-            aria-label="Process new evidence"
+            aria-label="Analyze uploaded documents"
           >
-            {extracting || evaluating ? "Processing…" : "Process new evidence"}
+            {extracting || evaluating ? "Analyzing…" : "Analyze uploaded documents"}
           </button>
           <button
             type="button"
@@ -160,7 +171,7 @@ export function FilePane({
             disabled={requesting || busy}
             aria-label={requestTarget ? `Request ${requestTarget}` : "Request document"}
           >
-            Request
+            Request missing document
           </button>
           <input
             ref={inputRef}
@@ -185,21 +196,21 @@ export function FilePane({
         }}
       >
         <section className="border-b border-border px-3.5 py-3">
-          <p className="cds-meta mb-1.5">Required evidence</p>
+          <p className="cds-meta mb-1.5">Required documents</p>
           <div className="flex flex-col">
             {view.required.map((row) => (
-              <RequirementRow key={row.id} row={row} onFocus={() => setFocusedRequirement(row.id)} />
+              <RequirementRow key={row.id} row={row} onFocus={() => setFocusedRequirement(row.id)} onOpenDocument={onOpenDocument} />
             ))}
           </div>
         </section>
 
         {view.supporting.length > 0 || view.leftover.length > 0 ? (
           <section className="border-b border-border px-3.5 py-3">
-            <p className="cds-meta mb-1.5">Additional / supporting</p>
+            <p className="cds-meta mb-1.5">Supporting documents</p>
             <div className="flex flex-col">
-              {view.supporting.map((row) => (
-                <RequirementRow key={row.id} row={row} onFocus={() => setFocusedRequirement(row.id)} />
-              ))}
+                {view.supporting.map((row) => (
+                  <RequirementRow key={row.id} row={row} onFocus={() => setFocusedRequirement(row.id)} onOpenDocument={onOpenDocument} />
+                ))}
               {view.leftover.map((doc) => (
                 <div key={doc.id} className="flex flex-col gap-0.5 px-1 py-1.5">
                   <div className="flex items-start justify-between gap-2">
@@ -222,52 +233,56 @@ export function FilePane({
           </section>
         ) : null}
 
-        <section className="border-b border-border px-3.5 py-3">
-          <p className="cds-meta mb-1.5">Findings</p>
-          <ul className="space-y-1">
-            {findings.map((item) => {
-              const selected = item.id === selectedFindingId;
-              return (
-                <li key={`${item.kind}-${item.id}`}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectFinding(item)}
-                    aria-pressed={selected}
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded px-1 py-1.5 text-left outline-none focus-visible:ring-1 focus-visible:ring-ring",
-                      selected && "bg-[hsl(var(--pill))]"
-                    )}
-                  >
-                    <span className="w-[92px] shrink-0 truncate font-display text-[9px] text-muted-foreground">
-                      {item.rule_id ?? (item.kind === "cp" ? "CP" : "EX")}
-                    </span>
-                    <CdsPill tone={severityTone(item.severity)}>{item.severity}</CdsPill>
-                    <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">{item.title}</span>
-                    <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
-                      {item.status}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-            {findings.length === 0 ? (
-              <li className="py-3 text-[11px] text-muted-foreground">No findings yet.</li>
-            ) : null}
-          </ul>
-        </section>
+        {showReviewSummary ? (
+          <section className="border-b border-border px-3.5 py-3">
+            <p className="cds-meta mb-1.5">Issues</p>
+            <ul className="space-y-1">
+              {findings.map((item) => {
+                const selected = item.id === selectedFindingId;
+                return (
+                  <li key={`${item.kind}-${item.id}`}>
+                    <button
+                      type="button"
+                      onClick={() => onSelectFinding(item)}
+                      aria-pressed={selected}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded px-1 py-1.5 text-left outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                        selected && "bg-[hsl(var(--pill))]"
+                      )}
+                    >
+                      <span className="w-[92px] shrink-0 truncate font-display text-[9px] text-muted-foreground">
+                        {item.rule_id ?? (item.kind === "cp" ? "CP" : "EX")}
+                      </span>
+                      <CdsPill tone={severityTone(item.severity)}>{item.severity}</CdsPill>
+                      <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">{item.title}</span>
+                      <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-muted-foreground">
+                        {item.status}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {findings.length === 0 ? (
+                <li className="py-3 text-[11px] text-muted-foreground">No findings yet.</li>
+              ) : null}
+            </ul>
+          </section>
+        ) : null}
       </div>
 
-      <div className="shrink-0 px-3.5 py-3">
-        <p className="cds-meta">Confirmed facts</p>
-        <p className="mt-1.5 text-[14px] font-semibold leading-5 text-foreground">
-          {total ? `${confirmed} / ${total} confirmed` : "No facts extracted"}
-        </p>
-        <p className="mt-1.5 text-[10px] leading-[15px] text-muted-foreground">
-          {proposed
-            ? `${proposed} proposed values require reviewer confirmation`
-            : "All extracted values are confirmed"}
-        </p>
-      </div>
+      {showReviewSummary ? (
+        <div className="shrink-0 px-3.5 py-3">
+          <p className="cds-meta">Confirmed facts</p>
+          <p className="mt-1.5 text-[14px] font-semibold leading-5 text-foreground">
+            {total ? `${confirmed} / ${total} confirmed` : "No facts extracted"}
+          </p>
+          <p className="mt-1.5 text-[10px] leading-[15px] text-muted-foreground">
+            {proposed
+              ? `${proposed} proposed values require reviewer confirmation`
+              : "All extracted values are confirmed"}
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

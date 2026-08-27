@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { WorkspaceIndex } from "@/components/dashboard/workspace-index";
 
 export default function GlobalExceptionsRedirectPage() {
-  redirect("/dashboard");
+  return <WorkspaceIndex surface="issues" />;
 }

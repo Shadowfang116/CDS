@@ -57,6 +57,12 @@
   --sidebar-accent-foreground: var(--paper);
   --sidebar-border: var(--line);
   --sidebar-ring: var(--crimson-border);
+
+  --status-high: 355 72% 32%;
+  --status-medium: 37 45% 44%;
+  --status-low: 212 36% 44%;
+  --status-good: 125 16% 41%;
+  --status-neutral: 216 13% 32%;
 }
 
 .dark {
@@ -89,8 +95,63 @@
   --sidebar-ring: var(--crimson-border);
 }
 
+.light {
+  --ink: 132 12% 92%;
+  --paper: 163 28% 10%;
+  --crimson: 168 45% 17%;
+  --crimson-foreground: 100 23% 97%;
+  --crimson-border: 168 47% 15%;
+  --sage: 158 45% 25%;
+  --gold: 38 66% 26%;
+  --info: 210 48% 37%;
+  --muted-ink: 150 7% 37%;
+  --line: 138 9% 79%;
+  --surface: 80 18% 97%;
+  --rail: 167 37% 10%;
+  --header: 80 18% 97%;
+  --pill: 137 11% 88%;
+  --canvas: 132 12% 92%;
+  --doc-paper: 48 27% 92%;
+  --background: var(--ink);
+  --foreground: var(--paper);
+  --card: var(--surface);
+  --card-foreground: var(--paper);
+  --popover: var(--surface);
+  --popover-foreground: var(--paper);
+  --primary: var(--crimson);
+  --primary-foreground: var(--crimson-foreground);
+  --secondary: 137 11% 88%;
+  --secondary-foreground: var(--paper);
+  --muted: 137 11% 88%;
+  --muted-foreground: var(--muted-ink);
+  --accent: 137 11% 88%;
+  --accent-foreground: var(--paper);
+  --destructive: 0 46% 38%;
+  --destructive-foreground: var(--crimson-foreground);
+  --border: var(--line);
+  --input: 144 8% 61%;
+  --ring: 215 79% 43%;
+  --sidebar-background: var(--rail);
+  --sidebar-foreground: 100 23% 97%;
+  --sidebar-primary: var(--gold);
+  --sidebar-primary-foreground: var(--crimson-foreground);
+  --sidebar-accent: var(--crimson);
+  --sidebar-accent-foreground: 100 23% 97%;
+  --sidebar-border: 144 8% 61%;
+  --sidebar-ring: 212 100% 73%;
+  --status-high: 0 46% 38%;
+  --status-medium: 39 69% 27%;
+  --status-low: 210 48% 37%;
+  --status-good: 158 45% 25%;
+  --status-neutral: 150 7% 37%;
+}
+
 html {
   color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
 }
 
 body {
@@ -150,7 +211,7 @@ body {
   font-weight: 500;
   letter-spacing: 1.2px;
   line-height: 15px;
-  text-transform: uppercase;
+  text-transform: none;
   color: hsl(var(--muted-foreground));
 }
 
@@ -167,7 +228,7 @@ body {
   font-weight: 500;
   letter-spacing: 0.02em;
   line-height: 15px;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -175,27 +236,57 @@ body {
 .cds-pill-blocking,
 .cds-pill-missing,
 .cds-pill-fail {
-  background: hsl(var(--crimson));
-  color: hsl(var(--paper));
+  background: hsl(var(--status-high));
+  color: hsl(var(--crimson-foreground));
 }
 
 .cds-pill-medium,
 .cds-pill-stale,
 .cds-pill-proposed {
-  background: hsl(var(--gold));
-  color: hsl(var(--paper));
+  background: hsl(var(--status-medium));
+  color: hsl(var(--crimson-foreground));
 }
 
 .cds-pill-low {
-  background: hsl(var(--info));
-  color: hsl(var(--paper));
+  background: hsl(var(--status-low));
+  color: hsl(var(--crimson-foreground));
 }
 
 .cds-pill-provided,
 .cds-pill-confirmed,
 .cds-pill-good {
-  background: hsl(var(--sage));
-  color: hsl(var(--paper));
+  background: hsl(var(--status-good));
+  color: hsl(var(--crimson-foreground));
+}
+
+.cds-quality-good {
+  border-color: hsl(var(--status-good) / 0.34);
+  background: hsl(var(--status-good) / 0.16);
+  color: hsl(var(--status-good));
+}
+
+.cds-quality-fair {
+  border-color: hsl(var(--status-medium) / 0.34);
+  background: hsl(var(--status-medium) / 0.16);
+  color: hsl(var(--status-medium));
+}
+
+.cds-quality-poor {
+  border-color: hsl(26 40% 40% / 0.34);
+  background: hsl(26 40% 40% / 0.16);
+  color: hsl(26 40% 55%);
+}
+
+.cds-quality-unusable {
+  border-color: hsl(var(--status-high) / 0.34);
+  background: hsl(var(--status-high) / 0.16);
+  color: hsl(var(--status-high));
+}
+
+.cds-quality-unknown {
+  border-color: hsl(var(--status-neutral) / 0.45);
+  background: hsl(var(--status-neutral) / 0.2);
+  color: hsl(var(--muted-foreground));
 }
 
 .cds-btn {
@@ -214,7 +305,7 @@ body {
 .cds-btn-primary {
   background: hsl(var(--crimson));
   border: 1px solid hsl(var(--crimson-border));
-  color: hsl(var(--paper));
+  color: hsl(var(--crimson-foreground));
 }
 
 .cds-btn-primary:disabled {
@@ -231,13 +322,18 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  min-width: 32px;
+  height: 44px;
+  min-width: 44px;
   padding: 8px 10px;
   border-radius: 4px;
   background: hsl(var(--surface));
   border: 1px solid hsl(var(--line));
   color: hsl(var(--muted-foreground));
+}
+
+.cds-hit-target {
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .cds-nav-code {

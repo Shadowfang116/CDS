@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-
-const API_INTERNAL_BASE_URL = (
-  process.env.API_INTERNAL_BASE_URL || process.env.API_BASE_URL || "http://localhost:8000"
-).replace(/\/+$/, "");
+import { resolveApiBaseUrl } from "@/lib/runtime-config";
 
 export async function POST(
   req: Request,
@@ -12,7 +9,7 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const cookie = req.headers.get("cookie");
 
-  const upstream = `${API_INTERNAL_BASE_URL}/api/v1/exceptions/${id}/resolve`;
+  const upstream = `${resolveApiBaseUrl(process.env).replace(/\/+$/, "")}/api/v1/exceptions/${id}/resolve`;
   const res = await fetch(upstream, {
     method: "POST",
     headers: {

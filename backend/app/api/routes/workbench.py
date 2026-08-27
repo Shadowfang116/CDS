@@ -20,6 +20,7 @@ from app.services.workbench import (
     request_waiver,
     submit_matter,
 )
+from app.services.rule_engine import RuleEnginePreconditionError
 
 router = APIRouter(prefix="/cases", tags=["workbench"])
 
@@ -121,7 +122,10 @@ async def workbench_evaluate(
     current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    counts = evaluate_matter(db, org_id=current_user.org_id, case_id=case_id, user_id=current_user.user_id)
+    try:
+        counts = evaluate_matter(db, org_id=current_user.org_id, case_id=case_id, user_id=current_user.user_id)
+    except RuleEnginePreconditionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     log_request_event(
         db,
         request=request,

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "smoke:routes": "node scripts/smoke-routes.mjs",
     "test:workbench": "npx --yes tsx lib/workbench/run-unit-tests.ts"
   },
   "dependencies": {

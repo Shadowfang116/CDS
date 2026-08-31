@@ -326,7 +326,13 @@ def confirm_fact(
 
 
 def evaluate_matter(db: Session, *, org_id: uuid.UUID, case_id: uuid.UUID, user_id: uuid.UUID) -> dict[str, Any]:
-    return run_rules(db, org_id, case_id, user_id)
+    result = run_rules(db, org_id, case_id, user_id)
+    case = db.query(Case).filter(Case.id == case_id, Case.org_id == org_id).first()
+    if case:
+        from app.services.resolution import reconcile_case_progress
+        reconcile_case_progress(db, case=case)
+        db.commit()
+    return result
 
 
 def request_waiver(

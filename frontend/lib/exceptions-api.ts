@@ -51,13 +51,17 @@ export async function resolveException(exceptionId: string, payload?: any): Prom
       "content-type": "application/json",
     },
     credentials: "include",
-    body: JSON.stringify(payload ?? {}),
+    body: JSON.stringify({
+      reason: typeof payload === "string" ? payload : payload?.reason ?? "",
+      closing_evidence_ref_ids: typeof payload === "object" ? payload?.closing_evidence_ref_ids ?? [] : [],
+    }),
   });
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
     throw new Error(`Resolve failed: ${res.status} ${txt}`);
   }
-  return normalizeExceptionRow(await res.json());
+  const body = await res.json();
+  return normalizeExceptionRow(body?.exception ?? body);
 }
 
 export async function waiveException(exceptionId: string, payload: { waiver_reason: string }): Promise<ExceptionRow> {

@@ -135,6 +135,12 @@ ALIASES = {
 
 # Specific-first filename patterns. First match wins.
 _FILENAME_PATTERNS: Sequence[Tuple[Tuple[str, ...], str]] = (
+    (("society_transfer", "transfer_ownership", "ownership_letter_chain"), "society_transfer"),
+    (("society_mortgage_permission", "mortgage_permission", "lien_marking"), "society_mortgage_permission"),
+    (("society_ndc", "society_no_dues"), "society_ndc"),
+    (("municipal_dues_clearance", "municipal_clearance"), "municipal_dues_clearance"),
+    (("registry_rod", "registry_verification"), "registry_rod"),
+    (("site_verification_report", "physical_site_verification"), "site_verification"),
     (("identity confirmation", "name confirmation", "identity_name"), "Identity Confirmation"),
     (("charge release", "release letter", "prior_charge_release"), "Charge Release"),
     (("dues clearance", "development charges clearance", "charges_clearance"), "Dues Clearance"),
@@ -275,6 +281,8 @@ def classify_document_type(
         "Possession Letter", "Property Tax/PT-10", "Board Resolution",
         "Building Plan", "Dues Clearance", "Charge Release",
         "Identity Confirmation", "Society/Authority NOC",
+        "society_transfer", "society_mortgage_permission", "society_ndc",
+        "municipal_dues_clearance", "registry_rod", "site_verification",
     }
     if filename_hit in protected:
         return filename_hit, "filename"

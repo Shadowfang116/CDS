@@ -643,10 +643,10 @@ export async function getException(exceptionId: string): Promise<any> {
   return fetchApi(`/exceptions/${exceptionId}`);
 }
 
-export async function resolveException(exceptionId: string, reason?: string): Promise<any> {
-  return fetchApi(`/exceptions/${exceptionId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ action: 'resolve', reason }),
+export async function resolveException(exceptionId: string, reason: string, closingEvidenceRefIds: string[] = []): Promise<any> {
+  return fetchApi(`/exceptions/${exceptionId}/resolve`, {
+    method: 'POST',
+    body: JSON.stringify({ reason, closing_evidence_ref_ids: closingEvidenceRefIds }),
   });
 }
 
@@ -1567,10 +1567,10 @@ export async function getCaseAuditTimeline(caseId: string): Promise<CaseAuditTim
 
 // ============ Evidence Attachment API (Phase 10) ============
 
-export async function attachExceptionEvidence(exceptionId: string, documentId: string, pageNumber: number, note?: string): Promise<any> {
+export async function attachExceptionEvidence(exceptionId: string, documentId: string, pageNumber: number, note?: string, isClosing = false): Promise<any> {
   return fetchApi(`/exceptions/${exceptionId}/evidence`, {
     method: 'POST',
-    body: JSON.stringify({ document_id: documentId, page_number: pageNumber, note }),
+    body: JSON.stringify({ document_id: documentId, page_number: pageNumber, note, is_closing: isClosing }),
   });
 }
 
@@ -2071,4 +2071,3 @@ export async function updateExpectation(expectationId: string, payload: Expectat
 export async function deleteExpectation(expectationId: string): Promise<void> {
   return fetchApi(`/expectations/${expectationId}`, { method: 'DELETE', bypassCache: true });
 }
-

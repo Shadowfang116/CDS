@@ -1041,16 +1041,16 @@ def run_rules(
             ),
         ).delete(synchronize_session=False)
 
-        db.query(Exception_).filter(
-            Exception_.case_id == case_id,
-            Exception_.org_id == org_id,
-            Exception_.status == "Open",
-        ).delete(synchronize_session=False)
-
         db.query(ConditionPrecedent).filter(
             ConditionPrecedent.case_id == case_id,
             ConditionPrecedent.org_id == org_id,
             ConditionPrecedent.status == "Open",
+        ).delete(synchronize_session=False)
+
+        db.query(Exception_).filter(
+            Exception_.case_id == case_id,
+            Exception_.org_id == org_id,
+            Exception_.status == "Open",
         ).delete(synchronize_session=False)
 
         preserved_rule_ids = {
@@ -1122,6 +1122,7 @@ def run_rules(
                         org_id=org_id,
                         case_id=case_id,
                         rule_id=result.rule_id,
+                        source_exception_id=exc.id,
                         severity=result.severity,
                         text=result.cp_text,
                         evidence_required=result.evidence_required,

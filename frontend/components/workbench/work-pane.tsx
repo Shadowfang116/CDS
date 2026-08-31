@@ -5,6 +5,8 @@ import { DossierFieldsEditor } from "@/components/case/DossierFieldsEditor";
 import { FindingsList } from "@/components/workbench/findings-list";
 import { CdsPill, severityTone } from "@/components/ui/cds-pill";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ApprovalRequest, CaseReadiness } from "@/lib/api";
 import { FindingRow, pendingWaiverExceptionIds, canonicalDocType } from "@/lib/workbench/findings";
 import { acknowledgementsComplete, canSelfApprove, submitBlocker, submitEnabled } from "@/lib/workbench/submit-gate";
@@ -29,7 +31,7 @@ type WorkPaneProps = {
   pendingWaiverIds?: Iterable<string>;
   nextAction?: string | null;
   onSelectFinding: (item: FindingRow) => void;
-  onResolve: (item: FindingRow) => void;
+  onResolve: (item: FindingRow, reason: string, closingEvidenceRefIds: string[]) => void;
   onWaive: (item: FindingRow, reason: string) => void;
   onSatisfyCp: (item: FindingRow) => void;
   onJumpToEvidence: (documentId: string, page?: number) => void;
@@ -123,6 +125,8 @@ export function WorkPane({
 }: WorkPaneProps) {
   const [mode, setMode] = useState<WorkMode>(initialMode ?? (focusField ? "dossier" : "findings"));
   const [acked, setAcked] = useState<string[]>([]);
+  const [resolveTarget, setResolveTarget] = useState<FindingRow | null>(null);
+  const [resolveReason, setResolveReason] = useState("");
 
   useEffect(() => {
     if (initialMode) setMode(initialMode);
@@ -248,7 +252,7 @@ export function WorkPane({
                     Link source page as proof
                   </button>
                   {selected.kind === "exception" ? (
-                    <button type="button" className="cds-btn cds-btn-ghost" onClick={() => onResolve(selected)} disabled={busy}>
+                    <button type="button" className="cds-btn cds-btn-ghost" onClick={() => { setResolveTarget(selected); setResolveReason(""); }} disabled={busy}>
                       Mark issue resolved
                     </button>
                   ) : (
@@ -286,7 +290,7 @@ export function WorkPane({
             selectedId={selectedFindingId}
             pendingWaiverIds={waiverIds}
             onSelect={onSelectFinding}
-            onResolve={onResolve}
+            onResolve={(item) => { setResolveTarget(item); setResolveReason(""); }}
             onWaive={onWaive}
             onSatisfyCp={onSatisfyCp}
             onJumpToEvidence={onJumpToEvidence}
@@ -437,6 +441,22 @@ export function WorkPane({
           </p>
         </div>
       ) : null}
+      <Dialog open={Boolean(resolveTarget)} onOpenChange={(open) => !open && setResolveTarget(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Resolve exception</DialogTitle><DialogDescription>Rationale and a linked source page marked as closing proof are required.</DialogDescription></DialogHeader>
+          <Textarea value={resolveReason} onChange={(event) => setResolveReason(event.target.value)} placeholder="Why is this issue resolved?" />
+          <p className="text-xs text-muted-foreground">Closing proof: {resolveTarget?.evidence_refs?.filter((ref) => ref.is_closing || ref.isClosing).length ?? 0} linked page(s)</p>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setResolveTarget(null)}>Cancel</Button>
+            <Button type="button" disabled={busy || !resolveReason.trim() || !(resolveTarget?.evidence_refs ?? []).some((ref) => ref.is_closing || ref.isClosing)} onClick={() => {
+              if (!resolveTarget) return;
+              const refs = (resolveTarget.evidence_refs ?? []).filter((ref) => ref.is_closing || ref.isClosing).map((ref) => ref.id).filter((id): id is string => Boolean(id));
+              onResolve(resolveTarget, resolveReason.trim(), refs);
+              setResolveTarget(null);
+            }}>Resolve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

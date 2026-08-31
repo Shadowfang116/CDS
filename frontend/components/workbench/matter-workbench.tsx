@@ -43,6 +43,7 @@ import {
   listExports,
   rejectRequest,
   resolveException,
+  attachExceptionEvidence,
   updateCP,
   uploadDocument,
   workbenchEvaluate,
@@ -267,8 +268,7 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
         selectedDocId={evidenceDocId}
         selectedPage={evidencePage}
         onBack={() => setQuery({ view: null })}
-        onAttachEvidence={(documentId, pageNumber) => setQuery({ doc: documentId, page: pageNumber, view: "evidence" })}
-        onResolve={(item) => void run(async () => { await resolveException(item.id, "Resolved from workbench"); }, "Issue resolved")}
+        onAttachEvidence={(documentId, pageNumber) => void run(async () => { if (selectedFinding?.kind === "exception") await attachExceptionEvidence(selectedFinding.id, documentId, pageNumber, "Closing proof", true); setQuery({ doc: documentId, page: pageNumber, view: "evidence" }); }, "Closing proof linked")}
         onRequestDocument={requestDocument}
       />
     );
@@ -295,7 +295,7 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
       pendingWaiverIds={waiverIds}
       nextAction={nextAction}
       onSelectFinding={selectFinding}
-      onResolve={(item) => void run(async () => { await resolveException(item.id, "Resolved from workbench"); }, "Issue resolved")}
+      onResolve={(item, reason, refs) => void run(async () => { await resolveException(item.id, reason, refs); }, "Issue resolved")}
       onWaive={(item, reason) => void run(async () => { await workbenchRequestWaiver(caseId, item.id, reason); }, "Waiver requested — another reviewer must decide")}
       onSatisfyCp={(item) => void run(async () => { await updateCP(item.id, "Met"); }, "Approval requirement marked complete")}
       onJumpToEvidence={(documentId, pageNumber) => setQuery({ doc: documentId, page: pageNumber, surface: "evidence" })}

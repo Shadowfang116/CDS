@@ -49,6 +49,7 @@ class ConditionPrecedent(Base):
     org_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     case_id = Column(UUID(as_uuid=True), ForeignKey("cases.id"), nullable=False)
     rule_id = Column(String, nullable=False)
+    source_exception_id = Column(UUID(as_uuid=True), ForeignKey("exceptions.id"), nullable=True, index=True)
     severity = Column(String, nullable=False)  # Critical, High, Medium, Low
     text = Column(Text, nullable=False)
     evidence_required = Column(Text, nullable=True)
@@ -58,6 +59,7 @@ class ConditionPrecedent(Base):
     satisfied_by_verification_type = Column(String, nullable=True)  # e_stamp, registry_rod
     satisfied_at = Column(DateTime, nullable=True)
     satisfied_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    auto_satisfied_from_exception = Column(Boolean, nullable=False, default=False)
     waiver_reason = Column(Text, nullable=True)
     waived_at = Column(DateTime, nullable=True)
     waived_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
@@ -66,6 +68,7 @@ class ConditionPrecedent(Base):
     
     __table_args__ = (
         Index("idx_cps_org_case_severity_status", "org_id", "case_id", "severity", "status"),
+        Index("idx_cps_source_exception", "org_id", "source_exception_id"),
     )
 
 
@@ -104,4 +107,3 @@ class RuleRun(Base):
     __table_args__ = (
         Index("idx_rule_runs_org_case", "org_id", "case_id"),
     )
-

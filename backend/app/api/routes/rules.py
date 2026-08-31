@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.api.deps import CurrentUser, require_reviewer, require_viewer
@@ -16,6 +17,7 @@ from app.models.rules import ConditionPrecedent, Exception_, ExceptionEvidenceRe
 from app.services.audit import log_request_event
 from app.services.exception_waive import exception_is_waivable
 from app.services.rule_engine import run_rules
+from app.services.resolution import reconcile_case_progress, resolve_exception as resolve_exception_transaction
 
 router = APIRouter(tags=["rules"])
 
@@ -74,6 +76,8 @@ class ExceptionResponse(BaseModel):
     source_page: int | None = None
     is_hard_stop: bool = False
     waivable: bool = True
+    resolved_at: datetime | None = None
+    waived_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -103,6 +107,8 @@ class CPResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     evidence_refs: list[dict[str, Any]] = []
+    source_exception_id: str | None = None
+    auto_satisfied_from_exception: bool = False
 
 
 class CPsListResponse(BaseModel):
@@ -141,6 +147,11 @@ class ExceptionUpdateRequest(BaseModel):
     waiver_reason: str | None = None
     source_document_id: str | None = None
     source_page: int | None = None
+
+
+class ExceptionResolveRequest(BaseModel):
+    reason: str
+    closing_evidence_ref_ids: list[str] = Field(default_factory=list)
 
 
 class CPStatusUpdateRequest(BaseModel):
@@ -207,8 +218,6 @@ def _get_cp_or_404(db: Session, *, cp_id: uuid.UUID, org_id: uuid.UUID) -> Condi
 
 
 def _serialize_exception_refs(db: Session, exception_item: Exception_) -> list[dict[str, Any]]:
-    if exception_item.evidence_refs:
-        return exception_item.evidence_refs
     refs = (
         db.query(ExceptionEvidenceRef)
         .filter(
@@ -217,15 +226,17 @@ def _serialize_exception_refs(db: Session, exception_item: Exception_) -> list[d
         )
         .all()
     )
-    return [
+    persisted = [
         {
             "id": str(ref.id),
             "document_id": str(ref.document_id) if ref.document_id else None,
             "page_number": ref.page_number,
             "note": ref.note,
+            "is_closing": bool(ref.is_closing),
         }
         for ref in refs
     ]
+    return persisted or (exception_item.evidence_refs or [])
 
 
 def _exception_is_waivable(exception_item: Exception_, library: dict[str, Any] | None = None) -> bool:
@@ -252,6 +263,8 @@ def _serialize_exception(db: Session, exception_item: Exception_) -> ExceptionRe
         source_page=exception_item.source_page,
         is_hard_stop=bool(exception_item.is_hard_stop),
         waivable=_exception_is_waivable(exception_item),
+        resolved_at=exception_item.resolved_at,
+        waived_at=exception_item.waived_at,
         created_at=exception_item.created_at,
         updated_at=exception_item.updated_at,
     )
@@ -288,6 +301,8 @@ def _serialize_cp(db: Session, cp: ConditionPrecedent) -> CPResponse:
         created_at=cp.created_at,
         updated_at=cp.updated_at,
         evidence_refs=_serialize_cp_evidence(db, cp),
+        source_exception_id=str(cp.source_exception_id) if cp.source_exception_id else None,
+        auto_satisfied_from_exception=bool(cp.auto_satisfied_from_exception),
     )
 
 
@@ -300,6 +315,9 @@ async def evaluate_case(
 ):
     case = _get_case_or_404(db, case_id=case_id, org_id=current_user.org_id)
     raw_counts = run_rules(db, current_user.org_id, case_id, current_user.user_id)
+    from app.services.resolution import reconcile_case_progress
+    progress = reconcile_case_progress(db, case=case)
+    db.commit()
     counts = {
         "critical": int(raw_counts.get("critical", 0)),
         "high": int(raw_counts.get("high", 0)),
@@ -308,7 +326,7 @@ async def evaluate_case(
         "total": int(raw_counts.get("total", 0)),
         "cps_total": int(raw_counts.get("cps_total", 0)),
         "hard_stop_count": int(raw_counts.get("hard_stop_count", 0)),
-        "decision": raw_counts.get("decision"),
+        "decision": progress["decision"],
     }
     log_request_event(
         db,
@@ -403,6 +421,51 @@ async def get_exception(
     return _serialize_exception(db, exception_item)
 
 
+@router.post("/exceptions/{exception_id}/resolve")
+async def resolve_exception_endpoint(
+    request: Request,
+    exception_id: uuid.UUID,
+    body: ExceptionResolveRequest,
+    current_user: CurrentUser = Depends(require_reviewer),
+    db: Session = Depends(get_db),
+):
+    """Resolve an exception, its generated CP, and case progress atomically."""
+    exception_item = _get_exception_or_404(db, exception_id=exception_id, org_id=current_user.org_id)
+    was_resolved = exception_item.status == "Resolved"
+    before_json = _serialize_exception(db, exception_item).model_dump(mode="json")
+    linked_cps, progress = resolve_exception_transaction(
+        db,
+        exception_item=exception_item,
+        user_id=current_user.user_id,
+        role=current_user.role,
+        reason=body.reason,
+        closing_evidence_ref_ids=body.closing_evidence_ref_ids,
+    )
+    db.flush()
+    after_json = _serialize_exception(db, exception_item).model_dump(mode="json")
+    after_json["reason"] = body.reason.strip()
+    after_json["linked_cp_ids"] = [str(cp.id) for cp in linked_cps]
+    after_json["case_progress"] = progress
+    if not was_resolved:
+        log_request_event(
+            db,
+            request=request,
+            action="exception.resolve",
+            org_id=current_user.org_id,
+            actor_id=current_user.user_id,
+            entity_type="exception",
+            entity_id=exception_item.id,
+            case_id=exception_item.case_id,
+            before_json=before_json,
+            after_json=after_json,
+        )
+    return {
+        "exception": _serialize_exception(db, exception_item),
+        "cps": [_serialize_cp(db, cp) for cp in linked_cps],
+        "case_progress": progress,
+    }
+
+
 @router.put("/exceptions/{exception_id}", response_model=ExceptionResponse)
 async def update_exception_record(
     request: Request,
@@ -482,15 +545,41 @@ async def update_exception_status(
         _mark_direct_waive_deprecated(response)
 
     before_json = _serialize_exception(db, exception_item).model_dump(mode="json")
-    exception_item.status = normalized_status
     if normalized_status == "Resolved":
-        exception_item.resolved_by_user_id = current_user.user_id
-        exception_item.resolved_at = datetime.utcnow()
-        exception_item.waiver_reason = None
-        exception_item.waived_by_user_id = None
-        exception_item.waived_at = None
-        audit_action = "exception.resolve"
-    elif normalized_status == "Waived":
+        existing_closing_refs = db.query(ExceptionEvidenceRef).filter(
+            ExceptionEvidenceRef.exception_id == exception_item.id,
+            ExceptionEvidenceRef.org_id == current_user.org_id,
+            ExceptionEvidenceRef.is_closing.is_(True),
+        ).all()
+        linked_cps, progress = resolve_exception_transaction(
+            db,
+            exception_item=exception_item,
+            user_id=current_user.user_id,
+            role=current_user.role,
+            reason=closure_reason or "Resolved exception",
+            closing_evidence_ref_ids=[str(ref.id) for ref in existing_closing_refs],
+        )
+        db.flush()
+        after_json = _serialize_exception(db, exception_item).model_dump(mode="json")
+        after_json["reason"] = closure_reason or "Resolved exception"
+        after_json["linked_cp_ids"] = [str(cp.id) for cp in linked_cps]
+        after_json["case_progress"] = progress
+        log_request_event(
+            db,
+            request=request,
+            action="exception.resolve",
+            org_id=current_user.org_id,
+            actor_id=current_user.user_id,
+            entity_type="exception",
+            entity_id=exception_item.id,
+            case_id=exception_item.case_id,
+            before_json=before_json,
+            after_json=after_json,
+        )
+        return _serialize_exception(db, exception_item)
+
+    exception_item.status = normalized_status
+    if normalized_status == "Waived":
         exception_item.waiver_reason = waiver_reason
         exception_item.waived_by_user_id = current_user.user_id
         exception_item.waived_at = datetime.utcnow()
@@ -504,6 +593,23 @@ async def update_exception_status(
         exception_item.waived_at = None
         exception_item.waiver_reason = None
         audit_action = "exception.reopen"
+
+        linked_cps = db.query(ConditionPrecedent).filter(
+            ConditionPrecedent.org_id == exception_item.org_id,
+            ConditionPrecedent.case_id == exception_item.case_id,
+            or_(
+                ConditionPrecedent.source_exception_id == exception_item.id,
+                ConditionPrecedent.rule_id == exception_item.rule_id,
+            ),
+            ConditionPrecedent.auto_satisfied_from_exception.is_(True),
+        ).all()
+        for cp in linked_cps:
+            cp.status = "Open"
+            cp.satisfied_at = None
+            cp.satisfied_by_user_id = None
+            cp.auto_satisfied_from_exception = False
+
+    progress = reconcile_case_progress(db, case=_get_case_or_404(db, case_id=exception_item.case_id, org_id=current_user.org_id))
     db.commit()
     db.refresh(exception_item)
     after_json = _serialize_exception(db, exception_item).model_dump(mode="json")
@@ -511,6 +617,7 @@ async def update_exception_status(
         after_json["reason"] = closure_reason
     if normalized_status == "Waived" and waiver_reason is not None:
         after_json["reason"] = waiver_reason
+    after_json["case_progress"] = progress
 
     log_request_event(
         db,
@@ -618,6 +725,9 @@ async def update_cp_status(
         cp.waived_at = None
         cp.waived_by_user_id = None
         audit_action = "cp.status_changed"
+    from app.services.resolution import reconcile_case_progress
+    case = _get_case_or_404(db, case_id=cp.case_id, org_id=current_user.org_id)
+    progress = reconcile_case_progress(db, case=case)
     db.commit()
     db.refresh(cp)
     log_request_event(

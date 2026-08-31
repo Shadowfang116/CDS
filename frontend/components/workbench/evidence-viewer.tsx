@@ -18,7 +18,6 @@ type EvidenceViewerProps = {
   selectedPage?: number;
   onBack: () => void;
   onAttachEvidence: (documentId: string, pageNumber: number) => void;
-  onResolve?: (item: FindingRow) => void;
   onRequestDocument?: () => void;
 };
 
@@ -35,7 +34,6 @@ export function EvidenceViewer({
   selectedPage,
   onBack,
   onAttachEvidence,
-  onResolve,
   onRequestDocument,
 }: EvidenceViewerProps) {
   const [tab, setTab] = useState<IntelligenceTab>("finding");
@@ -164,9 +162,6 @@ export function EvidenceViewer({
                 <div className="mt-4 flex gap-2">
                   <button type="button" className="cds-btn cds-btn-primary" onClick={onRequestDocument}>
                     Request corrected Fard
-                  </button>
-                  <button type="button" className="cds-btn cds-btn-ghost" onClick={() => onResolve?.(selectedFinding)}>
-                    Resolve
                   </button>
                 </div>
               ) : null}

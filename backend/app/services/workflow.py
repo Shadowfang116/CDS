@@ -25,7 +25,7 @@ CASE_TRANSITIONS = {
     "Processing": {"Review"},
     "Review": {"PendingDocs", "ReadyForApproval"},
     "PendingDocs": {"Review"},
-    "ReadyForApproval": {"Approved", "Rejected"},
+    "ReadyForApproval": {"Approved", "Rejected", "Review"},
     "Approved": {"Closed"},
     "Rejected": {"Closed"},
     "Closed": set(),

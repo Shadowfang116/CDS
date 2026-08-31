@@ -9,7 +9,7 @@ from app.db.session import get_db
 from app.models.rules import Exception_, ConditionPrecedent, ExceptionEvidenceRef
 from app.models.cp_evidence import CPEvidenceRef
 from app.models.document import Document
-from app.api.deps import get_current_user, CurrentUser
+from app.api.deps import get_current_user, require_reviewer, CurrentUser
 from app.services.audit import write_audit_event
 
 router = APIRouter(tags=["rules"])
@@ -19,6 +19,7 @@ class EvidenceAttachRequest(BaseModel):
     document_id: str
     page_number: int
     note: Optional[str] = None
+    is_closing: bool = False
 
 
 class EvidenceSnippetRequest(BaseModel):
@@ -32,6 +33,7 @@ class EvidenceRefResponse(BaseModel):
     document_id: Optional[str]
     page_number: Optional[int]
     note: Optional[str]
+    is_closing: bool = False
 
 
 @router.post("/exceptions/{exception_id}/evidence", response_model=EvidenceRefResponse)
@@ -39,7 +41,7 @@ async def attach_exception_evidence(
     request: Request,
     exception_id: uuid.UUID,
     body: EvidenceAttachRequest,
-    current_user: CurrentUser = Depends(get_current_user),
+    current_user: CurrentUser = Depends(require_reviewer),
     db: Session = Depends(get_db),
 ):
     """Attach evidence (document+page) to an exception."""
@@ -59,6 +61,8 @@ async def attach_exception_evidence(
     ).first()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    if body.page_number < 1 or (doc.page_count and body.page_number > doc.page_count):
+        raise HTTPException(status_code=422, detail="Evidence page is outside the document")
     
     # Create evidence ref
     evidence_ref = ExceptionEvidenceRef(
@@ -67,6 +71,7 @@ async def attach_exception_evidence(
         document_id=uuid.UUID(body.document_id),
         page_number=body.page_number,
         note=body.note,
+        is_closing=body.is_closing,
     )
     db.add(evidence_ref)
     db.commit()
@@ -155,4 +160,3 @@ async def attach_cp_evidence(
         page_number=body.page_number,
         note=body.note,
     )
-

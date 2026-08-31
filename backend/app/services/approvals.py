@@ -257,6 +257,10 @@ def apply_approval_side_effects(
                     "waiver_reason": payload.get("waiver_reason"),
                 },
             )
+            from app.services.resolution import reconcile_case_progress
+            case = db.query(Case).filter(Case.id == exception.case_id, Case.org_id == exception.org_id).first()
+            if case:
+                reconcile_case_progress(db, case=case)
     
     elif approval_request.request_type == "cp_waive":
         cp = db.query(ConditionPrecedent).filter(
@@ -279,6 +283,10 @@ def apply_approval_side_effects(
                     "waiver_reason": payload.get("waiver_reason"),
                 },
             )
+            from app.services.resolution import reconcile_case_progress
+            case = db.query(Case).filter(Case.id == cp.case_id, Case.org_id == cp.org_id).first()
+            if case:
+                reconcile_case_progress(db, case=case)
     
     elif approval_request.request_type == "case_decision":
         case = db.query(Case).filter(
@@ -535,4 +543,3 @@ def get_case_readiness(
             "cp_threshold_pct": cp_threshold_pct,
         },
     }
-

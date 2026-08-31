@@ -22,6 +22,7 @@ from app.services.doc_convert import convert_docx_bytes_to_pdf, DocConvertError
 from app.core.middleware import sanitize_filename
 from app.services.rule_engine import infer_doc_type_from_filename
 from app.services.documents.pdf_render import get_page_image_bytes
+from app.services.workflow import normalize_case_status, transition_case
 
 router = APIRouter(tags=["documents"])
 
@@ -56,6 +57,8 @@ async def upload_document(
     ).first()
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
+    if normalize_case_status(case.status) == "New":
+        transition_case(db, case=case, next_status="Processing")
     
     # Determine content type (check extension if content-type is missing/incorrect)
     content_type = file.content_type or "application/octet-stream"
@@ -598,6 +601,5 @@ async def render_page(
         raise HTTPException(status_code=404, detail="Page render unavailable")
 
     return Response(content=image_bytes, media_type="image/png", headers={"Cache-Control": "private, max-age=300"})
-
 
 

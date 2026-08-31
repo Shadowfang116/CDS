@@ -1,9 +1,12 @@
 export type FindingKind = "exception" | "cp";
 
 export type FindingEvidenceRef = {
+  id?: string;
   document_id?: string | null;
   page_number?: number | null;
   note?: string | null;
+  is_closing?: boolean;
+  isClosing?: boolean;
 };
 
 export type FindingRow = {

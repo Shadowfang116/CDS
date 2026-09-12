@@ -4,15 +4,26 @@
 
 | | |
 |---|---|
-| **Last updated** | 2026-08-25 |
+| **Last updated** | 2026-09-01 |
 | **Phase** | Matter Workbench product phase — Phase 1 shell |
 | **Branch** | `refactor/cds-backend-core` |
 | **Live case** | RUN 3 flagship `38e6069e-4c3d-4a41-94c8-8b9ecc92e069`. Visual corpus RUN 2 `5bcdb8eb-…`. Do not use RUN 1 `4673c7f2-…`. |
-| **Findings** | F10 🟢, F11 🟢, F12 🟢. Open: F7, F8. In progress: F3, F6. |
-| **Baseline CER/WER/F1** | ❌ pending sample PDFs (Q1) |
-| **Next action** | Backend gold gaps re-verified by focused pytest. No backend patch needed from current evidence; next backend proof should be a fresh live RUN 3 only if new end-to-end evidence is required. |
+| **Findings** | F7 🟢, F10 🟢, F11 🟢, F12 🟢. Open: F8. In progress: F3, F6. |
+| **Baseline CER/WER/F1** | ⚠️ text-layer proxy on 39 live pages: CER 44.76%, WER 61.57%, F1 68.59% |
+| **Next action** | Replace the proxy with independently transcribed scan ground truth; repair the production OCR quality model (F8). |
 
 ---
+
+### 2026-09-01 — Live OCR proxy and autofill measurement
+
+- Repaired the OCR evaluation metric import failure and corrected WER to use word-level edit distance.
+- Ran the live production OCR path against 17 Gold PDFs / 39 pages in the current RUN 3 case.
+- Compared raw OCR with each PDF's embedded text layer: CER `0.4476`, WER `0.6157`, overlap F1 `0.6859`, average service confidence `0.8917`.
+- This is a text-layer proxy, not independent scan ground truth; it is useful for regression measurement but not a final accuracy claim.
+- Compared eight labeled Gold autofill fields: `8/8` correct, including borrower name, source-specific areas, corrected Fard area, plot, block, borrower type, and transaction type.
+- Broader autofill accuracy remains unmeasured because the corpus does not label every one of the 41 extraction candidates.
+- Verification: the directly rerun contextual/evaluator subset was `13 passed, 1 warning`, and the full semantic/rule/OCR-domain run was `168 passed, 1 warning`.
+- Evidence: `AI_context/execution_reports/cds_gold_001_e2e_20260901-015531.json`.
 
 ## Log — append new entries at the top
 
@@ -311,3 +322,35 @@ baseline number.
 - On seeded `PILOT DEMO CASE`, authenticated workbench extraction returned 200 and evaluation returned 200 with findings and a blocked `FAIL` decision.
 - The workbench then reported one source document, findings, and `readiness=False`.
 - No OCR accuracy percentage is claimed: representative ground-truth samples remain unavailable, and the Surya fallback is an explicit release limitation.
+
+### 2026-09-12 — Local PaddleOCR benchmark and rulebook classification hardening
+
+- Local OCR environment completed with PaddlePaddle `3.3.1` and PaddleOCR `3.7.0`.
+- Added external-data benchmark manifest support, human-review gating, raw OCR output,
+  weighted CER/WER aggregation, character accuracy, and RSS delta reporting.
+- Ran the three-page draft pilot at 150 DPI with PaddleOCR: aggregate CER `0.3991`,
+  character accuracy `0.6009`, aggregate WER `0.7485`, average token F1 `0.3814`,
+  average confidence `0.9098`, and average warm-page time `40.48s`.
+- Pilot remains `DRAFT_REFERENCE_ONLY` and `NOT_RELEASE_ACCURACY` because all three
+  transcription files have `human_verified=false`.
+- Added field exact/normalized match metrics and evidence-link checks.
+- Hardened content classification against PaddleOCR Urdu variants; the three pilot
+  pages now map to Dues Clearance, Charge Release, and Identity Confirmation from OCR
+  text alone.
+- Focused suite: `17 passed`; backend suite: `225 passed`.
+
+### 2026-09-12 — User-verified OCR pilot rerun
+
+- The user confirmed the three supplied transcription pages as human-verified ground truth.
+- Updated external `review_status.csv` with reviewer `user`, review date `2026-09-12`,
+  and `human_verified=true`; updated the tracked pilot manifest accordingly.
+- Verified PaddleOCR pilot: aggregate CER `0.3991`, character accuracy `0.6009`,
+  aggregate WER `0.7485`, average token F1 `0.3814`, average confidence `0.9098`,
+  average page time `38.77s` at 150 DPI.
+- Tesseract control: aggregate CER `0.7320`, character accuracy `0.2680`,
+  aggregate WER `0.9172`, average token F1 `0.2041`, average confidence `0.5811`,
+  average page time `0.84s` at 150 DPI.
+- PaddleOCR improved CER by approximately `45.5%` relative to Tesseract on this pilot,
+  but the three pages are not sufficient for the full release gate.
+- PaddleOCR OCR-content classification mapped all three pages to the expected checklist
+  document types: Dues Clearance, Charge Release, and Identity Confirmation (`3/3`).

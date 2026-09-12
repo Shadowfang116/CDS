@@ -8,7 +8,8 @@ This directory contains a "golden dataset" for evaluating Urdu OCR accuracy and 
 datasets/urdu_ocr/
 ├── README.md (this file)
 ├── manifests/
-│   └── manifest.json (dataset manifest)
+│   ├── manifest.json (repository-local template)
+│   └── cds_gold_001_draft_pilot.json (external three-page pilot)
 ├── samples/ (gitignored - never commit PDFs)
 │   ├── sample1.pdf
 │   ├── sample1.page1.txt (ground truth for page 1)
@@ -21,17 +22,24 @@ datasets/urdu_ocr/
 ## Adding Samples
 
 1. **Place PDF files** in `samples/` directory (never commit to git)
-2. **Create ground truth text files** (optional but recommended):
+2. **Create ground truth text files** (required for accuracy claims):
    - Name format: `{sample_id}.page{N}.txt` (1-based page numbers)
    - Can be partial (key lines only) - F1 score handles this well
-   - Copy/paste ground truth text from verified sources
+   - Transcribe independently from the scan; do not copy OCR output
+   - Have an Urdu-capable reviewer approve the transcription
 3. **Update manifest.json**:
    ```json
    {
      "id": "sample1",
-     "pdf_path": "datasets/urdu_ocr/samples/sample1.pdf",
-     "pages": [
-       { "page": 0, "gt_path": "datasets/urdu_ocr/samples/sample1.page1.txt" }
+   "source_pdf": "02_ADDITIONAL_EVIDENCE/sample1.pdf",
+   "document_class": "fard",
+   "rulebook_targets": ["GOLD-EX-001"],
+   "pages": [
+       {
+         "page": 1,
+         "ground_truth_path": "transcriptions/sample1.page1.txt",
+         "human_verified": true
+       }
      ],
      "notes": "Description of sample"
    }
@@ -39,7 +47,9 @@ datasets/urdu_ocr/
 
 ## Creating Ground Truth
 
-Ground truth files should contain the expected text for each page:
+Ground truth files must contain an independently reviewed transcription of the
+expected text for each page. Until a reviewer approves the text, the page may
+be used for a smoke test but not for an accuracy claim:
 
 - **Full text**: Complete page text (best for CER/WER)
 - **Partial text**: Key lines only (F1 score works well with this)
@@ -54,6 +64,40 @@ Example ground truth (`sample1.page1.txt`):
 ```
 
 ## Running Evaluation
+
+### Local engine comparison
+
+Install the local OCR dependencies in a dedicated virtual environment, then
+run the comparison:
+
+```bash
+python -m venv .venv-ocr
+.venv-ocr\\Scripts\\python.exe -m pip install -r ocr_service/requirements.txt
+```
+
+```bash
+python scripts/dev/eval_local_ocr.py --engine both
+```
+
+This renders benchmark PDFs and runs Tesseract and PaddleOCR locally on the
+same pages. It fails when a referenced scan or reviewed transcription is
+missing, and records CER, WER, F1, confidence, CDS quality, elapsed time, and
+memory delta. It also saves raw OCR text under `reports/raw/` and reports
+weighted corpus CER/WER totals rather than only averaging page percentages.
+
+For the external CDS-GOLD-001 pilot, keep the PDFs and drafts outside Git and
+run:
+
+```powershell
+.venv-ocr\Scripts\python.exe scripts/dev/eval_local_ocr.py `
+  --manifest datasets/urdu_ocr/manifests/cds_gold_001_draft_pilot.json `
+  --data-root C:\path\to\CDS_GOLD_001_URDU_PDF_CORPUS `
+  --engine paddleocr --dpi 150 --allow-unverified
+```
+
+`--allow-unverified` is required for draft comparisons and marks the report
+`DRAFT_REFERENCE_ONLY` / `NOT_RELEASE_ACCURACY`. Omit it for a release
+candidate run; unverified pages are then rejected.
 
 ### Quick Mode (Quality Metrics Only)
 

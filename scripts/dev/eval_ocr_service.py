@@ -38,6 +38,7 @@ def evaluate_ocr_service(
         manifest = json.load(f)
 
     results = []
+    missing_files = []
     total_cer, total_wer, total_f1 = 0.0, 0.0, 0.0
     evaluated_pages = 0
 
@@ -46,24 +47,24 @@ def evaluate_ocr_service(
     for item in manifest.get("items", []):
         doc_id = item["id"]
         pdf_name = item.get("filename", f"{doc_id}.pdf")
-        pages_gt = item.get("ground_truth_pages", [])
+        pages_gt = item.get("ground_truth_pages") or [page.get("gt_path") for page in item.get("pages", [])]
 
         pages_payload = []
         for p_idx, gt_rel in enumerate(pages_gt, start=1):
             gt_file = samples_dir / gt_rel
             if not gt_file.exists():
-                logger.warning(f"Ground truth file missing: {gt_file}")
+                missing_files.append(str(gt_file))
                 continue
 
             # Render image or check for page image file
             page_img_path = samples_dir / f"{doc_id}.page{p_idx}.png"
             if not page_img_path.exists():
-                logger.warning(f"Page image missing: {page_img_path}")
+                missing_files.append(str(page_img_path))
                 continue
 
             with open(page_img_path, "rb") as img_f:
                 b64_img = base64.b64encode(img_f.read()).decode("utf-8")
-                pages_payload.append({"page_num": p_idx, "image_base64": b64_img})
+            pages_payload.append(b64_img)
 
         if not pages_payload:
             continue
@@ -83,22 +84,30 @@ def evaluate_ocr_service(
             gt_file = samples_dir / pages_gt[p_num - 1]
             gt_text = gt_file.read_text(encoding="utf-8").strip()
 
-            eval_metrics = evaluate_ocr_result(gt_text, ocr_text)
+            eval_metrics = evaluate_ocr_result(ocr_text, gt_text)
             results.append({
                 "doc_id": doc_id,
                 "page_num": p_num,
-                "cer": eval_metrics.cer,
-                "wer": eval_metrics.wer,
-                "f1_score": eval_metrics.f1_score,
+                "cer": eval_metrics.get("cer"),
+                "wer": eval_metrics.get("wer"),
+                "f1_score": eval_metrics.get("f1"),
                 "confidence": page_res.get("confidence", 0.0),
             })
-            total_cer += eval_metrics.cer
-            total_wer += eval_metrics.wer
-            total_f1 += eval_metrics.f1_score
+            total_cer += eval_metrics["cer"]
+            total_wer += eval_metrics["wer"]
+            total_f1 += eval_metrics["f1"]
             evaluated_pages += 1
+
+    if missing_files:
+        raise FileNotFoundError(
+            "Benchmark is incomplete; missing: " + ", ".join(sorted(set(missing_files)))
+        )
+    if evaluated_pages == 0:
+        raise ValueError("Benchmark contains no evaluated pages")
 
     summary = {
         "timestamp": datetime.utcnow().isoformat(),
+        "engine_requested": engine,
         "total_evaluated_pages": evaluated_pages,
         "avg_cer": (total_cer / evaluated_pages) if evaluated_pages > 0 else None,
         "avg_wer": (total_wer / evaluated_pages) if evaluated_pages > 0 else None,
@@ -106,7 +115,7 @@ def evaluate_ocr_service(
         "page_results": results,
     }
 
-    report_path = output_dir / f"ocr_service_eval_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+    report_path = output_dir / f"ocr_service_eval_{engine}_{datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')}.json"
     with open(report_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
 
@@ -120,17 +129,30 @@ def main():
     parser.add_argument("--manifest", default="datasets/urdu_ocr/manifests/manifest.json", help="Manifest JSON path")
     parser.add_argument("--samples", default="datasets/urdu_ocr/samples", help="Samples directory path")
     parser.add_argument("--out", default="datasets/urdu_ocr/reports", help="Output report directory")
-    parser.add_argument("--engine", default="tesseract", help="OCR engine to request; the service runs Tesseract")
+    parser.add_argument(
+        "--engine",
+        choices=("tesseract", "paddleocr", "both"),
+        default="tesseract",
+        help="OCR engine to request, or both for a side-by-side comparison",
+    )
     args = parser.parse_args()
 
     project_root = Path(__file__).resolve().parent.parent.parent
-    evaluate_ocr_service(
-        service_url=args.url,
-        manifest_path=project_root / args.manifest,
-        samples_dir=project_root / args.samples,
-        output_dir=project_root / args.out,
-        engine=args.engine,
-    )
+    engines = ("tesseract", "paddleocr") if args.engine == "both" else (args.engine,)
+    summaries = {
+        engine: evaluate_ocr_service(
+            service_url=args.url,
+            manifest_path=project_root / args.manifest,
+            samples_dir=project_root / args.samples,
+            output_dir=project_root / args.out,
+            engine=engine,
+        )
+        for engine in engines
+    }
+    if len(summaries) == 2:
+        comparison_path = project_root / args.out / f"ocr_service_comparison_{datetime.utcnow().strftime('%Y%m%d_%H%M%S_%f')}.json"
+        comparison_path.write_text(json.dumps(summaries, indent=2, ensure_ascii=False), encoding="utf-8")
+        logger.info("Side-by-side comparison saved to %s", comparison_path)
 
 
 if __name__ == "__main__":

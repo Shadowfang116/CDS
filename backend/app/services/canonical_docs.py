@@ -172,6 +172,9 @@ _CONTENT_PATTERNS: Sequence[Tuple[Tuple[str, ...], str]] = (
     (("فرد", "fard", "fard-e-malkiat"), "Fard"),
     (("possession letter", "قبضہ", "handover letter"), "Possession Letter"),
     (("search report", "title search", "encumbrance search"), "Search Report"),
+    (("dues clearance", "development charges clearance", "ترقیاتی واجبات", "ترقياتى واجبات", "واجبات كى", "کلیئرنس سرٹیفکیٹ", "كليئرنس سرئيفكيٹ"), "Dues Clearance"),
+    (("release of charge", "release /satisfaction letter", "satisfaction letter", "رہائی", "ريائى", "سابقه چارج"), "Charge Release"),
+    (("identity confirmation", "name confirmation", "قانونی شناخت", "قانونى شناخت", "شناخت كى تصديق", "شناختی فرق", "شناختى فرق", "idconf-"), "Identity Confirmation"),
     (("no objection", "این او سی", "noc"), "Society/Authority NOC"),
     (("valuation", "مالیت", "market value"), "Valuation"),
     (("facility approval", "facility sanctioned"), "Facility Approval"),
@@ -199,6 +202,19 @@ _STRONG_SALE_DEED = (
     "sale deed",
     "deed of sale",
     "فروخت کنندہ",
+)
+
+_IDENTITY_INDICATORS = (
+    "identity confirmation",
+    "name confirmation",
+    "legal identity",
+    "قانونی شناخت",
+    "املا کے فرق",
+    "reconciliation evidence",
+    "شناختى فرق",
+    "شناختی فرق",
+    "idconf-",
+    "نامقانونى شناخت",
 )
 
 
@@ -275,6 +291,7 @@ def classify_document_type(
     blob_lower = blob.lower()
     mutation_hits = sum(1 for token in _MUTATION_INDICATORS if token in blob or token in blob_lower)
     sale_hits = sum(1 for token in _STRONG_SALE_DEED if token in blob or token in blob_lower)
+    identity_hits = sum(1 for token in _IDENTITY_INDICATORS if token in blob or token in blob_lower)
 
     protected = {
         "Fard", "CNIC", "Search Report", "Valuation", "Facility Approval",
@@ -292,6 +309,8 @@ def classify_document_type(
         return "Sale Deed", "filename"
 
     if mutation_hits and mutation_hits >= sale_hits and sale_hits <= 1:
+        if identity_hits:
+            return "Identity Confirmation", "content"
         return "Mutation", "content" if ocr_text else "filename"
     if content_hit:
         return content_hit, "content"

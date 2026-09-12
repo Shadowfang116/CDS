@@ -1,0 +1,52 @@
+{
+  "version": "v2",
+  "benchmark_status": "USER_VERIFIED_PILOT",
+  "accuracy_status": "VERIFIED_PILOT_ACCURACY",
+  "items": [
+    {
+      "id": "14_Development_Charges_Clearance_URDU",
+      "source_pdf": "02_ADDITIONAL_EVIDENCE/14_Development_Charges_Clearance_URDU.pdf",
+      "document_class": "development_charges_clearance",
+      "rulebook_targets": ["GOLD-EX-003"],
+      "pages": [
+        {
+          "page": 1,
+          "ground_truth_path": "Sample_Urdu_Transcriptions_DRAFT/14_Development_Charges_Clearance_URDU.page1.txt",
+          "human_verified": true,
+          "reviewer": "user",
+          "review_date": "2026-09-12"
+        }
+      ]
+    },
+    {
+      "id": "15_Prior_Charge_Release_Letter_URDU",
+      "source_pdf": "02_ADDITIONAL_EVIDENCE/15_Prior_Charge_Release_Letter_URDU.pdf",
+      "document_class": "prior_charge_release",
+      "rulebook_targets": ["GOLD-EX-004"],
+      "pages": [
+        {
+          "page": 1,
+          "ground_truth_path": "Sample_Urdu_Transcriptions_DRAFT/15_Prior_Charge_Release_Letter_URDU.page1.txt",
+          "human_verified": true,
+          "reviewer": "user",
+          "review_date": "2026-09-12"
+        }
+      ]
+    },
+    {
+      "id": "16_Identity_Name_Confirmation_URDU",
+      "source_pdf": "02_ADDITIONAL_EVIDENCE/16_Identity_Name_Confirmation_URDU.pdf",
+      "document_class": "identity_name_confirmation",
+      "rulebook_targets": ["GOLD-EX-006"],
+      "pages": [
+        {
+          "page": 1,
+          "ground_truth_path": "Sample_Urdu_Transcriptions_DRAFT/16_Identity_Name_Confirmation_URDU.page1.txt",
+          "human_verified": true,
+          "reviewer": "user",
+          "review_date": "2026-09-12"
+        }
+      ]
+    }
+  ]
+}

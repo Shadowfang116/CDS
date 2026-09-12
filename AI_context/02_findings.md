@@ -19,7 +19,7 @@ references below — they drift as soon as anyone edits these files.
 | F4 | 🟢 fixed (2026-08-16) | medium-large | `ocr_service/engines/tesseract_engine.py` |
 | F5 | 🟢 fixed (2026-08-16) | small-medium | `backend/app/services/ocr_domain_ur.py` |
 | F6 | 🟡 in progress | medium | `backend/app/core/config.py` |
-| F7 | 🔴 open | blocks all verification | `scripts/dev/eval_urdu_ocr.py:16` |
+| F7 | 🟢 fixed (2026-09-01) | blocks all verification | `scripts/dev/eval_urdu_ocr.py:16`, `backend/app/services/ocr_eval.py` |
 | F8 | 🔴 open | affects trust, not raw CER | `ocr_service/quality.py:38-43` |
 | F9 | 🟢 fixed (2026-08-16) | medium | `backend/app/core/config.py`, `ocr_service/preprocessing.py` |
 | F10 | 🟢 fixed (2026-08-17) | field accuracy (names) | `backend/app/services/extractors/party_roles.py`, `sale_deed_clauses.py` |

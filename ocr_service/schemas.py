@@ -12,7 +12,7 @@ class WordBox(BaseModel):
 class OcrRequest(BaseModel):
     document_id: str
     pages: list[str]
-    # Kept as a string for compatibility with older callers; the service always runs Tesseract.
+    # Kept as a string for compatibility with older callers and engine experiments.
     engine: str = "tesseract"
 
 

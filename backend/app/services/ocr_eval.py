@@ -1,14 +1,9 @@
 ﻿"""DEV-ONLY OCR evaluation metrics used by scripts/dev/eval_*.py. Not on the production path."""
 import logging
 import re
+import unicodedata
 from typing import Dict, Any, Optional
 
-from app.services.ocr_quality import (
-    urdu_char_ratio,
-    latin_ratio,
-    garbage_ratio,
-    whitespace_ratio,
-)
 from app.services.ocr_text import normalize_unicode
 
 # Digit normalization mapping (reuse from ocr_text.py)
@@ -28,6 +23,27 @@ def normalize_digits(text:
     return ''.join(URDU_DIGIT_MAP.get(c, c) for c in text)
 
 logger = logging.getLogger(__name__)
+
+
+def urdu_char_ratio(text: str) -> float:
+    return sum(1 for char in text if "\u0600" <= char <= "\u06ff") / max(len(text), 1)
+
+
+def latin_ratio(text: str) -> float:
+    return sum(1 for char in text if char.isascii() and char.isalpha()) / max(len(text), 1)
+
+
+def garbage_ratio(text: str) -> float:
+    garbage = sum(
+        1
+        for char in text
+        if not char.isspace() and unicodedata.category(char)[0] in {"C", "S"}
+    )
+    return garbage / max(len(text), 1)
+
+
+def whitespace_ratio(text: str) -> float:
+    return sum(1 for char in text if char.isspace()) / max(len(text), 1)
 
 
 def normalize_for_eval(text:
@@ -145,17 +161,25 @@ def word_error_rate(pred:
     Returns:
         WER (0.0 = perfect, higher = worse)
     """
-    # Tokenize by whitespace
     pred_words = pred.split()
     gt_words = gt.split()
     
     if not gt_words:
         return 1.0 if pred_words else 0.0
     
-    dist = edit_distance(' '.join(pred_words), ' '.join(gt_words))
-    # Approximate WER using character-level edit distance on word sequences
-    # More accurate would be word-level edit distance, but this is simpler
-    return dist / max(1, len(' '.join(gt_words)))
+    dp = list(range(len(gt_words) + 1))
+    for i, pred_word in enumerate(pred_words, start=1):
+        previous = dp[0]
+        dp[0] = i
+        for j, gt_word in enumerate(gt_words, start=1):
+            current = dp[j]
+            dp[j] = min(
+                dp[j] + 1,
+                dp[j - 1] + 1,
+                previous + (pred_word != gt_word),
+            )
+            previous = current
+    return dp[-1] / max(1, len(gt_words))
 
 
 def overlap_f1(pred:
@@ -255,3 +279,72 @@ def evaluate_ocr_result(
     
     return result
 
+
+def normalize_field_value(value: Any, normalization: str = "text") -> str:
+    """Normalize an extracted legal field without applying semantic correction."""
+    text = normalize_digits(str(value or ""))
+    text = unicodedata.normalize("NFKC", text).strip().lower()
+    if normalization in {"amount", "identifier"}:
+        text = re.sub(r"[\s,٬،/\\-]", "", text)
+        if normalization == "amount":
+            text = re.sub(r"[^0-9]", "", text)
+    elif normalization == "area":
+        text = re.sub(r"\s+", " ", text)
+    else:
+        text = re.sub(r"\s+", " ", text)
+    return text
+
+
+def evaluate_field_predictions(
+    references: list[dict[str, Any]],
+    predictions: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Score field extraction and evidence links against page-level references."""
+    prediction_map = {
+        (row.get("document_id"), int(row.get("page", row.get("source_page", 0))), row.get("field")): row
+        for row in predictions
+    }
+    rows: list[dict[str, Any]] = []
+    exact_matches = normalized_matches = false_positives = missing = missing_links = 0
+    for reference in references:
+        key = (reference.get("document_id"), int(reference.get("page", 0)), reference.get("field"))
+        prediction = prediction_map.get(key)
+        expected = str(reference.get("reference_value", ""))
+        normalization = reference.get("normalization", "text")
+        predicted = str(prediction.get("predicted_value", "")) if prediction else ""
+        exact = bool(prediction) and predicted.strip() == expected.strip()
+        normalized = bool(prediction) and normalize_field_value(predicted, normalization) == normalize_field_value(expected, normalization)
+        linked = bool(prediction and prediction.get("source_page") and prediction.get("snippet"))
+        if exact:
+            exact_matches += 1
+        if normalized:
+            normalized_matches += 1
+        elif prediction:
+            false_positives += 1
+        else:
+            missing += 1
+        if prediction and not linked:
+            missing_links += 1
+        rows.append({
+            "document_id": reference.get("document_id"),
+            "page": reference.get("page"),
+            "field": reference.get("field"),
+            "exact_match": exact,
+            "normalized_match": normalized,
+            "missing": not bool(prediction),
+            "false_positive": bool(prediction) and not normalized,
+            "evidence_linked": linked,
+            "confidence": prediction.get("confidence") if prediction else None,
+        })
+    total = len(references)
+    return {
+        "fields_total": total,
+        "exact_matches": exact_matches,
+        "normalized_matches": normalized_matches,
+        "false_positives": false_positives,
+        "missing_values": missing,
+        "missing_evidence_links": missing_links,
+        "exact_match_rate": exact_matches / max(1, total),
+        "normalized_match_rate": normalized_matches / max(1, total),
+        "rows": rows,
+    }

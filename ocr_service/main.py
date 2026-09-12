@@ -10,6 +10,7 @@ import numpy as np
 from fastapi import FastAPI, HTTPException
 from PIL import Image
 
+from engines.paddleocr_engine import run_paddleocr
 from engines.tesseract_engine import run_tesseract
 from preprocessing import preprocess_page
 from quality import score_page
@@ -22,7 +23,8 @@ app = FastAPI(title="OCR Service", version="0.1.0")
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "service": "ocr_service", "default_engine": "tesseract", "engine": "tesseract"}
+    engine = _resolve_engine_name(REQUESTED_DEFAULT_ENGINE)
+    return {"status": "ok", "service": "ocr_service", "default_engine": engine, "engine": engine}
 
 
 def _env_int(name: str, default: int) -> int:
@@ -35,18 +37,19 @@ def _env_int(name: str, default: int) -> int:
     return max(1, value)
 
 
-REQUESTED_DEFAULT_ENGINE = "tesseract"
+REQUESTED_DEFAULT_ENGINE = os.getenv("OCR_ENGINE", "tesseract")
 OCR_MAX_CONCURRENT_PAGES = _env_int("OCR_MAX_CONCURRENT_PAGES", 2)
 OCR_MAX_WORKERS = _env_int("OCR_MAX_WORKERS", 1)
 _THREAD_POOL_EXECUTOR: ThreadPoolExecutor | None = None
 
 
 def _normalize_engine_name(engine_name: str | None) -> str:
-    return "tesseract"
+    normalized = (engine_name or "tesseract").strip().lower()
+    return normalized if normalized in {"tesseract", "paddleocr"} else "tesseract"
 
 
 def _resolve_engine_name(engine_name: str | None) -> str:
-    return "tesseract"
+    return _normalize_engine_name(engine_name)
 
 
 @app.on_event("startup")
@@ -97,13 +100,14 @@ def _decode_page_source(source: str) -> np.ndarray:
 
 
 def _select_engine(engine_name: str) -> Callable[[np.ndarray], OcrPageResult]:
-    return run_tesseract
+    return run_paddleocr if _resolve_engine_name(engine_name) == "paddleocr" else run_tesseract
 
 
 def _process_page_sync(page_num: int, source: str, engine_name: str) -> OcrPageResult:
     image = _decode_page_source(source)
-    processed = preprocess_page(image)
-    engine = _select_engine("tesseract")
+    effective_engine = _resolve_engine_name(engine_name)
+    processed = image if effective_engine == "paddleocr" else preprocess_page(image)
+    engine = _select_engine(effective_engine)
     page_result = engine(processed)
 
     if page_result.quality_level != "unavailable":
@@ -124,7 +128,7 @@ async def run_ocr(request: OcrRequest) -> OcrResponse:
     if not request.pages:
         raise HTTPException(status_code=400, detail="At least one page image is required")
 
-    effective_engine = "tesseract"
+    effective_engine = _resolve_engine_name(request.engine)
     batch_size = min(OCR_MAX_CONCURRENT_PAGES, len(request.pages))
     logger.info(
         "OCR request document_id=%s page_count=%s engine=%s batch_size=%s",

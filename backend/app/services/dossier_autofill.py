@@ -3,6 +3,7 @@ import uuid
 import re
 import os
 import logging
+import unicodedata
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 from dataclasses import dataclass
@@ -174,6 +175,7 @@ def party_role_confidence(method: str, role: str) -> Tuple[float, bool]:
 
 LOW_QUALITY_CONFIDENCE_CAP = 0.4
 LOW_QUALITY_SHORT_VALUE_LEN = 10
+HIGH_RISK_CONFIDENCE_THRESHOLD = 0.85
 PAGE_QUALITY_FACTORS = {
     "good": 1.0,
     "fair": 0.8,
@@ -581,14 +583,19 @@ def _score_page_text_quality(
     avg_chars_per_word = (
         sum(len(word) for word in words) / word_count if word_count else 0.0
     )
-    confidence_score = _normalize_confidence(float(confidence)) if confidence is not None else 0.5
+    confidence_known = confidence is not None
+    confidence_score = _normalize_confidence(float(confidence)) if confidence_known else 0.0
 
     if word_count < 5:
         return 0.1, "unusable", f"Too few detected words ({word_count} < 5)"
 
-    base_score = min(word_count / 40.0, 1.0) * 0.5
-    base_score += min(avg_chars_per_word / 5.0, 1.0) * 0.35
-    base_score += confidence_score * 0.15
+    base_score = min(word_count / 8.0, 1.0) * 0.25
+    base_score += min(avg_chars_per_word / 3.5, 1.0) * 0.20
+    base_score += confidence_score * 0.35
+    base_score += _script_consistency(text) * 0.10
+    base_score += (1.0 - min(_garbage_ratio(text) * 5.0, 1.0)) * 0.10
+    if not confidence_known:
+        base_score = min(base_score, 0.49)
     quality_score = max(0.0, min(1.0, base_score))
 
     if avg_chars_per_word < 2.5:
@@ -596,11 +603,37 @@ def _score_page_text_quality(
             f"Average characters per word too low ({avg_chars_per_word:.2f} < 2.50)"
         )
 
+    if _garbage_ratio(text) > 0.08:
+        return min(quality_score, 0.29), "poor", "Too many garbage or replacement characters"
+
     quality_level = _quality_level_from_score(quality_score)
     if quality_level in {"good", "fair"}:
         return quality_score, quality_level, None
 
     return quality_score, quality_level, f"Low OCR text quality ({quality_level})"
+
+
+def _script_consistency(text: str) -> float:
+    informative = [char for char in text if not char.isspace() and not unicodedata.category(char).startswith("P")]
+    if not informative:
+        return 0.0
+    supported = sum(
+        1
+        for char in informative
+        if ("\u0600" <= char <= "\u06ff") or (char.isascii() and (char.isalnum() or char in "./-"))
+    )
+    return supported / len(informative)
+
+
+def _garbage_ratio(text: str) -> float:
+    if not text:
+        return 0.0
+    garbage = sum(
+        1
+        for char in text
+        if char == "�" or unicodedata.category(char) in {"Cc", "Cf", "Co", "Cn"}
+    )
+    return garbage / max(1, len(text))
 
 
 def harden_low_quality_candidate(
@@ -664,6 +697,12 @@ def apply_candidate_quality_gate(
         needs_review = True
         review_status = "needs_review"
         notes.append(f"High-risk field requires good OCR quality (current: {quality_level})")
+    elif _is_high_risk_field(field_name) and normalized_confidence < HIGH_RISK_CONFIDENCE_THRESHOLD:
+        needs_review = True
+        review_status = "needs_review"
+        notes.append(
+            f"High-risk field requires OCR confidence >= {HIGH_RISK_CONFIDENCE_THRESHOLD:.2f}"
+        )
 
     if not validation_result.valid:
         needs_review = True

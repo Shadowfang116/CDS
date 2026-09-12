@@ -1,5 +1,6 @@
 """Tesseract OCR engine implementation (F4 fixes)."""
 import logging
+from pathlib import Path
 
 import numpy as np
 from PIL import Image
@@ -84,6 +85,15 @@ def run_tesseract(image: np.ndarray, psm: int = 3, dpi: int = 300) -> OcrPageRes
             warning_reason="pytesseract is not installed",
             confidence=0.0,
         )
+
+    if not Path(pytesseract.pytesseract.tesseract_cmd).exists():
+        for candidate in (
+            Path(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
+            Path(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+        ):
+            if candidate.exists():
+                pytesseract.pytesseract.tesseract_cmd = str(candidate)
+                break
 
     # Convert to grayscale & apply Tesseract-specific dynamic binarization
     gray = image if image.ndim == 2 else np.dot(image[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)

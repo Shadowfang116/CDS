@@ -1,52 +1,23 @@
 """Celery tasks for OCR processing."""
 
 import asyncio
-import base64
-import io
 import logging
 import uuid
 from datetime import datetime
-
-from PIL import Image
 
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.document import Document, DocumentPage
 from app.services.audit import log_event
 from app.services.canonical_docs import persist_document_classification
-from app.services.ocr import OCRError, download_page_pdf, pdf_to_image
+from app.services.ocr_assets import render_page_asset_to_base64_png
+from app.services.ocr import OCRError
 from app.services.ocr_pipeline import run_ocr_pipeline
 from app.services.ocr_quality import compute_ocr_quality_signal
 from app.services.rule_engine import run_rules
-from app.services.storage import get_object_bytes
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
-IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/tiff", "image/tif"}
-
-
-def _render_page_pdf_to_base64_png(minio_key: str) -> str:
-    pdf_bytes = download_page_pdf(minio_key)
-    image, _dpi_used = pdf_to_image(pdf_bytes)
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("ascii")
-
-
-def _render_image_to_base64_png(minio_key: str) -> str:
-    raw_bytes = get_object_bytes(minio_key)
-    image = Image.open(io.BytesIO(raw_bytes)).convert("RGB")
-    buffer = io.BytesIO()
-    image.save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("ascii")
-
-
-def _render_page_asset_to_base64_png(minio_key: str, content_type: str) -> str:
-    if content_type in IMAGE_CONTENT_TYPES:
-        return _render_image_to_base64_png(minio_key)
-    return _render_page_pdf_to_base64_png(minio_key)
-
-
 @celery_app.task(name="ocr.process_document", bind=True, max_retries=3)
 def process_document_ocr(
     self,
@@ -104,7 +75,7 @@ def process_document_ocr(
                 page.ocr_error = None
                 db.commit()
 
-                page_image = _render_page_asset_to_base64_png(
+                page_image = render_page_asset_to_base64_png(
                     page.minio_key_page_pdf,
                     document.content_type,
                 )

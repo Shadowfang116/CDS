@@ -1,6 +1,7 @@
 """Phase 10: Celery task for re-running OCR on a single page."""
 import logging
 import uuid
+import asyncio
 from datetime import datetime
 
 from celery.exceptions import MaxRetriesExceededError, Retry
@@ -8,12 +9,35 @@ from celery.exceptions import MaxRetriesExceededError, Retry
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.document import Document, DocumentPage
+from app.services.ocr_assets import render_page_asset_to_base64_png
 from app.services.audit import write_audit_event
 from app.services.ocr import ocr_page_pdf
+from app.services.ocr_pipeline import run_ocr_pipeline
 from app.services.ocr_quality import compute_ocr_quality_signal
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
+
+
+def _uses_shared_ocr_path(options: dict) -> bool:
+    """Use the shared engine for normal reruns; preserve forced legacy modes."""
+    return not bool(options)
+
+
+def _run_default_page_ocr(document_id: uuid.UUID, page, content_type: str):
+    payload = render_page_asset_to_base64_png(page.minio_key_page_pdf, content_type)
+    result = asyncio.run(
+        run_ocr_pipeline(document_id=str(document_id), page_images=[payload])
+    )
+    if not result.pages:
+        raise RuntimeError("OCR service returned no page result")
+    page_result = result.pages[0]
+    metadata = {
+        "engine_used": page_result.engine_used,
+        "quality_score": page_result.quality_score,
+        "quality_level": page_result.quality_level,
+    }
+    return page_result.text, page_result.confidence, metadata
 
 
 def _retry_countdown(task, base_seconds: int = 60, max_seconds: int = 300) -> int:
@@ -104,7 +128,12 @@ def rerun_page_ocr_task(
 
         try:
             t_start = datetime.utcnow()
-            text, confidence, metadata = ocr_page_pdf(page.minio_key_page_pdf)
+            if _uses_shared_ocr_path(options):
+                text, confidence, metadata = _run_default_page_ocr(
+                    document_uuid, page, document.content_type
+                )
+            else:
+                text, confidence, metadata = ocr_page_pdf(page.minio_key_page_pdf)
             t_end = datetime.utcnow()
 
             page.ocr_text = text

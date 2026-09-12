@@ -13,7 +13,7 @@ class OcrRequest(BaseModel):
     document_id: str
     pages: list[str]
     # Kept as a string for compatibility with older callers and engine experiments.
-    engine: str = "tesseract"
+    engine: str = "paddleocr"
 
 
 class OcrPageResult(BaseModel):

@@ -37,7 +37,7 @@ ocr_service/
 no ensemble, no post-correction.
 
 Deployed as its own compose service (`docker-compose.yml:70-84`), port 8001.
-`OCR_ENGINE` defaults to `tesseract`; compatibility requests are normalized to it.
+`OCR_ENGINE` defaults to `paddleocr`; explicit `tesseract` requests remain supported for control and fallback testing.
 
 ### Stack B — `backend/app/services/ocr_*.py` (WRITTEN, ALMOST ENTIRELY UNREACHABLE)
 

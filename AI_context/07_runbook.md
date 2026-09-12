@@ -2,12 +2,11 @@
 
 ## Current verified state — 2026-08-26
 
-The active production OCR path is Tesseract-only:
+The active production OCR path uses PaddleOCR by default, with Tesseract retained as an explicit control/fallback:
 
-`Celery OCR task → backend OCR HTTP adapter → ocr_service → Tesseract`
+`Celery OCR task → backend OCR HTTP adapter → ocr_service → PaddleOCR`
 
-The service reports `default_engine: "tesseract"` from `/health`, and both an omitted
-engine and an explicit `engine: "tesseract"` request return `engine_used: "tesseract"`.
+The service reports `default_engine: "paddleocr"` from `/health`. An omitted engine uses PaddleOCR; an explicit `engine: "tesseract"` request remains available for comparison and fallback testing.
 Legacy Surya instructions below are historical findings and are not an operational
 run path. Do not reintroduce them into deployment configuration or smoke tests.
 

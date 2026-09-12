@@ -37,14 +37,14 @@ def _env_int(name: str, default: int) -> int:
     return max(1, value)
 
 
-REQUESTED_DEFAULT_ENGINE = os.getenv("OCR_ENGINE", "tesseract")
+REQUESTED_DEFAULT_ENGINE = os.getenv("OCR_ENGINE", "paddleocr")
 OCR_MAX_CONCURRENT_PAGES = _env_int("OCR_MAX_CONCURRENT_PAGES", 2)
 OCR_MAX_WORKERS = _env_int("OCR_MAX_WORKERS", 1)
 _THREAD_POOL_EXECUTOR: ThreadPoolExecutor | None = None
 
 
 def _normalize_engine_name(engine_name: str | None) -> str:
-    normalized = (engine_name or "tesseract").strip().lower()
+    normalized = (engine_name or REQUESTED_DEFAULT_ENGINE).strip().lower()
     return normalized if normalized in {"tesseract", "paddleocr"} else "tesseract"
 
 

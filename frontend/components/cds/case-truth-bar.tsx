@@ -29,10 +29,10 @@ export function CaseTruthBar({
       </div>
       <div className="mt-4 flex flex-wrap gap-x-8 gap-y-2 text-sm tabular">
         <span className={highExceptions > 0 ? "text-primary" : "text-muted-foreground"}>
-          {String(highExceptions).padStart(2, "0")} high-risk exception{highExceptions === 1 ? "" : "s"}
+          {String(highExceptions).padStart(2, "0")} high-risk issue{highExceptions === 1 ? "" : "s"}
         </span>
         <span className="text-muted-foreground">
-          {String(openCps).padStart(2, "0")} open CP{openCps === 1 ? "" : "s"}
+          {String(openCps).padStart(2, "0")} approval needed
         </span>
         <span className="text-muted-foreground">
           {String(documents).padStart(2, "0")} document{documents === 1 ? "" : "s"}

@@ -195,7 +195,7 @@ export function WorkPane({
           {selected ? (
             <div className="flex flex-col gap-2.5">
               <p className="cds-meta">
-                {selected.rule_id ?? (selected.kind === "cp" ? "Approval requirement" : "Issue")}
+                {selected.rule_id ?? (selected.kind === "cp" ? "Approval needed" : "Issue")}
                 {selected.module ? ` · ${selected.module}` : selected.kind === "exception" ? " · Title / Property" : ""}
               </p>
               <div className="flex flex-wrap items-center gap-2">
@@ -234,7 +234,7 @@ export function WorkPane({
               ) : null}
               {selected.cp_text ? (
                 <>
-                  <p className="cds-meta">Proposed approval requirement</p>
+                  <p className="cds-meta">Approval needed</p>
                   <p className="text-[11px] leading-4 text-muted-foreground">{selected.cp_text}</p>
                 </>
               ) : null}
@@ -420,7 +420,7 @@ export function WorkPane({
             {readiness?.ready ? "Ready for approval" : "Not ready for approval"}
           </p>
           <p className="mt-1.5 text-[11px] leading-4 text-muted-foreground">
-            {highOpen} high-priority issues · {openCps} approval requirements open
+            {highOpen} high-priority issues · {openCps} approval needed
           </p>
           <div className="relative mt-2.5 h-1.5 w-full rounded-[3px] bg-border">
             <div
@@ -443,7 +443,7 @@ export function WorkPane({
       ) : null}
       <Dialog open={Boolean(resolveTarget)} onOpenChange={(open) => !open && setResolveTarget(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Resolve exception</DialogTitle><DialogDescription>Rationale and a linked source page marked as closing proof are required.</DialogDescription></DialogHeader>
+          <DialogHeader><DialogTitle>Resolve issue</DialogTitle><DialogDescription>Rationale and a linked source page marked as closing proof are required.</DialogDescription></DialogHeader>
           <Textarea value={resolveReason} onChange={(event) => setResolveReason(event.target.value)} placeholder="Why is this issue resolved?" />
           <p className="text-xs text-muted-foreground">Closing proof: {resolveTarget?.evidence_refs?.filter((ref) => ref.is_closing || ref.isClosing).length ?? 0} linked page(s)</p>
           <DialogFooter>

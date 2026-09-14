@@ -62,10 +62,10 @@ export function FindingsList({
             <li key={`${item.kind}-${item.id}`} className={selected ? "bg-muted/40" : undefined}>
               <button type="button" className="w-full px-3 py-3 text-left" onClick={() => onSelect(item)}>
                 <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-                  {item.kind === "cp" ? "CP" : "Exception"}
+                  {item.kind === "cp" ? "Approval needed" : "Issue"}
                   {item.rule_id ? ` · ${item.rule_id}` : ""}
                   {` · ${item.severity}`}
-                  {item.is_hard_stop ? " · hard-stop" : ""}
+                  {item.is_hard_stop ? " · blocking issue" : ""}
                 </p>
                 <p className="mt-1 text-sm text-foreground">{item.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -76,7 +76,7 @@ export function FindingsList({
               {selected ? (
                 <div className="space-y-2 px-3 pb-3 text-sm text-muted-foreground">
                   {item.description ? <p className="text-foreground">{item.description}</p> : null}
-                  {item.cp_text ? <p>CP: {item.cp_text}</p> : null}
+                  {item.cp_text ? <p>Approval needed: {item.cp_text}</p> : null}
                   {required ? <p>Required: {required}</p> : null}
                   {evidence ? (
                     <Button

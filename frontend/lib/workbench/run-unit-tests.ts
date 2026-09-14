@@ -51,8 +51,8 @@ assert.equal(dashboardSectionFromPath("/dashboard/documents"), "documents");
 assert.equal(dashboardSectionFromPath("/dashboard/cp"), "cp");
 assert.equal(isDashboardNavActive("/dashboard/cases/case-1", "/dashboard/cases"), true);
 assert.equal(isDashboardNavActive("/dashboard", "/dashboard"), true);
-assert.equal(ocrStatusLabel("complete"), "Text extracted");
-assert.match(ocrReviewNotice("complete", 96) ?? "", /provisional/i);
+assert.equal(ocrStatusLabel("complete"), "Scan complete");
+assert.match(ocrReviewNotice("complete", 96) ?? "", /needs your review/i);
 assert.match(ocrReviewNotice("failed", null) ?? "", /manual review/i);
 assert.equal(
   resolveApiBaseUrl({ API_INTERNAL_BASE_URL: "http://api:8000", API_BASE_URL: "http://localhost:8000", NODE_ENV: "production" }),
@@ -105,7 +105,7 @@ assert.equal(
   }),
   "Review issue: Historical property tax"
 );
-assert.equal(clientNextAction({ status: "NEW" }), "Review matter readiness");
+assert.equal(clientNextAction({ status: "NEW" }), "Review case readiness");
 assert.equal(findingRequestLabel(goldTax), "Request Property Tax / PT-10");
 assert.equal(isKycNoiseLabel("Salary slip"), true);
 assert.equal(isKycNoiseLabel("Approved building plan"), false);
@@ -318,8 +318,8 @@ const hardStopSummary = summarizeInboxItem({
   open_cps: 0,
   next_action: "Clear hard-stop: Title chain",
 });
-assert.equal(hardStopSummary.label, "Hard-stop open");
-assert.match(hardStopSummary.action, /Clear hard-stop/i);
+assert.equal(hardStopSummary.label, "Blocking issue open");
+assert.match(hardStopSummary.action, /blocking issues/i);
 
 const missingInfoSummary = summarizeInboxItem({
   open_hard_stop: 0,

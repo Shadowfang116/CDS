@@ -140,7 +140,7 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
 
   useEffect(() => {
     void load().catch((error) => {
-      toast({ title: "Matter failed to load", description: error instanceof Error ? error.message : "Error", variant: "error" });
+      toast({ title: "Case failed to load", description: error instanceof Error ? error.message : "Error", variant: "error" });
     });
   }, [load, toast]);
 
@@ -253,7 +253,7 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
     }, instrument ? `Draft discrepancy letter generated — ${instrument}` : "Draft discrepancy letter generated — review before anything leaves CDS");
 
   if (!matter) {
-    return <p className="p-6 text-sm text-muted-foreground">Loading matter…</p>;
+    return <p className="p-6 text-sm text-muted-foreground">Loading case…</p>;
   }
 
   if (view === "evidence") {
@@ -297,7 +297,7 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
       onSelectFinding={selectFinding}
       onResolve={(item, reason, refs) => void run(async () => { await resolveException(item.id, reason, refs); }, "Issue resolved")}
       onWaive={(item, reason) => void run(async () => { await workbenchRequestWaiver(caseId, item.id, reason); }, "Waiver requested — another reviewer must decide")}
-      onSatisfyCp={(item) => void run(async () => { await updateCP(item.id, "Met"); }, "Approval requirement marked complete")}
+      onSatisfyCp={(item) => void run(async () => { await updateCP(item.id, "Met"); }, "Approval needed marked complete")}
       onJumpToEvidence={(documentId, pageNumber) => setQuery({ doc: documentId, page: pageNumber, surface: "evidence" })}
       onRequestDocument={requestDocument}
       onOpenEvidence={() => setQuery({ view: "evidence" })}
@@ -334,7 +334,7 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
   );
 
   return (
-    <div className="flex h-[calc(100vh-58px)] min-h-0 flex-col bg-background" data-page="matter" data-surface="operational" data-tour="matter-workspace">
+    <div className="flex h-[calc(100vh-58px)] min-h-0 flex-col bg-background" data-page="case" data-surface="operational" data-tour="matter-workspace">
       <DecisionStrip
         title={matter.title}
         status={matter.status}
@@ -364,16 +364,16 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
         <div className="hidden h-full min-h-0 md:flex">
           <aside className={matterRailCollapsed ? "w-12 shrink-0 border-r border-border" : "w-[min(22rem,30vw)] shrink-0 border-r border-border"}>
             {matterRailCollapsed ? (
-              <button type="button" className="flex h-full w-full items-start justify-center pt-4 text-xs text-muted-foreground" onClick={() => setMatterRailCollapsed(false)} aria-label="Show Matter workspace rail">
+                <button type="button" className="flex h-full w-full items-start justify-center pt-4 text-xs text-muted-foreground" onClick={() => setMatterRailCollapsed(false)} aria-label="Show case workspace rail">
                 <span style={{ writingMode: "vertical-rl" }}>Show workspace</span>
               </button>
             ) : (
               <div className="flex h-full min-h-0 flex-col">
                 <div className="flex shrink-0 items-center justify-between border-b border-border px-3.5 py-2.5">
-                  <p className="cds-meta">Matter workspace</p>
-                  <button type="button" className="cds-meta text-muted-foreground" onClick={() => setMatterRailCollapsed(true)} aria-label="Hide Matter workspace rail">Hide</button>
+                  <p className="cds-meta">Case workspace</p>
+                  <button type="button" className="cds-meta text-muted-foreground" onClick={() => setMatterRailCollapsed(true)} aria-label="Hide case workspace rail">Hide</button>
                 </div>
-                <nav className="grid shrink-0 grid-cols-3 border-b border-border p-1" aria-label="Matter workspace">
+                <nav className="grid shrink-0 grid-cols-3 border-b border-border p-1" aria-label="Case workspace">
                   {([["documents", "Documents"], ["review", "Review"], ["decision", "Decision"]] as const).map(([item, label]) => (
                     <button key={item} type="button" aria-current={surface === item ? "page" : undefined} onClick={() => setQuery({ surface: item, panel: null, work: null })} className={surface === item ? "bg-foreground px-2 py-2 text-xs font-semibold text-background" : "px-2 py-2 text-xs text-muted-foreground hover:bg-[hsl(var(--pill))]"}>{label}</button>
                   ))}
@@ -447,7 +447,7 @@ export function MatterWorkbench({ caseId }: MatterWorkbenchProps) {
           </main>
         </div>
         <div className="absolute inset-0 flex min-h-0 flex-col md:hidden">
-          <nav className="grid shrink-0 grid-cols-3 border-b border-border bg-[hsl(var(--surface))] p-1" role="tablist" aria-label="Matter workspace">
+          <nav className="grid shrink-0 grid-cols-3 border-b border-border bg-[hsl(var(--surface))] p-1" role="tablist" aria-label="Case workspace">
             {([["documents", "Documents"], ["review", "Review"], ["decision", "Decision"]] as const).map(([item, label]) => (
               <button key={item} type="button" role="tab" aria-selected={surface === item} onClick={() => setQuery({ surface: item, panel: null, work: null })} className={surface === item ? "bg-foreground px-2 py-2 text-xs font-semibold text-background" : "px-2 py-2 text-xs text-muted-foreground"}>{label}</button>
             ))}

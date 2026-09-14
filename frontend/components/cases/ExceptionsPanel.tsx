@@ -233,7 +233,7 @@ export function ExceptionsPanel({
       }
       setClosureNotes(nextClosureNotes);
     } catch (error: any) {
-      setPanelError(error.message || 'Failed to load exceptions');
+      setPanelError(error.message || 'Failed to load issues');
     } finally {
       setLoading(false);
     }
@@ -274,15 +274,15 @@ export function ExceptionsPanel({
       setResolveTarget(null);
       setResolveNote('');
       toast({
-        title: 'Exception resolved.',
+        title: 'Issue resolved.',
         description: 'The closure note has been recorded.',
         variant: 'success',
       });
       await loadExceptions();
     } catch (error: any) {
-      setPanelError(error.message || 'Failed to resolve exception');
+      setPanelError(error.message || 'Failed to resolve issue');
       toast({
-        title: 'Unable to resolve exception.',
+        title: 'Unable to resolve issue.',
         description: error.message || 'Please retry.',
         variant: 'error',
       });
@@ -310,7 +310,7 @@ export function ExceptionsPanel({
       });
       await loadExceptions();
     } catch (error: any) {
-      setPanelError(error.message || 'Failed to waive exception');
+      setPanelError(error.message || 'Failed to waive issue');
       toast({
         title: 'Unable to record waiver.',
         description: error.message || 'Please retry.',
@@ -337,7 +337,7 @@ export function ExceptionsPanel({
       <Card>
         <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <CardTitle>Exceptions</CardTitle>
+          <CardTitle>Issues</CardTitle>
             <p className="mt-1 text-sm text-stone-400">
               Review severity-ranked findings, linked annexures, and closure actions.
             </p>
@@ -359,8 +359,8 @@ export function ExceptionsPanel({
             <ExceptionRowsSkeleton />
           ) : !data || sortedExceptions.length === 0 ? (
             <EmptyState
-              title="No exceptions recorded for this case."
-              description="Run rule evaluation to refresh the legal exception register for this file."
+              title="No issues recorded for this case."
+              description="Review the documents to refresh the issue list for this case."
               actionLabel={onEvaluate ? 'Evaluate Rules' : undefined}
               onAction={onEvaluate ? () => void onEvaluate() : undefined}
             />
@@ -372,7 +372,7 @@ export function ExceptionsPanel({
                   <TableHead>Title</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Evidence Count</TableHead>
-                  <TableHead>CP Linked</TableHead>
+                          <TableHead>Approval needed</TableHead>
                   <TableHead>Updated</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -504,7 +504,7 @@ export function ExceptionsPanel({
                                 ) : null}
                                 {evidenceDefinition.cp_recommended_text ? (
                                   <div>
-                                    <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Recommended CP Text</div>
+                                    <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Recommended approval wording</div>
                                     <p className="mt-2 text-sm text-stone-200">{evidenceDefinition.cp_recommended_text}</p>
                                   </div>
                                 ) : null}
@@ -514,7 +514,7 @@ export function ExceptionsPanel({
                                   </div>
                                 ) : null}
                                 <div>
-                                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Condition Precedent</div>
+                                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-stone-500">Approval needed</div>
                                   <p className="mt-2 text-sm text-stone-200">{truncate(exceptionItem.cp_text, 500)}</p>
                                 </div>
                                 <div>
@@ -585,9 +585,9 @@ export function ExceptionsPanel({
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Resolve Exception</DialogTitle>
+            <DialogTitle>Resolve issue</DialogTitle>
             <DialogDescription>
-              Record the closure note that supports resolution of this exception.
+              Record the closure note that supports resolution of this issue.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
@@ -596,7 +596,7 @@ export function ExceptionsPanel({
             </div>
             {resolveMissingEvidence ? (
               <div className="rounded-md border border-[rgba(189,90,86,0.36)] bg-[rgba(189,90,86,0.12)] px-3 py-2 text-sm text-[rgb(240,205,202)]">
-                This exception requires evidence before resolution.
+                This issue requires evidence before resolution.
                 <div className="mt-1 text-xs text-stone-300">
                   Override is allowed only with a strong closure note explaining the documentary basis for closure.
                 </div>
@@ -653,9 +653,9 @@ export function ExceptionsPanel({
       }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Waive Exception</DialogTitle>
+            <DialogTitle>Waive issue</DialogTitle>
             <DialogDescription>
-              Record the approver rationale for waiving this exception.
+              Record the approver rationale for waiving this issue.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

@@ -62,7 +62,7 @@ export function CaseControlsCard({ controls, onViewDocument, onNavigateToDocumen
                       </Badge>
                       {pb.hard_stops.length > 0 && (
                         <Badge variant="error" size="sm">
-                          {pb.hard_stops.length} hard-stops
+                          {pb.hard_stops.length} blocking issues
                         </Badge>
                       )}
                     </div>
@@ -148,7 +148,7 @@ export function CaseControlsCard({ controls, onViewDocument, onNavigateToDocumen
           {controls.readiness.ready ? (
             <div className="p-3 bg-green-500/10 border border-green-500/30 rounded">
               <p className="text-sm text-green-400">
-                ✓ Ready for approval (no open hard-stops).
+                ✓ Ready for approval (no open blocking issues).
               </p>
             </div>
           ) : (

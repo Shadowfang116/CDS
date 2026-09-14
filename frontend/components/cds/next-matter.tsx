@@ -43,10 +43,10 @@ export function NextMatter({
   if (!title) {
     return (
       <div className="flex flex-col gap-5">
-        <p className="cds-meta">Next matter</p>
+        <p className="cds-meta">Next case</p>
         <h1 className="cds-overview-display">Review queue is clear</h1>
         <p className="max-w-md text-sm leading-6 text-muted-foreground">
-          No matter currently requires intervention in this window.
+          No case currently requires intervention in this window.
         </p>
       </div>
     );
@@ -80,7 +80,7 @@ export function NextMatter({
       </div>
       <div>
         <Button variant="primary" className={OVERVIEW_BUTTON_CLASS} onClick={onOpen}>
-          Open next matter
+          Open next case
         </Button>
       </div>
     </div>

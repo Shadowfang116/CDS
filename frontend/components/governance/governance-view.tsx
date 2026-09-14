@@ -131,11 +131,11 @@ export function GovernanceView({ fixedTab, title = "Governance" }: { fixedTab?: 
           {summary ? (
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
-                <p className="cds-meta">Open matters</p>
+                <p className="cds-meta">Open cases</p>
                 <p className="text-2xl tabular">{summary.kpis.active_cases}</p>
               </div>
               <div>
-                <p className="cds-meta">High exceptions</p>
+                <p className="cds-meta">High-priority issues</p>
                 <p className="text-2xl tabular">{summary.kpis.open_high_exceptions}</p>
               </div>
               <div>

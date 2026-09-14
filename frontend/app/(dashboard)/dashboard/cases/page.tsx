@@ -210,19 +210,19 @@ function CasesPageContent() {
   return (
     <>
       <SetPageChrome
-        title="Matters"
-        breadcrumbs={[{ label: "Matters" }]}
+        title="Cases"
+        breadcrumbs={[{ label: "Cases" }]}
         actions={null}
       />
 
       <Dialog open={newCaseOpen} onOpenChange={handleNewCaseClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>New matter</DialogTitle>
+            <DialogTitle>New case</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3 py-2">
             <Input
-              placeholder="Matter name"
+              placeholder="Case name"
               value={newCaseTitle}
               onChange={(e) => setNewCaseTitle(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !creating) handleCreateCase(); }}
@@ -248,10 +248,10 @@ function CasesPageContent() {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div className="space-y-2">
               <div className="text-xs font-medium text-muted-foreground">
-                Matter queue
+                Case queue
               </div>
               <div className="text-sm text-muted-foreground">
-                Open a matter to upload documents, review extracted information, resolve issues, and submit it for approval.
+                Open a case to upload documents, review extracted information, resolve issues, and submit it for approval.
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
@@ -259,10 +259,10 @@ function CasesPageContent() {
                 size="sm"
                 onClick={() => { setNewCaseTitle(""); setCreateError(null); setNewCaseOpen(true); }}
               >
-                New matter
+                New case
               </Button>
               <span className="border border-border bg-muted px-3 py-2 text-sm text-foreground">
-                {total} matter{total !== 1 ? "s" : ""}
+                {total} case{total !== 1 ? "s" : ""}
               </span>
               <select
                 value={pageSize}
@@ -361,11 +361,11 @@ export default function CasesPage() {
       fallback={
         <div className="space-y-4">
           <section className="border border-border bg-card px-5 py-4">
-            <div className="text-sm text-muted-foreground">Loading matters…</div>
+            <div className="text-sm text-muted-foreground">Loading cases…</div>
           </section>
           <Card>
             <CardContent className="p-5">
-            <div className="text-sm text-muted-foreground">Preparing matter queue…</div>
+            <div className="text-sm text-muted-foreground">Preparing case queue…</div>
             </CardContent>
           </Card>
         </div>

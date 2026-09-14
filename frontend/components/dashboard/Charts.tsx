@@ -240,7 +240,7 @@ export function SeverityDonut({ data, loading, selectedSeverity, onSelectSeverit
   if (total === 0) {
     return (
       <div className="h-48 min-w-0 w-full">
-        <ChartEmptyState message="No open exceptions" />
+        <ChartEmptyState message="No open issues" />
       </div>
     );
   }

@@ -248,7 +248,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
             {isOverview ? (
               <p className="cds-meta">Inbox</p>
             ) : isMatter ? (
-              <p className="cds-meta">Matter</p>
+              <p className="cds-meta">Case</p>
             ) : (
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-baseline gap-2">

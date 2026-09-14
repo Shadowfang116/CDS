@@ -53,7 +53,7 @@ export function EvidenceViewer({
         <div className="flex items-center gap-3.5">
           <p className="font-display text-[12px] font-medium tracking-[0.08em] text-foreground">CDS</p>
           <button type="button" className="text-[11px] font-medium text-muted-foreground" onClick={onBack}>
-            ← Matter
+            ← Case
           </button>
           <span className="h-[22px] w-px bg-border" />
           <p className="text-[12px] font-semibold text-foreground">{matterTitle}</p>

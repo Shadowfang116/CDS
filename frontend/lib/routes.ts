@@ -2,12 +2,12 @@ type QueryValue = string | number | boolean | null | undefined;
 
 export const CASE_TABS = [
   { key: "summary", label: "Overview" },
-  { key: "exceptions", label: "Exceptions" },
+  { key: "exceptions", label: "Issues" },
   { key: "cps", label: "Conditions" },
   { key: "documents", label: "Documents" },
-  { key: "dossier", label: "Dossier" },
+  { key: "dossier", label: "Case details" },
   { key: "audit", label: "Audit" },
-  { key: "ocr-extractions", label: "OCR Review" },
+  { key: "ocr-extractions", label: "Scan review" },
   { key: "verification", label: "Checks" },
   { key: "drafts", label: "Drafts" },
   { key: "exports", label: "Exports" },

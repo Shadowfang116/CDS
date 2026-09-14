@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 
 const GROUPS = [
   { id: "file", label: "File", tabs: ["summary", "documents", "ocr-extractions"] as CaseTabKey[] },
-  { id: "findings", label: "Findings", tabs: ["exceptions", "cps"] as CaseTabKey[] },
-  { id: "dossier", label: "Dossier", tabs: ["dossier", "verification"] as CaseTabKey[] },
+  { id: "findings", label: "Issues", tabs: ["exceptions", "cps"] as CaseTabKey[] },
+  { id: "dossier", label: "Case details", tabs: ["dossier", "verification"] as CaseTabKey[] },
   { id: "pack", label: "Pack", tabs: ["drafts", "exports", "audit"] as CaseTabKey[] },
 ] as const;
 
@@ -21,7 +21,7 @@ export function MatterNav({ activeTab, onSelect, exceptionCount }: MatterNavProp
 
   return (
     <div className="border-b border-border">
-      <div className="relative flex gap-8" role="tablist" aria-label="Matter domains">
+      <div className="relative flex gap-8" role="tablist" aria-label="Case sections">
         {GROUPS.map((group) => {
           const selected = group.id === activeGroup.id;
           return (
@@ -48,7 +48,7 @@ export function MatterNav({ activeTab, onSelect, exceptionCount }: MatterNavProp
           );
         })}
       </div>
-      <div className="flex gap-6 py-3" role="tablist" aria-label="Matter sections">
+      <div className="flex gap-6 py-3" role="tablist" aria-label="Case sections">
         {activeGroup.tabs.map((key) => {
           const meta = CASE_TABS.find((tab) => tab.key === key);
           const selected = activeTab === key;

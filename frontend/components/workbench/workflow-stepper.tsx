@@ -35,7 +35,7 @@ export function WorkflowStepper({
 }) {
   const activeIndex = STEPS.findIndex((step) => step.id === active);
   return (
-    <nav aria-label="Matter workflow" className="border-b border-border bg-[hsl(var(--surface))] px-4 py-3 sm:px-5">
+    <nav aria-label="Case steps" className="border-b border-border bg-[hsl(var(--surface))] px-4 py-3 sm:px-5">
       <ol className="flex min-w-max items-center gap-1 sm:min-w-0 sm:justify-between sm:gap-2">
         {STEPS.map((step, index) => {
           const complete = index < activeIndex;

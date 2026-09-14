@@ -11,7 +11,7 @@ export function submitEnabled(input: SubmitGateInput): boolean {
 }
 
 export function submitBlocker(input: SubmitGateInput): string | null {
-  if (input.decision === "FAIL") return "Decision is FAIL — clear hard-stops and open High exceptions first";
+  if (input.decision === "FAIL") return "Decision needs work — fix blocking issues and high-priority issues first";
   if (input.blockedReasons[0]) return input.blockedReasons[0];
   if (!input.ready) return "Readiness is not met";
   return null;

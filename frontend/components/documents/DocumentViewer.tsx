@@ -51,7 +51,7 @@ const DOCUMENT_STAGE_MAP: Record<string, DocumentStage> = {
   uploaded: { label: 'Uploaded', progress: 10 },
   queued: { label: 'Queued', progress: 20 },
   preprocessing: { label: 'Preprocessing', progress: 35 },
-  ocr_in_progress: { label: 'OCR in progress', progress: 55 },
+  ocr_in_progress: { label: 'Document scan in progress', progress: 55 },
   extracting: { label: 'Extracting fields', progress: 70 },
   rules_evaluation: { label: 'Rules evaluation', progress: 85 },
   complete: { label: 'Complete', progress: 100 },
@@ -291,7 +291,7 @@ export function DocumentViewer({
         setOcrTextData(ocrResult);
         setOcrText(ocrResult.effective_text || ocrResult.raw_text || '');
       } catch {
-        setOcrText('OCR not available');
+        setOcrText('Scanned text not available');
         setOcrTextData(null);
       }
 
@@ -321,7 +321,7 @@ export function DocumentViewer({
       const status = await getOcrStatus(documentId);
       setOcrStatus(status);
     } catch {
-      setViewerError('Failed to load OCR status');
+      setViewerError('Failed to load document scan status');
     }
   }, [selectedDoc]);
 
@@ -344,7 +344,7 @@ export function DocumentViewer({
     try {
       await enqueueOcr(documentId, true);
       toast({
-        title: 'OCR rerun queued.',
+        title: 'Document scan queued.',
         description: 'Processing will continue in the background.',
         variant: 'success',
       });
@@ -354,9 +354,9 @@ export function DocumentViewer({
         setOcrLoading(false);
       }, 2000);
     } catch (e: any) {
-      setViewerError('Failed to queue OCR rerun');
+        setViewerError('Failed to queue document scan');
       toast({
-        title: 'Unable to queue OCR rerun.',
+        title: 'Unable to queue document scan.',
         description: e.message || 'Please retry.',
         variant: 'error',
       });
@@ -431,11 +431,11 @@ export function DocumentViewer({
                   qualityLevel
                 )}`}
               >
-                OCR {formatQualityLabel(qualityLevel)}
+                Scan quality: {formatQualityLabel(qualityLevel)}
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs border-[rgba(82,90,99,0.5)] bg-[rgba(29,34,39,0.98)] text-xs text-stone-200">
-              {warningReason || 'OCR quality metadata available for this document page.'}
+              {warningReason || 'Scan quality metadata available for this document page.'}
             </TooltipContent>
           </Tooltip>
           {typeof qualityScore === 'number' ? (
@@ -692,7 +692,7 @@ export function DocumentViewer({
                   onClick={handleForceOcr}
                   disabled={ocrLoading}
                 >
-                  {ocrLoading ? 'Processing...' : 'Re-run OCR (force)'}
+                  {ocrLoading ? 'Processing...' : 'Re-scan documents'}
                 </Button>
               )}
             </div>
@@ -703,7 +703,7 @@ export function DocumentViewer({
           {ocrStatus && !compact ? (
             <div className="border-t border-[rgba(82,90,99,0.24)] bg-[rgba(18,22,27,0.62)] px-4 py-2">
               <div className="flex flex-wrap items-center gap-4 text-xs text-stone-400">
-                {selectedPageOcrStatus ? <span>Page OCR: {selectedPageOcrStatus.status}</span> : null}
+                {selectedPageOcrStatus ? <span>Page scan: {selectedPageOcrStatus.status}</span> : null}
                 {ocrStatus.average_ocr_chars_per_page && (
                   <span>Avg chars/page: {Math.round(ocrStatus.average_ocr_chars_per_page)}</span>
                 )}
@@ -846,7 +846,7 @@ export function DocumentViewer({
           <div className="-mx-1 mb-3 flex shrink-0 items-center justify-between gap-3 bg-[hsl(var(--surface))] px-1 pb-2">
             <div className="flex items-center gap-2">
               <h4 className={compact ? "cds-meta" : "text-sm font-medium text-stone-100"}>
-                {variant === "evidence" ? "OCR / Native text" : compact ? "Extracted text" : "OCR Text"}
+                {variant === "evidence" ? "Scanned / native text" : compact ? "Extracted text" : "Scanned text"}
               </h4>
               {ocrTextData?.has_correction && (
                 <Badge className="bg-amber-600/20 text-amber-200 border-amber-600/50 text-xs">
@@ -902,7 +902,7 @@ export function DocumentViewer({
                       setOcrCorrectionNote('');
                     }}
                   >
-                    Edit OCR Text
+                    Edit scanned text
                   </Button>
                   {ocrTextData?.has_correction && (
                     <Button
@@ -922,7 +922,7 @@ export function DocumentViewer({
                         await autofillDossier(caseId, false);
                         toast({
                           title: 'Autofill completed.',
-                          description: 'Review the OCR Extractions tab for refreshed field suggestions.',
+                          description: 'Review the scanned text tab for refreshed field suggestions.',
                           variant: 'success',
                         });
                         router.push(getCaseTabPath(caseId, 'ocr-extractions'));
@@ -959,7 +959,7 @@ export function DocumentViewer({
                     if (ocrText) {
                       navigator.clipboard.writeText(ocrText);
                       toast({
-                        title: 'OCR text copied.',
+                        title: 'Scanned text copied.',
                         description: 'The current page text is now on the clipboard.',
                         variant: 'success',
                       });
@@ -976,7 +976,7 @@ export function DocumentViewer({
           {editingOcr ? (
             <div className="space-y-3">
               <div className="bg-amber-900/20 border border-amber-700 rounded p-2 text-xs text-amber-200">
-                You are editing OCR text corrections (does not overwrite raw OCR).
+                You are editing scanned text corrections (does not overwrite the original scan).
               </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-stone-300">Corrected Text</label>
@@ -1042,13 +1042,13 @@ export function DocumentViewer({
                       setOcrCorrectionNote('');
                       await loadPage();
                       toast({
-                        title: 'OCR correction saved.',
+                        title: 'Scanned text correction saved.',
                         description: 'The corrected text is now active for this page.',
                         variant: 'success',
                       });
                     } catch (e: any) {
                       toast({
-                        title: 'Unable to save OCR correction.',
+                        title: 'Unable to save scanned text correction.',
                         description: e.message || 'Please retry.',
                         variant: 'error',
                       });
@@ -1081,7 +1081,7 @@ export function DocumentViewer({
                 }
               }}
             >
-              {ocrText || 'OCR text not available'}
+              {ocrText || 'Scanned text not available'}
             </div>
             {compact && highlightLabel && selectedSnippetText ? (
               <p className="mt-2 font-display text-[10px] text-muted-foreground">
@@ -1127,15 +1127,15 @@ export function DocumentViewer({
                   }}
                 >
                   <option value="">Select target...</option>
-                  <option value="exception">Exception</option>
-                  <option value="cp">Condition Precedent (CP)</option>
+                  <option value="exception">Issue</option>
+                  <option value="cp">Approval needed</option>
                 </select>
               </div>
 
               {snippetTarget && (
                 <div className="mb-4">
                   <label className="mb-2 block text-sm font-medium text-stone-300">
-                    {snippetTarget === 'exception' ? 'Exception:' : 'CP:'}
+                    {snippetTarget === 'exception' ? 'Issue:' : 'Approval needed:'}
                   </label>
                   <select
                     className="w-full rounded border border-[rgba(82,90,99,0.42)] bg-[rgba(18,22,27,0.82)] px-3 py-2 text-stone-100"
@@ -1244,9 +1244,9 @@ export function DocumentViewer({
         <Dialog open={revertDialogOpen} onOpenChange={setRevertDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Revert OCR Correction</DialogTitle>
+              <DialogTitle>Revert scanned text correction</DialogTitle>
               <DialogDescription>
-                This will remove the current correction and restore the raw OCR text for this page.
+                This will remove the current correction and restore the original scanned text for this page.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -1266,13 +1266,13 @@ export function DocumentViewer({
                     setRevertDialogOpen(false);
                     await loadPage();
                     toast({
-                      title: 'OCR correction reverted.',
-                      description: 'The raw OCR text is active again for this page.',
+                      title: 'Scanned text correction reverted.',
+                      description: 'The original scanned text is active again for this page.',
                       variant: 'success',
                     });
                   } catch (e: any) {
                     toast({
-                      title: 'Unable to revert OCR correction.',
+                      title: 'Unable to revert scanned text correction.',
                       description: e.message || 'Please retry.',
                       variant: 'error',
                     });

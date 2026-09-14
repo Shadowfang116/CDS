@@ -130,7 +130,7 @@ export function DossierFieldsEditor({
         }
         loadedRef.current.caseId = caseId;
       } catch (e: any) {
-        setError(e.message || 'Failed to load dossier fields');
+        setError(e.message || 'Failed to load case details');
       } finally {
         setLoading(false);
       }
@@ -174,7 +174,7 @@ export function DossierFieldsEditor({
       if (e.name === 'AbortError') {
         return; // Ignore abort errors
       }
-      setError(e.message || 'Failed to load dossier fields');
+      setError(e.message || 'Failed to load case details');
     } finally {
       if (!abortController.signal.aborted) {
         setLoading(false);
@@ -301,8 +301,8 @@ export function DossierFieldsEditor({
   if (fields.length === 0) {
     return (
       <EmptyState
-        title="No dossier fields are available for this case."
-        description="Upload documents and run OCR or autofill to populate the dossier workspace."
+        title="No case details are available yet."
+        description="Upload documents and start a scan or Autofill to populate the case details."
         className="min-h-[220px]"
       />
     );
@@ -441,7 +441,7 @@ export function DossierFieldsEditor({
                     className="w-4 h-4"
                   />
                   <label htmlFor="force-confirm" className="text-sm text-muted-foreground">
-                    Force confirm — OCR confidence is low or the page is incomplete. Reason still required.
+                    Force confirm — scan confidence is low or the page is incomplete. Reason still required.
                   </label>
                 </div>
               ) : null}

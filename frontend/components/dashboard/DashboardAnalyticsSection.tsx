@@ -112,7 +112,7 @@ export function DashboardAnalyticsSection({
       <div className="grid grid-cols-1 gap-6">
         <Card>
           <CardHeader className="border-b border-[rgba(82,90,99,0.34)]">
-            <CardTitle className="text-base font-semibold tracking-tight text-stone-100">Current exception mix</CardTitle>
+            <CardTitle className="text-base font-semibold tracking-tight text-stone-100">Current issue mix</CardTitle>
             <p className="mt-1 text-sm text-stone-400">Use severity filters to narrow the queue without opening a full chart view.</p>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -144,14 +144,14 @@ export function DashboardAnalyticsSection({
                         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                         {item.label}
                       </div>
-                      <div className="mt-1 text-xs text-stone-500">Open exceptions in the current window</div>
+                      <div className="mt-1 text-xs text-stone-500">Open issues in the current window</div>
                     </div>
                     <Badge variant={item.tone}>{item.value}</Badge>
                   </button>
                 );
               })
             ) : (
-              <CompactPanelEmptyState message="No open exceptions in this range." />
+              <CompactPanelEmptyState message="No open issues in this range." />
             )}
           </CardContent>
         </Card>

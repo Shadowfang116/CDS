@@ -251,7 +251,7 @@ export function FilePane({
                       )}
                     >
                       <span className="w-[92px] shrink-0 truncate font-display text-[9px] text-muted-foreground">
-                        {item.rule_id ?? (item.kind === "cp" ? "CP" : "EX")}
+                        {item.rule_id ?? (item.kind === "cp" ? "Approval needed" : "Issue")}
                       </span>
                       <CdsPill tone={severityTone(item.severity)}>{item.severity}</CdsPill>
                       <span className="min-w-0 flex-1 truncate text-[11px] text-foreground">{item.title}</span>

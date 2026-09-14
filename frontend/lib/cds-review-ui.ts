@@ -61,30 +61,30 @@ export function isDashboardNavActive(pathname: string, href: string): boolean {
 
 export function ocrStatusLabel(status?: string | null): string {
   const value = normalizeStatus(status);
-  if (value === "complete" || value === "done" || value === "completed") return "Text extracted";
+  if (value === "complete" || value === "done" || value === "completed") return "Scan complete";
   if (value === "needs_review") return "Review required";
-  if (value === "failed") return "Text extraction failed";
+  if (value === "failed") return "Scan failed";
   if (value === "uploaded") return "Uploaded";
-  return status || "OCR";
+  return status || "Scan";
 }
 
 export function ocrReviewNotice(status?: string | null, confidence?: number | null): string | null {
   const value = normalizeStatus(status);
 
   if (value === "failed") {
-    return "OCR failed. Review the source page and use manual review or a replacement upload before relying on this page.";
+    return "Document scan failed. Review the source page and use manual review or a replacement upload before relying on this page.";
   }
 
   if (value === "processing" || value === "queued" || value === "uploaded" || value === "ocr_in_progress") {
-    return "OCR is still running. Keep the source page in view and confirm the field after extraction finishes.";
+    return "Document scan is still running. Keep the source page in view and confirm the field after scanning finishes.";
   }
 
   if (value === "needs_review" || (confidence !== null && confidence !== undefined && confidence < 80)) {
-    return "This text is provisional. Compare it with the source page, then confirm or correct the field in Work.";
+    return "This text needs your review. Compare it with the source page, then confirm or correct the field in Work.";
   }
 
   if (value === "complete" || value === "done" || value === "completed") {
-    return "OCR is complete, but the extracted text stays provisional until a reviewer confirms it against the source page.";
+    return "Scanning is complete, but the text still needs your review until you confirm it against the source page.";
   }
 
   return null;
@@ -92,11 +92,15 @@ export function ocrReviewNotice(status?: string | null, confidence?: number | nu
 
 export function summarizeInboxItem(item: InboxSummaryInput): InboxSummary {
   const nextAction = (item.next_action ?? "").trim();
+  const displayAction = nextAction
+    .replace(/hard-stops?/gi, "blocking issues")
+    .replace(/exceptions?/gi, "issues")
+    .replace(/\bCPs?\b/gi, "approval needed items");
 
   if ((item.open_hard_stop ?? 0) > 0) {
     return {
-      label: "Hard-stop open",
-      action: nextAction || "Open the matter, compare the cited source page, and clear the hard-stop before submission.",
+      label: "Blocking issue open",
+      action: displayAction || "Open the case, compare the cited source page, and fix the blocking issue before submission.",
       tone: "high",
     };
   }
@@ -104,7 +108,7 @@ export function summarizeInboxItem(item: InboxSummaryInput): InboxSummary {
   if (missingInformationAction(nextAction)) {
     return {
       label: "Missing information",
-      action: nextAction || "Open the matter, request or upload the missing evidence, then rerun review.",
+      action: displayAction || "Open the case, request or upload the missing evidence, then rerun the review.",
       tone: "high",
     };
   }
@@ -112,7 +116,7 @@ export function summarizeInboxItem(item: InboxSummaryInput): InboxSummary {
   if ((item.open_high ?? 0) > 0) {
     return {
       label: "High-risk findings open",
-      action: nextAction || "Open the matter, compare the source page, and resolve or waive the finding with evidence.",
+      action: displayAction || "Open the case, compare the source page, and resolve or waive the issue with evidence.",
       tone: "high",
     };
   }
@@ -120,22 +124,22 @@ export function summarizeInboxItem(item: InboxSummaryInput): InboxSummary {
   if ((item.open_medium ?? 0) > 0) {
     return {
       label: "Review needed",
-      action: nextAction || "Open the matter, confirm the cited page, and record the result before deciding.",
+      action: displayAction || "Open the case, confirm the cited page, and record the result before deciding.",
       tone: "medium",
     };
   }
 
   if ((item.open_cps ?? 0) > 0) {
     return {
-      label: "CP outstanding",
-      action: nextAction || "Open the matter, attach the supporting page, and mark the condition met when complete.",
+      label: "Approval needed",
+      action: displayAction || "Open the case, attach the supporting page, and mark the approval need complete when ready.",
       tone: "neutral",
     };
   }
 
   return {
     label: "Ready",
-    action: nextAction || "Open the matter and prepare the approval package.",
+    action: displayAction || "Open the case and prepare the approval package.",
     tone: "good",
   };
 }

@@ -183,7 +183,7 @@ function getDecisionIndicator(params: {
       label: 'Reject',
       tone: 'text-[rgb(219,156,153)]',
       surface: 'border-[rgba(189,90,86,0.38)] bg-[rgba(189,90,86,0.1)]',
-      rationale: 'Multiple unresolved high-severity exceptions remain open.',
+      rationale: 'Multiple unresolved high-severity issues remain open.',
     };
   }
 
@@ -192,7 +192,7 @@ function getDecisionIndicator(params: {
       label: 'Hold',
       tone: 'text-[rgb(219,194,137)]',
       surface: 'border-[rgba(184,151,95,0.35)] bg-[rgba(184,151,95,0.1)]',
-      rationale: 'A high-severity exception remains unresolved and requires reviewer action.',
+      rationale: 'A high-severity issue remains unresolved and requires reviewer action.',
     };
   }
 
@@ -201,7 +201,7 @@ function getDecisionIndicator(params: {
       label: 'Proceed with Conditions',
       tone: 'text-[rgb(219,194,137)]',
       surface: 'border-[rgba(184,151,95,0.35)] bg-[rgba(184,151,95,0.1)]',
-      rationale: 'No unresolved high-severity exceptions remain, but open Conditions Precedent or residual issues still require closure.',
+      rationale: 'No unresolved high-severity issues remain, but approval needed items or residual issues still require closure.',
     };
   }
 
@@ -209,7 +209,7 @@ function getDecisionIndicator(params: {
     label: 'Proceed',
     tone: 'text-[rgb(157,201,169)]',
     surface: 'border-[rgba(88,140,102,0.35)] bg-[rgba(88,140,102,0.12)]',
-    rationale: 'No unresolved high-severity exceptions or open Conditions Precedent remain.',
+    rationale: 'No unresolved high-severity issues or approval needed items remain.',
   };
 }
 
@@ -395,7 +395,7 @@ export function CaseWorkspace(props: { caseId: string }) {
       const d = await getDossier(memoizedCaseId);
       setDossier(d);
     } catch (e: any) {
-      setError(e.message || 'Failed to load dossier');
+      setError(e.message || 'Failed to load case details');
     } finally {
       setDossierLoading(false);
     }
@@ -411,7 +411,7 @@ export function CaseWorkspace(props: { caseId: string }) {
       setExceptions(exc);
       setCps(cp);
     } catch (e: any) {
-      setError(e.message || 'Failed to load exceptions or conditions precedent');
+      setError(e.message || 'Failed to load issues or approval needed items');
     } finally {
       setExceptionsLoading(false);
     }
@@ -662,8 +662,8 @@ export function CaseWorkspace(props: { caseId: string }) {
         ? 'border-[rgba(189,90,86,0.38)] bg-[rgba(189,90,86,0.1)]'
         : 'border-[rgba(88,140,102,0.35)] bg-[rgba(88,140,102,0.12)]',
       rationale: notReady
-        ? 'Open high-severity exceptions or required Conditions Precedent still block approval readiness.'
-        : 'No open high-severity exceptions or required Conditions Precedent currently block approval readiness.',
+        ? 'Open high-severity issues or approval needed items still block approval readiness.'
+        : 'No open high-severity issues or approval needed items currently block approval readiness.',
     };
   }, [openCpCount, openExceptionCounts.high]);
   const getDocumentLabel = useCallback(
@@ -702,7 +702,7 @@ export function CaseWorkspace(props: { caseId: string }) {
 
   return (
     <>
-      <SetPageChrome title={caseData?.title || 'Matter'} />
+      <SetPageChrome title={caseData?.title || 'Case'} />
       <div
         className="space-y-8 px-[clamp(1.5rem,3vw,2.5rem)] py-6"
         data-page="matter"
@@ -725,16 +725,16 @@ export function CaseWorkspace(props: { caseId: string }) {
           documents={documents.length}
           blockedBy={
             (exceptions?.high_count ?? 0) > 0
-              ? 'high-risk exceptions'
+              ? 'high-risk issues'
               : (cps?.open_count ?? 0) > 0
                 ? 'open conditions precedent'
                 : null
           }
           nextAction={
             (exceptions?.high_count ?? 0) > 0
-              ? 'Review high-risk exceptions'
+              ? 'Review high-risk issues'
               : (cps?.open_count ?? 0) > 0
-                ? 'Close open CPs'
+                ? 'Complete approval needed items'
                 : 'Continue file review'
           }
         />
@@ -759,7 +759,7 @@ export function CaseWorkspace(props: { caseId: string }) {
         />
       )}
 
-      {/* Dossier Tab - P14: Use DossierFieldsEditor */}
+      {/* Case details tab - P14: Use DossierFieldsEditor */}
       {activeTab === 'dossier' && (
         dossierLoading && !dossier ? (
           <CaseTabSkeleton />
@@ -769,9 +769,9 @@ export function CaseWorkspace(props: { caseId: string }) {
           <div className="card">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h3 className="text-lg font-semibold mb-3">Autofill from OCR</h3>
+                <h3 className="text-lg font-semibold mb-3">Autofill from scanned documents</h3>
                 <p className="mb-4 text-sm text-stone-400">
-                  Extract key dossier fields (plot, block, phase, scheme, district, etc.) from OCR text across all documents.
+                  Extract key case details (plot, block, phase, scheme, district, etc.) from scanned text across all documents.
                 </p>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -823,9 +823,9 @@ export function CaseWorkspace(props: { caseId: string }) {
           {/* P14: DossierFieldsEditor */}
           <div className="card">
             <div className="mb-4">
-              <h2 className="text-lg font-semibold">Case Dossier</h2>
+                <h2 className="text-lg font-semibold">Case details</h2>
               <p className="text-sm text-slate-400">
-                Edit dossier fields with notes and evidence links. Critical fields require evidence or Admin force.
+                Edit case details with notes and evidence links. Critical fields require evidence or Admin force.
               </p>
             </div>
             <DossierFieldsEditor caseId={caseId} documents={documents} />
@@ -843,9 +843,9 @@ export function CaseWorkspace(props: { caseId: string }) {
       {activeTab === 'ocr-extractions' && (
         <div className="space-y-6">
           <div className="card">
-            <h2 className="text-lg font-semibold mb-4">OCR Extractions</h2>
+                <h2 className="text-lg font-semibold mb-4">Scanned text</h2>
             <p className="text-slate-400 mb-4">
-              Review and edit OCR-extracted fields before confirming them to the dossier.
+              Review and edit scanned fields before confirming them to case details.
             </p>
             <OCRExtractionsPanel
               caseId={caseId}
@@ -903,7 +903,7 @@ export function CaseWorkspace(props: { caseId: string }) {
         />
       )}
 
-      {/* Conditions Precedent Tab */}
+      {/* Approval needed tab */}
       {activeTab === 'cps' && (
         exceptionsLoading && !cps ? (
           <CaseTabSkeleton />
@@ -912,7 +912,7 @@ export function CaseWorkspace(props: { caseId: string }) {
           <div className="card">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold">Conditions Precedent (CP)</h2>
+                <h2 className="text-lg font-semibold">Approval needed</h2>
                 <p className="mt-1 text-sm text-slate-400">Track required undertakings, missing annexures, and satisfaction status before approval.</p>
               </div>
               <Button
@@ -927,7 +927,7 @@ export function CaseWorkspace(props: { caseId: string }) {
 
           <div className="card">
             <h3 className="font-semibold mb-4">
-              Conditions Precedent
+              Approval needed
               {cps && <span className="text-slate-400 ml-2">({cps.open_count} open)</span>}
             </h3>
             {cpItems.length === 0 ? (
@@ -984,7 +984,7 @@ export function CaseWorkspace(props: { caseId: string }) {
                             ) : null}
                             {cp.evidenceDefinition.cp_recommended_text ? (
                               <div>
-                                <dt className="text-slate-500">Recommended CP Text</dt>
+                                <dt className="text-slate-500">Recommended approval wording</dt>
                                 <dd className="mt-1">{cp.evidenceDefinition.cp_recommended_text}</dd>
                               </div>
                             ) : null}
@@ -1060,7 +1060,7 @@ export function CaseWorkspace(props: { caseId: string }) {
         <div className="space-y-6">
           <div className="card">
             <h2 className="text-lg font-semibold mb-4">Generate Draft Documents</h2>
-            <p className="mb-6 text-stone-400">Generate bank-style DOCX drafts based on case data, exceptions, and dossier fields.</p>
+            <p className="mb-6 text-stone-400">Generate bank-style DOCX drafts based on case data, issues, and case details.</p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="rounded-lg border border-[rgba(82,90,99,0.38)] bg-[rgba(34,39,45,0.82)] p-4">
@@ -1142,7 +1142,7 @@ export function CaseWorkspace(props: { caseId: string }) {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h2 className="text-lg font-semibold mb-4">Bank Pack Export</h2>
-                <p className="text-slate-400 mb-6">Generate a bank-format PDF memorandum with executive summary, exception register, Conditions Precedent register, and annexure references.</p>
+                <p className="text-slate-400 mb-6">Generate a bank-format PDF memorandum with executive summary, issue register, approval needed register, and annexure references.</p>
               </div>
               <Button
                 onClick={handleGenerateBankPack}
@@ -1251,9 +1251,9 @@ export function CaseWorkspace(props: { caseId: string }) {
               <dd className="flex flex-wrap gap-x-8 gap-y-1 tabular text-muted-foreground">
                 <span>{String(documents.length).padStart(2, '0')} documents</span>
                 <span className={openExceptionCounts.high > 0 ? 'text-primary' : undefined}>
-                  {String(openExceptionTotal).padStart(2, '0')} open exceptions
+                  {String(openExceptionTotal).padStart(2, '0')} open issues
                 </span>
-                <span>{String(openCpCount).padStart(2, '0')} open CPs</span>
+                <span>{String(openCpCount).padStart(2, '0')} approvals needed</span>
               </dd>
             </div>
           </dl>
@@ -1261,7 +1261,7 @@ export function CaseWorkspace(props: { caseId: string }) {
           <section>
             <p className="cds-meta">Key issues</p>
             {keyIssues.length === 0 ? (
-              <p className="mt-4 text-sm text-muted-foreground">No open exceptions requiring escalation.</p>
+              <p className="mt-4 text-sm text-muted-foreground">No open issues requiring escalation.</p>
             ) : (
               <ul className="mt-2">
                 {keyIssues.map((issue: any) => {

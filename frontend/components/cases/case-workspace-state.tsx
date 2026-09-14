@@ -53,8 +53,8 @@ export function CaseNotFoundState(props: {
 }) {
   const {
     onBack,
-    title = 'Matter not found',
-    description = 'This matter does not exist or you do not have access. Return to the matters list to continue.',
+    title = 'Case not found',
+    description = 'This case does not exist or you do not have access. Return to the cases list to continue.',
   } = props;
 
   return (

@@ -37,7 +37,7 @@ function ocrReviewNotice(status?: string | null, confidence?: number | null): st
   const value = (status ?? "").replace(/\s+/g, "_").toLowerCase();
   if (value === "failed") return "Text extraction failed. Use the source page and request a replacement or manual review.";
   if (value === "needs_review" || (confidence !== null && confidence !== undefined && confidence < 80)) {
-    return "This text is provisional. Compare it with the source page before relying on it.";
+    return "This text needs your review. Compare it with the source page before relying on it.";
   }
   return null;
 }
@@ -78,7 +78,7 @@ export function EvidencePane({
                 Page {page} of {pageCount || "—"}
               </span>
               <CdsPill tone={ocrTone(selected.status)}>{ocrLabel(selected.status)}</CdsPill>
-              {confidence !== null ? <span className="text-[10px] text-muted-foreground">{confidence}% confidence</span> : null}
+              {confidence !== null ? <span className="text-[10px] text-muted-foreground">{confidence}% document type confidence</span> : null}
               <div className="flex items-center gap-1 rounded border border-border p-0.5" role="tablist" aria-label="Evidence view">
                 {([['source', 'Source page'], ['text', 'Extracted text'], ['split', 'Side by side']] as const).map(([mode, label]) => (
                   <button key={mode} type="button" role="tab" aria-selected={evidenceMode === mode} onClick={() => setEvidenceMode(mode)} className={evidenceMode === mode ? "bg-foreground px-2 py-1 text-[10px] font-semibold text-background" : "px-2 py-1 text-[10px] text-muted-foreground hover:bg-[hsl(var(--pill))]"}>{label}</button>

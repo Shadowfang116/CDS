@@ -267,7 +267,7 @@ export function DocumentsPanel({
 
     if (eligible.length === 0) {
       toast({
-        title: 'No documents ready for OCR.',
+        title: 'No documents ready to scan.',
         description: 'Upload documents first, or wait for pre-processing to complete.',
         variant: 'info',
       });
@@ -291,13 +291,13 @@ export function DocumentsPanel({
 
     if (failed === 0) {
       toast({
-        title: 'OCR started.',
+        title: 'Document scan started.',
         description: `${succeeded} document${succeeded === 1 ? '' : 's'} queued for processing.`,
         variant: 'success',
       });
     } else {
       toast({
-        title: 'OCR partially started.',
+        title: 'Document scan partially started.',
         description: `${succeeded} queued, ${failed} failed.`,
         variant: 'error',
       });
@@ -336,7 +336,7 @@ export function DocumentsPanel({
           <div>
             <CardTitle>Documents</CardTitle>
             <p className="mt-1 text-sm text-stone-400">
-              Review annexures, inspect OCR page text, and attach evidence from a single workspace.
+              Review annexures, inspect scanned text, and attach evidence from a single workspace.
             </p>
           </div>
           <div className="shrink-0">
@@ -346,7 +346,7 @@ export function DocumentsPanel({
               disabled={ocrRunning || uploading}
               loading={ocrRunning}
             >
-              {ocrRunning ? 'Starting OCR…' : 'Begin OCR'}
+              {ocrRunning ? 'Starting scan…' : 'Start scan'}
             </Button>
           </div>
         </CardHeader>

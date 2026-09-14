@@ -320,7 +320,7 @@ The physical scene is a Reviewer at a desktop under mixed office light, moving q
 - **Evidence is spatial:** provenance should be visible in layout, not hidden in metadata or a modal.
 - **Calm is not empty:** operational screens may be dense, but hierarchy must make the next action obvious.
 - **Human confirmation is the visual center:** OCR is a reading aid. Proposed data never looks equivalent to confirmed data.
-- **Product language stays legal:** matter, title chain, dossier, Exception, CP, waiver, annexure, and bank pack.
+- **Product language stays clear:** case, issue, approval needed, case details, waiver, annexure, and bank pack. Keep precise property terms such as Fard, Mutation, Jamabandi, NOC, and Encumbrance.
 
 ### Reference synthesis
 
@@ -403,7 +403,7 @@ Fallbacks:
 
 - Use tabular numerals for counts, dates, page numbers, and versions.
 - Keep body text between 55 and 72 characters per line.
-- Use sentence case everywhere except legal acronyms such as CP, NOC, and OCR.
+- Use sentence case everywhere. Keep property-document acronyms such as NOC when they help users identify the source document.
 - Do not use eyebrow text above headings.
 - Headings describe the task or object: “Review title chain,” not “Overview.”
 - Use weight and spacing before introducing another text size.

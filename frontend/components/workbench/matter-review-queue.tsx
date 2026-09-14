@@ -77,7 +77,7 @@ export function MatterReviewQueue({
   return (
     <div className="flex h-full min-h-0 flex-col bg-[hsl(var(--surface))]">
       <header className="shrink-0 border-b border-border px-3.5 py-3">
-        <p className="cds-meta">Review</p>
+          <p className="cds-meta">Review</p>
         <h2 className="mt-1 text-[16px] font-semibold text-foreground">Items needing your attention</h2>
         <p className="mt-1 text-[11px] leading-4 text-muted-foreground">
           Open one item to review its source and next action.
@@ -117,7 +117,7 @@ export function MatterReviewQueue({
                     key={`${item.kind}-${item.id}`}
                     selected={item.id === selectedFindingId}
                     label={item.title}
-                    detail={item.kind === "cp" ? "Approval requirement" : item.description || "Review the source and choose the next action."}
+                    detail={item.kind === "cp" ? "Approval needed" : item.description || "Review the source and choose the next action."}
                     status={item.status}
                     onClick={() => onSelectFinding(item)}
                   >
@@ -156,7 +156,7 @@ export function MatterReviewQueue({
           <div className="px-3.5 py-8">
             <p className="text-[14px] font-semibold text-foreground">Nothing needs review</p>
             <p className="mt-1 text-[12px] leading-5 text-muted-foreground">
-              The matter can move to the decision step when readiness checks are complete.
+              The case can move to the decision step when readiness checks are complete.
             </p>
           </div>
         ) : null}

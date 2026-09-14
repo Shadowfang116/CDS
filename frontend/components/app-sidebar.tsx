@@ -22,10 +22,10 @@ type NavigationItem = {
 
 const PRIMARY_NAVIGATION: NavigationItem[] = [
   { label: "Inbox", href: "/dashboard", icon: Inbox },
-  { label: "Matters", href: "/dashboard/cases", icon: FolderOpen },
+  { label: "Cases", href: "/dashboard/cases", icon: FolderOpen },
   { label: "Documents", href: "/dashboard/documents", icon: FileText },
   { label: "Issues", href: "/dashboard/exceptions", icon: AlertTriangle },
-  { label: "Approval requirements", href: "/dashboard/cp", icon: CheckSquare },
+  { label: "Approval needed", href: "/dashboard/cp", icon: CheckSquare },
   { label: "Approvals", href: "/approvals", icon: CheckSquare, roles: ["Approver", "Admin"] },
   { label: "Audit", href: "/dashboard/audit", icon: Shield, roles: ["Admin"] },
 ];

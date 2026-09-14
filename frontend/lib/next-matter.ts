@@ -43,13 +43,13 @@ export function pickNextMatter(
 
 export function nextMatterWhy(item: NeedsAttentionItem): string {
   if (item.open_high > 0) {
-    return `${item.open_high} high-risk exception${item.open_high === 1 ? "" : "s"}`;
+    return `${item.open_high} high-risk issue${item.open_high === 1 ? "" : "s"}`;
   }
   if (item.pending_verifications > 0) {
     return `${item.pending_verifications} check${item.pending_verifications === 1 ? "" : "s"} outstanding`;
   }
   if (item.open_medium + item.open_low > 0) {
-    return `${item.open_medium + item.open_low} open exception${item.open_medium + item.open_low === 1 ? "" : "s"}`;
+    return `${item.open_medium + item.open_low} open issue${item.open_medium + item.open_low === 1 ? "" : "s"}`;
   }
   return item.status;
 }

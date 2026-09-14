@@ -2,6 +2,7 @@
 
 import { CdsPill } from "@/components/ui/cds-pill";
 import { urduTextProps } from "@/lib/text-script";
+import { displayDecision } from "@/lib/ui-copy";
 
 type DecisionStripProps = {
   title: string;
@@ -55,14 +56,14 @@ export function DecisionStrip({
         </div>
         <div className="shrink-0 pt-1 text-right text-[11px] text-muted-foreground">
           <p>Stage: <span className="font-medium text-foreground">{status}</span></p>
-          <p className="mt-1">{decision ? `Decision: ${decision}` : "No decision yet"}</p>
+          <p className="mt-1">{decision ? `Decision: ${displayDecision(decision)}` : "No decision yet"}</p>
         </div>
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
         <span>{documents} document{documents === 1 ? "" : "s"}</span>
         <span>{highExceptions} high-priority issue{highExceptions === 1 ? "" : "s"}</span>
         {hardStops > 0 ? <span>{hardStops} blocking issue{hardStops === 1 ? "" : "s"}</span> : null}
-        <span>{openCps} approval requirement{openCps === 1 ? "" : "s"} outstanding</span>
+        <span>{openCps} approval{openCps === 1 ? "" : "s"} needed</span>
         {jurisdiction ? <span>{jurisdiction}</span> : null}
       </div>
       <div className="mt-2 grid gap-1 text-[12px] font-medium text-foreground sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:gap-x-6">

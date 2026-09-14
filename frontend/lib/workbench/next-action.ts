@@ -21,6 +21,6 @@ export function clientNextAction(input: NextActionInput): string {
   if (input.openMediumTitle) return `Review issue: ${input.openMediumTitle}`;
   if (input.openLowTitle) return `Review issue: ${input.openLowTitle}`;
   if (status === "approved") return "Issue bank pack";
-  if (status === "new") return "Review matter readiness";
+  if (status === "new") return "Review case readiness";
   return "Submit for approval";
 }

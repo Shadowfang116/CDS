@@ -15,6 +15,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getCaseWorkbenchPath } from "@/lib/routes";
+import { displayDecision } from "@/lib/ui-copy";
 import { useToast } from "@/components/ui/toast";
 
 const QUEUES = [
@@ -104,7 +105,7 @@ export function InboxView() {
           <p className="cds-meta text-muted-foreground">Dashboard</p>
           <h1 className="mt-1 text-2xl font-medium tracking-[-0.03em]">Review queue</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Start with the matters that need a decision, then follow the evidence and next action.
+            Start with the cases that need a decision, then follow the evidence and next action.
           </p>
         </div>
         <form
@@ -117,7 +118,7 @@ export function InboxView() {
           }}
         >
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            New matter
+            New case
             <input
               className="h-9 w-56 rounded-sm border border-border bg-background px-2 text-sm text-foreground"
               value={title}
@@ -147,7 +148,7 @@ export function InboxView() {
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-            Authority / regime
+            Property authority
             <select
               className="h-9 rounded-sm border border-border bg-background px-2 text-sm"
               value={propertyRegime}
@@ -177,7 +178,7 @@ export function InboxView() {
           <p className="text-sm font-medium text-foreground">Current view</p>
           <p className="mt-2 text-2xl font-medium tabular text-foreground">{highRiskMatters}</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            High-risk matters{incompleteMatters ? ` · ${incompleteMatters} missing information` : ""}
+            High-risk cases{incompleteMatters ? ` · ${incompleteMatters} missing information` : ""}
           </p>
         </div>
       </section>
@@ -203,9 +204,9 @@ export function InboxView() {
         <p className="text-sm text-muted-foreground">Loading queue…</p>
       ) : items.length === 0 ? (
         <EmptyState
-          title="No matters need you"
-          description="Create a matter to start a review, or switch queues to see blocked and ready work."
-          actionLabel="Create a matter"
+          title="No cases need you"
+          description="Create a case to start a review, or switch queues to see blocked and ready work."
+          actionLabel="Create a case"
           onAction={() => {
             newMatterFormRef.current?.querySelector<HTMLInputElement>("input[placeholder='Borrower / file name']")?.focus();
           }}
@@ -214,7 +215,7 @@ export function InboxView() {
         <table className="w-full text-left text-sm" data-tour="case-list">
           <thead className="text-xs font-medium text-muted-foreground">
             <tr>
-              <th className="pb-2 font-medium">Matter</th>
+              <th className="pb-2 font-medium">Case</th>
               <th className="pb-2 font-medium">Decision</th>
               <th className="pb-2 font-medium">Next</th>
               <th className="pb-2 font-medium">Age</th>
@@ -231,7 +232,7 @@ export function InboxView() {
                   <p className="text-xs text-muted-foreground">
                     {item.status}
                     {item.open_high ? ` · High risk ${item.open_high}` : ""}
-                    {item.open_cps ? ` · CP ${item.open_cps}` : ""}
+                    {item.open_cps ? ` · ${item.open_cps} approval${item.open_cps === 1 ? "" : "s"} needed` : ""}
                   </p>
                   {item.open_high > 0 ? (
                     <p className="mt-1 text-xs text-[hsl(var(--status-high))]">
@@ -243,7 +244,7 @@ export function InboxView() {
                     </p>
                   ) : null}
                 </td>
-                <td className="py-3 tabular">{item.decision ?? "—"}</td>
+                <td className="py-3 tabular">{item.decision ? displayDecision(item.decision) : "—"}</td>
                 <td className="py-3 text-muted-foreground">{item.next_action}</td>
                 <td className="py-3 tabular text-muted-foreground">{ageLabel(item.updated_at)}</td>
                 <td className="py-3 text-right">

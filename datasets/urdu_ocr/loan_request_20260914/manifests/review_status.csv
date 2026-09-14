@@ -1,0 +1,19 @@
+﻿page_id,source_document,page,image,line_count,human_verified,verification_status,reviewer,reviewed_at,notes
+Aks_E_Shajra-1,Aks_E_Shajra.pdf,1,images/Aks_E_Shajra-1.png,4,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+DOC057-1,DOC057.pdf,1,images/DOC057-1.png,34,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+DOC058-1,DOC058.pdf,1,images/DOC058-1.png,31,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+DOC059-1,DOC059.pdf,1,images/DOC059-1.png,30,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+DOC061-1,DOC061.pdf,1,images/DOC061-1.png,35,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+DOC062-1,DOC062.pdf,1,images/DOC062-1.png,10,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Fard_For_Loan_11_04_22-1,Fard_For_Loan_11_04_22.pdf,1,images/Fard_For_Loan_11_04_22-1.png,22,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Inteqal_07_04_2022-1,Inteqal_07_04_2022.pdf,1,images/Inteqal_07_04_2022-1.png,28,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Registry-1,Registry.pdf,1,images/Registry-1.png,48,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Registry-2,Registry.pdf,1,images/Registry-2.png,26,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Registry-3,Registry.pdf,1,images/Registry-3.png,37,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Registry-4,Registry.pdf,1,images/Registry-4.png,29,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Registry-5,Registry.pdf,1,images/Registry-5.png,29,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Registry-6,Registry.pdf,1,images/Registry-6.png,31,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Sanction_Letter-1,Sanction_Letter.pdf,1,images/Sanction_Letter-1.png,44,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Sanction_Letter-2,Sanction_Letter.pdf,1,images/Sanction_Letter-2.png,42,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Site_Map-1,Site_Map.pdf,1,images/Site_Map-1.png,45,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.
+Site_Map-2,Site_Map.pdf,1,images/Site_Map-2.png,50,False,DRAFT_UNVERIFIED,,,Verify text and polygons against scan; compare candidate_text_tesseract when useful.

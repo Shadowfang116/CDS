@@ -1,0 +1,1272 @@
+{
+  "dataset_id": "loan_request_20260914",
+  "source_document": "Site_Map.pdf",
+  "source_page_image": "images/Site_Map-1.png",
+  "page": 1,
+  "language": "urd+eng",
+  "human_verified": false,
+  "verification_status": "DRAFT_UNVERIFIED",
+  "box_method": "Tesseract control word boxes grouped by reading line",
+  "lines": [
+    {
+      "line_id": 1,
+      "reading_order": 1,
+      "bbox": [
+        [
+          1169,
+          82
+        ],
+        [
+          1170,
+          82
+        ],
+        [
+          1170,
+          138
+        ],
+        [
+          1169,
+          138
+        ]
+      ],
+      "text": "Lamit مقر‎ fer. t SANCTIONED",
+      "candidate_text_tesseract": "Lamit مقر‎ fer. t SANCTIONED",
+      "source_ocr_text": "SSS",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_001.png"
+    },
+    {
+      "line_id": 2,
+      "reading_order": 2,
+      "bbox": [
+        [
+          1169,
+          101
+        ],
+        [
+          1170,
+          101
+        ],
+        [
+          1170,
+          159
+        ],
+        [
+          1169,
+          159
+        ]
+      ],
+      "text": "Abt FIED رح‎ رح DAM BIW EZ",
+      "candidate_text_tesseract": "Abt FIED رح‎ رح DAM BIW EZ",
+      "source_ocr_text": "‏ا‎ ae i ‏0ئ‎ 77 e kernal ‏ارد تا‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_002.png"
+    },
+    {
+      "line_id": 3,
+      "reading_order": 3,
+      "bbox": [
+        [
+          1169,
+          113
+        ],
+        [
+          1170,
+          113
+        ],
+        [
+          1170,
+          222
+        ],
+        [
+          1169,
+          222
+        ]
+      ],
+      "text": "Property Property Uist مار‎ لہ ےہ 7 Date..06-03- 2679.",
+      "candidate_text_tesseract": "Property Property Uist مار‎ لہ ےہ 7 Date..06-03- 2679.",
+      "source_ocr_text": "\\ woawmnecuon Hato Slt = Date.n.29-03- 2.013",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_003.png"
+    },
+    {
+      "line_id": 4,
+      "reading_order": 4,
+      "bbox": [
+        [
+          1169,
+          165
+        ],
+        [
+          1170,
+          165
+        ],
+        [
+          1170,
+          186
+        ],
+        [
+          1169,
+          186
+        ]
+      ],
+      "text": "-",
+      "candidate_text_tesseract": "-",
+      "source_ocr_text": "‏بت سیت‎ ee 1 715 ‏و‎ |",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_004.png"
+    },
+    {
+      "line_id": 5,
+      "reading_order": 5,
+      "bbox": [
+        [
+          1169,
+          164
+        ],
+        [
+          1170,
+          164
+        ],
+        [
+          1170,
+          218
+        ],
+        [
+          1169,
+          218
+        ]
+      ],
+      "text": "Sine SIO eee nf tat 19-0۷7۔۱×‎ 205",
+      "candidate_text_tesseract": "Sine SIO eee nf tat 19-0۷7۔۱×‎ 205",
+      "source_ocr_text": "| ۲۲ + Ww sheet (20'-0\" Wide) -",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_005.png"
+    },
+    {
+      "line_id": 6,
+      "reading_order": 6,
+      "bbox": [
+        [
+          573,
+          197
+        ],
+        [
+          1170,
+          197
+        ],
+        [
+          1170,
+          253
+        ],
+        [
+          573,
+          253
+        ]
+      ],
+      "text": "امتننلمنیا ےا ر وہ ut‏ Dare 2.9-03- 2918",
+      "candidate_text_tesseract": "امتننلمنیا ےا ر وہ ut‏ Dare 2.9-03- 2918",
+      "source_ocr_text": "‏یہ‎ | x p—_f / lan",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_006.png"
+    },
+    {
+      "line_id": 7,
+      "reading_order": 7,
+      "bbox": [
+        [
+          595,
+          206
+        ],
+        [
+          1170,
+          206
+        ],
+        [
+          1170,
+          282
+        ],
+        [
+          595,
+          282
+        ]
+      ],
+      "text": "عدھ سہ] ۱1ؤ سے4 Other Other A hie",
+      "candidate_text_tesseract": "عدھ سہ] ۱1ؤ سے4 Other Other A hie",
+      "source_ocr_text": "| om ‏ا0ہ‎ when Site PlAM ggg este ‏مت‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_007.png"
+    },
+    {
+      "line_id": 8,
+      "reading_order": 8,
+      "bbox": [
+        [
+          608,
+          255
+        ],
+        [
+          1170,
+          255
+        ],
+        [
+          1170,
+          300
+        ],
+        [
+          608,
+          300
+        ]
+      ],
+      "text": "کبجہن ۲۸ء ٦٦+ (theer",
+      "candidate_text_tesseract": "کبجہن ۲۸ء ٦٦+ (theer",
+      "source_ocr_text": "‎۱ ‏اہ‎ _١__١ 8۱ ع٤ےلجگس ‏ہچ چیچی گت و وچھشس‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_008.png"
+    },
+    {
+      "line_id": 9,
+      "reading_order": 9,
+      "bbox": [
+        [
+          965,
+          256
+        ],
+        [
+          1170,
+          256
+        ],
+        [
+          1170,
+          317
+        ],
+        [
+          965,
+          317
+        ]
+      ],
+      "text": "عم IE ache ad در‎",
+      "candidate_text_tesseract": "عم IE ache ad در‎",
+      "source_ocr_text": "۱ 11 eH Py) l LA > G52? ٣ ‏سس سی وا جج‎ ce |",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_009.png"
+    },
+    {
+      "line_id": 10,
+      "reading_order": 10,
+      "bbox": [
+        [
+          1169,
+          277
+        ],
+        [
+          1170,
+          277
+        ],
+        [
+          1170,
+          325
+        ],
+        [
+          1169,
+          325
+        ]
+      ],
+      "text": "Tee ےہ",
+      "candidate_text_tesseract": "Tee ےہ",
+      "source_ocr_text": "وت وو ...سس 1 ا ‎piss ef — pies‏ =|",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_010.png"
+    },
+    {
+      "line_id": 11,
+      "reading_order": 11,
+      "bbox": [
+        [
+          1169,
+          379
+        ],
+        [
+          1170,
+          379
+        ],
+        [
+          1170,
+          415
+        ],
+        [
+          1169,
+          415
+        ]
+      ],
+      "text": "Ln",
+      "candidate_text_tesseract": "Ln",
+      "source_ocr_text": "السا ‎COVERED AREA‏ 07۸ جا 0 = ‎saree‏ سی",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_011.png"
+    },
+    {
+      "line_id": 12,
+      "reading_order": 12,
+      "bbox": [
+        [
+          1169,
+          397
+        ],
+        [
+          1170,
+          397
+        ],
+        [
+          1170,
+          447
+        ],
+        [
+          1169,
+          447
+        ]
+      ],
+      "text": "1 APPR ران‎",
+      "candidate_text_tesseract": "1 APPR ران‎",
+      "source_ocr_text": "وس سچجچجچچ جج ہے ‎LS ۲۳۳٢‏ | \\",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_012.png"
+    },
+    {
+      "line_id": 13,
+      "reading_order": 13,
+      "bbox": [
+        [
+          1169,
+          405
+        ],
+        [
+          1170,
+          405
+        ],
+        [
+          1170,
+          462
+        ],
+        [
+          1169,
+          462
+        ]
+      ],
+      "text": "Site Plan ۳۶۴ ہی‎",
+      "candidate_text_tesseract": "Site Plan ۳۶۴ ہی‎",
+      "source_ocr_text": "‎ee oa‏ مہ گیا جم کمن نت 4 & 8",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_013.png"
+    },
+    {
+      "line_id": 14,
+      "reading_order": 14,
+      "bbox": [
+        [
+          1169,
+          433
+        ],
+        [
+          1170,
+          433
+        ],
+        [
+          1170,
+          468
+        ],
+        [
+          1169,
+          468
+        ]
+      ],
+      "text": "Town",
+      "candidate_text_tesseract": "Town",
+      "source_ocr_text": "‎yi : Ee‏ — ۱ 0",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_014.png"
+    },
+    {
+      "line_id": 15,
+      "reading_order": 15,
+      "bbox": [
+        [
+          1169,
+          450
+        ],
+        [
+          1170,
+          450
+        ],
+        [
+          1170,
+          476
+        ],
+        [
+          1169,
+          476
+        ]
+      ],
+      "text": "—",
+      "candidate_text_tesseract": "—",
+      "source_ocr_text": "j 0 ٍ an VY a 4 F",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_015.png"
+    },
+    {
+      "line_id": 16,
+      "reading_order": 16,
+      "bbox": [
+        [
+          1169,
+          502
+        ],
+        [
+          1170,
+          502
+        ],
+        [
+          1170,
+          544
+        ],
+        [
+          1169,
+          544
+        ]
+      ],
+      "text": "SCHEDULE OF AREA",
+      "candidate_text_tesseract": "SCHEDULE OF AREA",
+      "source_ocr_text": "| TH ‏رین‎ Hisar FA ‏وا‎ ,",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_016.png"
+    },
+    {
+      "line_id": 17,
+      "reading_order": 17,
+      "bbox": [
+        [
+          1169,
+          547
+        ],
+        [
+          1170,
+          547
+        ],
+        [
+          1170,
+          610
+        ],
+        [
+          1169,
+          610
+        ]
+      ],
+      "text": "TOTAL APEA OF PLOT | essa |",
+      "candidate_text_tesseract": "TOTAL APEA OF PLOT | essa |",
+      "source_ocr_text": "| 7 ِ ١",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_017.png"
+    },
+    {
+      "line_id": 18,
+      "reading_order": 18,
+      "bbox": [
+        [
+          1169,
+          595
+        ],
+        [
+          1170,
+          595
+        ],
+        [
+          1170,
+          645
+        ],
+        [
+          1169,
+          645
+        ]
+      ],
+      "text": "DPEN AREA OF PLOT [ casse",
+      "candidate_text_tesseract": "DPEN AREA OF PLOT [ casse",
+      "source_ocr_text": "۱ 1 = wi = ‏ان‎ B Bo bas =",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_018.png"
+    },
+    {
+      "line_id": 19,
+      "reading_order": 19,
+      "bbox": [
+        [
+          1124,
+          646
+        ],
+        [
+          1170,
+          646
+        ],
+        [
+          1170,
+          697
+        ],
+        [
+          1124,
+          697
+        ]
+      ],
+      "text": "YA RCCSTAIR DETAIL LOVERED APEA OF GFLOCR وت8‎ 8",
+      "candidate_text_tesseract": "YA RCCSTAIR DETAIL LOVERED APEA OF GFLOCR وت8‎ 8",
+      "source_ocr_text": "‏کا‎ =o ‏ل‎ ٠. | cee | ‏نس‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_019.png"
+    },
+    {
+      "line_id": 20,
+      "reading_order": 20,
+      "bbox": [
+        [
+          1169,
+          676
+        ],
+        [
+          1170,
+          676
+        ],
+        [
+          1170,
+          711
+        ],
+        [
+          1169,
+          711
+        ]
+      ],
+      "text": "Maier",
+      "candidate_text_tesseract": "Maier",
+      "source_ocr_text": "‎[aa ‏ععے‎ ٦ا‎ L ‏آپے_‎ Foundation Details canes",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_020.png"
+    },
+    {
+      "line_id": 21,
+      "reading_order": 21,
+      "bbox": [
+        [
+          1169,
+          691
+        ],
+        [
+          1170,
+          691
+        ],
+        [
+          1170,
+          723
+        ],
+        [
+          1169,
+          723
+        ]
+      ],
+      "text": "COV AREA OF ROOF PROJECTIONG#! 038S%",
+      "candidate_text_tesseract": "COV AREA OF ROOF PROJECTIONG#! 038S%",
+      "source_ocr_text": "سس ‎a Sia anes‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_021.png"
+    },
+    {
+      "line_id": 22,
+      "reading_order": 22,
+      "bbox": [
+        [
+          1169,
+          732
+        ],
+        [
+          1170,
+          732
+        ],
+        [
+          1170,
+          767
+        ],
+        [
+          1169,
+          767
+        ]
+      ],
+      "text": "COVERED AREA OF FLOOR er ت‎",
+      "candidate_text_tesseract": "COVERED AREA OF FLOOR er ت‎",
+      "source_ocr_text": "ہمہ لہ مم جيظچج مہ ے٭ے ‏ ےا ۔ے",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_022.png"
+    },
+    {
+      "line_id": 23,
+      "reading_order": 23,
+      "bbox": [
+        [
+          1169,
+          773
+        ],
+        [
+          1170,
+          773
+        ],
+        [
+          1170,
+          809
+        ],
+        [
+          1169,
+          809
+        ]
+      ],
+      "text": "COVERED AREA OF MLAITY 248 Sh",
+      "candidate_text_tesseract": "COVERED AREA OF MLAITY 248 Sh",
+      "source_ocr_text": "‎Scanned with CamScanner‏ ۲",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_023.png"
+    },
+    {
+      "line_id": 24,
+      "reading_order": 24,
+      "bbox": [
+        [
+          1169,
+          811
+        ],
+        [
+          1170,
+          811
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "TOTAL COVERED AREA 1582 $@",
+      "candidate_text_tesseract": "TOTAL COVERED AREA 1582 $@",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_024.png"
+    },
+    {
+      "line_id": 25,
+      "reading_order": 25,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "AS-BUILT DRAWING",
+      "candidate_text_tesseract": "AS-BUILT DRAWING",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_025.png"
+    },
+    {
+      "line_id": 26,
+      "reading_order": 26,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "A PLAN OF THE HOUSE BUILDING FOR",
+      "candidate_text_tesseract": "A PLAN OF THE HOUSE BUILDING FOR",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_026.png"
+    },
+    {
+      "line_id": 27,
+      "reading_order": 27,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "rad ہیر MUHAMAMONAVEED‏ 0ا MUHAMMAD RAMZAN‏",
+      "candidate_text_tesseract": "rad ہیر MUHAMAMONAVEED‏ 0ا MUHAMMAD RAMZAN‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_027.png"
+    },
+    {
+      "line_id": 28,
+      "reading_order": 28,
+      "bbox": [
+        [
+          656,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          656,
+          827
+        ]
+      ],
+      "text": "للہا AT KHEWAT NO 6. KHATOOMI NO 14,15,‏",
+      "candidate_text_tesseract": "للہا AT KHEWAT NO 6. KHATOOMI NO 14,15,‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_028.png"
+    },
+    {
+      "line_id": 29,
+      "reading_order": 29,
+      "bbox": [
+        [
+          645,
+          826
+        ],
+        [
+          728,
+          826
+        ],
+        [
+          728,
+          827
+        ],
+        [
+          645,
+          827
+        ]
+      ],
+      "text": "weene‏",
+      "candidate_text_tesseract": "weene‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_029.png"
+    },
+    {
+      "line_id": 30,
+      "reading_order": 30,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "SALAM KHATA 01۲۸۲ 10, SITUATED ABADI‏",
+      "candidate_text_tesseract": "SALAM KHATA 01۲۸۲ 10, SITUATED ABADI‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_030.png"
+    },
+    {
+      "line_id": 31,
+      "reading_order": 31,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "HADBAST MOUZA TULS PURA TEHSIL SHALIMAR‏",
+      "candidate_text_tesseract": "HADBAST MOUZA TULS PURA TEHSIL SHALIMAR‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_031.png"
+    },
+    {
+      "line_id": 32,
+      "reading_order": 32,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "TASTRICT LAHORE,",
+      "candidate_text_tesseract": "TASTRICT LAHORE,",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_032.png"
+    },
+    {
+      "line_id": 33,
+      "reading_order": 33,
+      "bbox": [
+        [
+          593,
+          826
+        ],
+        [
+          739,
+          826
+        ],
+        [
+          739,
+          827
+        ],
+        [
+          593,
+          827
+        ]
+      ],
+      "text": "SATE",
+      "candidate_text_tesseract": "SATE",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_033.png"
+    },
+    {
+      "line_id": 34,
+      "reading_order": 34,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "پا ونس",
+      "candidate_text_tesseract": "پا ونس",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_034.png"
+    },
+    {
+      "line_id": 35,
+      "reading_order": 35,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "EN",
+      "candidate_text_tesseract": "EN",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_035.png"
+    },
+    {
+      "line_id": 36,
+      "reading_order": 36,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "WS",
+      "candidate_text_tesseract": "WS",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_036.png"
+    },
+    {
+      "line_id": 37,
+      "reading_order": 37,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "اھ",
+      "candidate_text_tesseract": "اھ",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_037.png"
+    },
+    {
+      "line_id": 38,
+      "reading_order": 38,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "INNS ھ",
+      "candidate_text_tesseract": "INNS ھ",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_038.png"
+    },
+    {
+      "line_id": 39,
+      "reading_order": 39,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "×1 1 0",
+      "candidate_text_tesseract": "×1 1 0",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_039.png"
+    },
+    {
+      "line_id": 40,
+      "reading_order": 40,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "2 ] | ٦‏",
+      "candidate_text_tesseract": "2 ] | ٦‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_040.png"
+    },
+    {
+      "line_id": 41,
+      "reading_order": 41,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "rt 5 f",
+      "candidate_text_tesseract": "rt 5 f",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_041.png"
+    },
+    {
+      "line_id": 42,
+      "reading_order": 42,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "t",
+      "candidate_text_tesseract": "t",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_042.png"
+    },
+    {
+      "line_id": 43,
+      "reading_order": 43,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "Foundation Details",
+      "candidate_text_tesseract": "Foundation Details",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_043.png"
+    },
+    {
+      "line_id": 44,
+      "reading_order": 44,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "TTR Ae",
+      "candidate_text_tesseract": "TTR Ae",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_044.png"
+    },
+    {
+      "line_id": 45,
+      "reading_order": 45,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "Scanned with ئ)‎ 68۲",
+      "candidate_text_tesseract": "Scanned with ئ)‎ 68۲",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Site_Map-1_line_045.png"
+    }
+  ]
+}

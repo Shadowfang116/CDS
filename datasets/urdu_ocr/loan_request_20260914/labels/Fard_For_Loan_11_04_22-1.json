@@ -1,0 +1,628 @@
+{
+  "dataset_id": "loan_request_20260914",
+  "source_document": "Fard_For_Loan_11_04_22.pdf",
+  "source_page_image": "images/Fard_For_Loan_11_04_22-1.png",
+  "page": 1,
+  "language": "urd+eng",
+  "human_verified": false,
+  "verification_status": "DRAFT_UNVERIFIED",
+  "box_method": "Tesseract control word boxes grouped by reading line",
+  "lines": [
+    {
+      "line_id": 1,
+      "reading_order": 1,
+      "bbox": [
+        [
+          1169,
+          109
+        ],
+        [
+          1170,
+          109
+        ],
+        [
+          1170,
+          185
+        ],
+        [
+          1169,
+          185
+        ]
+      ],
+      "text": "aves",
+      "candidate_text_tesseract": "aves",
+      "source_ocr_text": "لج مہ رت ‎in et‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_001.png"
+    },
+    {
+      "line_id": 2,
+      "reading_order": 2,
+      "bbox": [
+        [
+          175,
+          91
+        ],
+        [
+          1170,
+          91
+        ],
+        [
+          1170,
+          302
+        ],
+        [
+          175,
+          302
+        ]
+      ],
+      "text": "“XXXIVA, EME ice ٠‏ Se ہمد زشن(ضل رای",
+      "candidate_text_tesseract": "“XXXIVA, EME ice ٠‏ Se ہمد زشن(ضل رای",
+      "source_ocr_text": "‎cur Tr‏ ساسا ع ]۳۱ا ‎ep‏ اھ ای.۹[ ‎٢٣ ۱١٤۹‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_002.png"
+    },
+    {
+      "line_id": 3,
+      "reading_order": 3,
+      "bbox": [
+        [
+          595,
+          156
+        ],
+        [
+          856,
+          156
+        ],
+        [
+          856,
+          298
+        ],
+        [
+          595,
+          298
+        ]
+      ],
+      "text": "کہ ق۶",
+      "candidate_text_tesseract": "کہ ق۶",
+      "source_ocr_text": "۶ا 220 1 1",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_003.png"
+    },
+    {
+      "line_id": 4,
+      "reading_order": 4,
+      "bbox": [
+        [
+          243,
+          225
+        ],
+        [
+          1170,
+          225
+        ],
+        [
+          1170,
+          365
+        ],
+        [
+          243,
+          365
+        ]
+      ],
+      "text": "زنر حتف ioe‏ * مال we Or. می گل کے ا",
+      "candidate_text_tesseract": "زنر حتف ioe‏ * مال we Or. می گل کے ا",
+      "source_ocr_text": "‎٣‏ اخ ا السا ما آپی اج ۱ہ ان کول نا جا | ‎Duets) out | attr‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_004.png"
+    },
+    {
+      "line_id": 5,
+      "reading_order": 5,
+      "bbox": [
+        [
+          1169,
+          291
+        ],
+        [
+          1170,
+          291
+        ],
+        [
+          1170,
+          394
+        ],
+        [
+          1169,
+          394
+        ]
+      ],
+      "text": "of",
+      "candidate_text_tesseract": "of",
+      "source_ocr_text": "‎ee‏ سے ا سے آ ےر ےتا نت",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_005.png"
+    },
+    {
+      "line_id": 6,
+      "reading_order": 6,
+      "bbox": [
+        [
+          230,
+          225
+        ],
+        [
+          1170,
+          225
+        ],
+        [
+          1170,
+          544
+        ],
+        [
+          230,
+          544
+        ]
+      ],
+      "text": "[+ ۹ A Zz 1 6 \"گر or | (25 | Gor {Qe 7 Fr ٢ ۱‏",
+      "candidate_text_tesseract": "[+ ۹ A Zz 1 6 \"گر or | (25 | Gor {Qe 7 Fr ٢ ۱‏",
+      "source_ocr_text": "‎ia‏ ےھ ےل ہے",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_006.png"
+    },
+    {
+      "line_id": 7,
+      "reading_order": 7,
+      "bbox": [
+        [
+          176,
+          368
+        ],
+        [
+          1170,
+          368
+        ],
+        [
+          1170,
+          489
+        ],
+        [
+          176,
+          489
+        ]
+      ],
+      "text": "ed | db 6 ری‎ eet Weta Lib ZB 27 Hal |‏",
+      "candidate_text_tesseract": "ed | db 6 ری‎ eet Weta Lib ZB 27 Hal |‏",
+      "source_ocr_text": "‎Lampe‏ ےھ ‎ian‏ سے",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_007.png"
+    },
+    {
+      "line_id": 8,
+      "reading_order": 8,
+      "bbox": [
+        [
+          127,
+          406
+        ],
+        [
+          1170,
+          406
+        ],
+        [
+          1170,
+          579
+        ],
+        [
+          127,
+          579
+        ]
+      ],
+      "text": "ر) کول ردار(اگ انان | od‏ ati Biles | oe ہیں رای ادا Sloe]‏ اکچاج 6لا اس۳۸ ال ۲م ا | اج اک ا €",
+      "candidate_text_tesseract": "ر) کول ردار(اگ انان | od‏ ati Biles | oe ہیں رای ادا Sloe]‏ اکچاج 6لا اس۳۸ ال ۲م ا | اج اک ا €",
+      "source_ocr_text": "‎Aa? | | a‏ |",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_008.png"
+    },
+    {
+      "line_id": 9,
+      "reading_order": 9,
+      "bbox": [
+        [
+          195,
+          464
+        ],
+        [
+          1170,
+          464
+        ],
+        [
+          1170,
+          574
+        ],
+        [
+          195,
+          574
+        ]
+      ],
+      "text": "مائیرزشن شر | وجب مالیہ اورصطالبہ‎ شر ene hint 2 Pls یا چپ ws REL] sahacdes |S ۰‏",
+      "candidate_text_tesseract": "مائیرزشن شر | وجب مالیہ اورصطالبہ‎ شر ene hint 2 Pls یا چپ ws REL] sahacdes |S ۰‏",
+      "source_ocr_text": "‎Ae |‏ را ‎CORE‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_009.png"
+    },
+    {
+      "line_id": 10,
+      "reading_order": 10,
+      "bbox": [
+        [
+          1169,
+          571
+        ],
+        [
+          1170,
+          571
+        ],
+        [
+          1170,
+          706
+        ],
+        [
+          1169,
+          706
+        ]
+      ],
+      "text": "ہے سر سے سے طض از سے ےٍ",
+      "candidate_text_tesseract": "ہے سر سے سے طض از سے ےٍ",
+      "source_ocr_text": "‏: 4 / 4/ ھک 7 ۳",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_010.png"
+    },
+    {
+      "line_id": 11,
+      "reading_order": 11,
+      "bbox": [
+        [
+          148,
+          638
+        ],
+        [
+          1170,
+          638
+        ],
+        [
+          1170,
+          759
+        ],
+        [
+          148,
+          759
+        ]
+      ],
+      "text": "7 سد‎ 6ی ہل اس er‏ AO. ۱ a رز مر qv‏ Yio’ 2-۱ :‏",
+      "candidate_text_tesseract": "7 سد‎ 6ی ہل اس er‏ AO. ۱ a رز مر qv‏ Yio’ 2-۱ :‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_011.png"
+    },
+    {
+      "line_id": 12,
+      "reading_order": 12,
+      "bbox": [
+        [
+          651,
+          657
+        ],
+        [
+          1170,
+          657
+        ],
+        [
+          1170,
+          808
+        ],
+        [
+          651,
+          808
+        ]
+      ],
+      "text": "| م_] irene 27 7 لہس اپ .مہ ‘‏ ...ا",
+      "candidate_text_tesseract": "| م_] irene 27 7 لہس اپ .مہ ‘‏ ...ا",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_012.png"
+    },
+    {
+      "line_id": 13,
+      "reading_order": 13,
+      "bbox": [
+        [
+          1169,
+          749
+        ],
+        [
+          1170,
+          749
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1169,
+          826
+        ]
+      ],
+      "text": "f/f‏ = وہوہرہت FE سو SP”‏",
+      "candidate_text_tesseract": "f/f‏ = وہوہرہت FE سو SP”‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_013.png"
+    },
+    {
+      "line_id": 14,
+      "reading_order": 14,
+      "bbox": [
+        [
+          668,
+          817
+        ],
+        [
+          696,
+          817
+        ],
+        [
+          696,
+          827
+        ],
+        [
+          668,
+          827
+        ]
+      ],
+      "text": "ا",
+      "candidate_text_tesseract": "ا",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_014.png"
+    },
+    {
+      "line_id": 15,
+      "reading_order": 15,
+      "bbox": [
+        [
+          17,
+          826
+        ],
+        [
+          300,
+          826
+        ],
+        [
+          300,
+          827
+        ],
+        [
+          17,
+          827
+        ]
+      ],
+      "text": "SS",
+      "candidate_text_tesseract": "SS",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_015.png"
+    },
+    {
+      "line_id": 16,
+      "reading_order": 16,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "a in‏ ای لق سے سس",
+      "candidate_text_tesseract": "a in‏ ای لق سے سس",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_016.png"
+    },
+    {
+      "line_id": 17,
+      "reading_order": 17,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "سے ےر کے",
+      "candidate_text_tesseract": "سے ےر کے",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_017.png"
+    },
+    {
+      "line_id": 18,
+      "reading_order": 18,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "7279/۸ -25prb pa‏ ہک لہہہےے",
+      "candidate_text_tesseract": "7279/۸ -25prb pa‏ ہک لہہہےے",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_018.png"
+    },
+    {
+      "line_id": 19,
+      "reading_order": 19,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "l= PEF ESI‏ ۳ب",
+      "candidate_text_tesseract": "l= PEF ESI‏ ۳ب",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_019.png"
+    },
+    {
+      "line_id": 20,
+      "reading_order": 20,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "EBFC Or‏",
+      "candidate_text_tesseract": "EBFC Or‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_020.png"
+    },
+    {
+      "line_id": 21,
+      "reading_order": 21,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "| AUES EH DE‏",
+      "candidate_text_tesseract": "| AUES EH DE‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_021.png"
+    },
+    {
+      "line_id": 22,
+      "reading_order": 22,
+      "bbox": [
+        [
+          1169,
+          826
+        ],
+        [
+          1170,
+          826
+        ],
+        [
+          1170,
+          827
+        ],
+        [
+          1169,
+          827
+        ]
+      ],
+      "text": "LT‏ و",
+      "candidate_text_tesseract": "LT‏ و",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Fard_For_Loan_11_04_22-1_line_022.png"
+    }
+  ]
+}

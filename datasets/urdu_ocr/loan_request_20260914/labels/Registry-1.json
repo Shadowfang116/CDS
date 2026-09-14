@@ -1,0 +1,1356 @@
+{
+  "dataset_id": "loan_request_20260914",
+  "source_document": "Registry.pdf",
+  "source_page_image": "images/Registry-1.png",
+  "page": 1,
+  "language": "urd+eng",
+  "human_verified": false,
+  "verification_status": "DRAFT_UNVERIFIED",
+  "box_method": "Tesseract control word boxes grouped by reading line",
+  "lines": [
+    {
+      "line_id": 1,
+      "reading_order": 1,
+      "bbox": [
+        [
+          440,
+          48
+        ],
+        [
+          827,
+          48
+        ],
+        [
+          827,
+          91
+        ],
+        [
+          440,
+          91
+        ]
+      ],
+      "text": "٤٠ع‎ eo be eg : . فھفھم‎ کم : ہکم . oe 7",
+      "candidate_text_tesseract": "٤٠ع‎ eo be eg : . فھفھم‎ کم : ہکم . oe 7",
+      "source_ocr_text": "7 ‏ھپ بس‎ 2 (AMRIT et |",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_001.png"
+    },
+    {
+      "line_id": 2,
+      "reading_order": 2,
+      "bbox": [
+        [
+          826,
+          107
+        ],
+        [
+          827,
+          107
+        ],
+        [
+          827,
+          191
+        ],
+        [
+          826,
+          191
+        ]
+      ],
+      "text": "Ml 1۷ fr.",
+      "candidate_text_tesseract": "Ml 1۷ fr.",
+      "source_ocr_text": "1 ona E-STAMP ‏سر شش‎ 4 |",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_002.png"
+    },
+    {
+      "line_id": 3,
+      "reading_order": 3,
+      "bbox": [
+        [
+          268,
+          99
+        ],
+        [
+          827,
+          99
+        ],
+        [
+          827,
+          248
+        ],
+        [
+          268,
+          248
+        ]
+      ],
+      "text": "۱ cc سد‎",
+      "candidate_text_tesseract": "۱ cc سد‎",
+      "source_ocr_text": "0 oft ‏ید‎ Deke / ig |",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_003.png"
+    },
+    {
+      "line_id": 4,
+      "reading_order": 4,
+      "bbox": [
+        [
+          302,
+          142
+        ],
+        [
+          827,
+          142
+        ],
+        [
+          827,
+          289
+        ],
+        [
+          302,
+          289
+        ]
+      ],
+      "text": "کے‎ Waar 7727771272277",
+      "candidate_text_tesseract": "کے‎ Waar 7727771272277",
+      "source_ocr_text": ": fe ners ٠ ‏کا‎ aoe “Rs i21o00// Q",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_004.png"
+    },
+    {
+      "line_id": 5,
+      "reading_order": 5,
+      "bbox": [
+        [
+          263,
+          231
+        ],
+        [
+          827,
+          231
+        ],
+        [
+          827,
+          328
+        ],
+        [
+          263,
+          328
+        ]
+      ],
+      "text": "آے لن ہی sna 2 E- STAMP “po uin-seroepaecso0dios 05 0 دا",
+      "candidate_text_tesseract": "آے لن ہی sna 2 E- STAMP “po uin-seroepaecso0dios 05 0 دا",
+      "source_ocr_text": "‏وو سستے سچھتھھسستً‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_005.png"
+    },
+    {
+      "line_id": 6,
+      "reading_order": 6,
+      "bbox": [
+        [
+          337,
+          245
+        ],
+        [
+          827,
+          245
+        ],
+        [
+          827,
+          362
+        ],
+        [
+          337,
+          362
+        ]
+      ],
+      "text": ": %‏ جوحہیيیتی",
+      "candidate_text_tesseract": ": %‏ جوحہیيیتی",
+      "source_ocr_text": "‏یھ سے‎ 20",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_006.png"
+    },
+    {
+      "line_id": 7,
+      "reading_order": 7,
+      "bbox": [
+        [
+          826,
+          317
+        ],
+        [
+          827,
+          317
+        ],
+        [
+          827,
+          384
+        ],
+        [
+          826,
+          384
+        ]
+      ],
+      "text": "حون",
+      "candidate_text_tesseract": "حون",
+      "source_ocr_text": "= ‏ردممج ٥یسی میٹ ہے‎ ~~ Pepi. to\\ DOOR.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_007.png"
+    },
+    {
+      "line_id": 8,
+      "reading_order": 8,
+      "bbox": [
+        [
+          826,
+          342
+        ],
+        [
+          827,
+          342
+        ],
+        [
+          827,
+          434
+        ],
+        [
+          826,
+          434
+        ]
+      ],
+      "text": "ere",
+      "candidate_text_tesseract": "ere",
+      "source_ocr_text": "‏لے سس ےسج جس سس سس سس سس مه‎ i -",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_008.png"
+    },
+    {
+      "line_id": 9,
+      "reading_order": 9,
+      "bbox": [
+        [
+          826,
+          388
+        ],
+        [
+          827,
+          388
+        ],
+        [
+          827,
+          483
+        ],
+        [
+          826,
+          483
+        ]
+      ],
+      "text": "7 DE. es",
+      "candidate_text_tesseract": "7 DE. es",
+      "source_ocr_text": ": ‏مھ‎ د٭٤‎ (oAevitbe thee tune le iti. ** * ‏رھ‎ Gr !",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_009.png"
+    },
+    {
+      "line_id": 10,
+      "reading_order": 10,
+      "bbox": [
+        [
+          453,
+          396
+        ],
+        [
+          827,
+          396
+        ],
+        [
+          827,
+          564
+        ],
+        [
+          453,
+          564
+        ]
+      ],
+      "text": ": ee 28 bdas",
+      "candidate_text_tesseract": ": ee 28 bdas",
+      "source_ocr_text": "#2 GD ] ‏پل ا شش لپ ۱,0۱0۸۸ دی\"‎ SE 2",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_010.png"
+    },
+    {
+      "line_id": 11,
+      "reading_order": 11,
+      "bbox": [
+        [
+          652,
+          372
+        ],
+        [
+          827,
+          372
+        ],
+        [
+          827,
+          635
+        ],
+        [
+          652,
+          635
+        ]
+      ],
+      "text": "7 COD if RDA tte na",
+      "candidate_text_tesseract": "7 COD if RDA tte na",
+      "source_ocr_text": "H 202229 | ‏:میم‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_011.png"
+    },
+    {
+      "line_id": 12,
+      "reading_order": 12,
+      "bbox": [
+        [
+          415,
+          421
+        ],
+        [
+          827,
+          421
+        ],
+        [
+          827,
+          682
+        ],
+        [
+          415,
+          682
+        ]
+      ],
+      "text": "ا‎ Ve AS Ee",
+      "candidate_text_tesseract": "ا‎ Ve AS Ee",
+      "source_ocr_text": "‎H 8 te held | pe 0 3",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_012.png"
+    },
+    {
+      "line_id": 13,
+      "reading_order": 13,
+      "bbox": [
+        [
+          291,
+          548
+        ],
+        [
+          827,
+          548
+        ],
+        [
+          827,
+          621
+        ],
+        [
+          291,
+          621
+        ]
+      ],
+      "text": "he. tal eS way ak: BS 2 =~",
+      "candidate_text_tesseract": "he. tal eS way ak: BS 2 =~",
+      "source_ocr_text": "۲ [ tsa? 91 1 2]",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_013.png"
+    },
+    {
+      "line_id": 14,
+      "reading_order": 14,
+      "bbox": [
+        [
+          287,
+          595
+        ],
+        [
+          827,
+          595
+        ],
+        [
+          827,
+          698
+        ],
+        [
+          287,
+          698
+        ]
+      ],
+      "text": "2 Non-Judicial “0 عم “OD‏",
+      "candidate_text_tesseract": "2 Non-Judicial “0 عم “OD‏",
+      "source_ocr_text": "۱ ‏ہے 8 0ت سس ہت رکا‎ i",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_014.png"
+    },
+    {
+      "line_id": 15,
+      "reading_order": 15,
+      "bbox": [
+        [
+          287,
+          638
+        ],
+        [
+          827,
+          638
+        ],
+        [
+          827,
+          756
+        ],
+        [
+          287,
+          756
+        ]
+      ],
+      "text": "و 4 we a - a J‏ -‏",
+      "candidate_text_tesseract": "و 4 we a - a J‏ -‏",
+      "source_ocr_text": "| ‏اظرارغ)‎ |",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_015.png"
+    },
+    {
+      "line_id": 16,
+      "reading_order": 16,
+      "bbox": [
+        [
+          273,
+          683
+        ],
+        [
+          827,
+          683
+        ],
+        [
+          827,
+          804
+        ],
+        [
+          273,
+          804
+        ]
+      ],
+      "text": "جستچتڑ ک٢ا‏ re‏ کس سج مت مت جیے ہے جم مو سد جم ےم لے پوت",
+      "candidate_text_tesseract": "جستچتڑ ک٢ا‏ re‏ کس سج مت مت جیے ہے جم مو سد جم ےم لے پوت",
+      "source_ocr_text": "| ۱٢٢٢14",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_016.png"
+    },
+    {
+      "line_id": 17,
+      "reading_order": 17,
+      "bbox": [
+        [
+          545,
+          730
+        ],
+        [
+          827,
+          730
+        ],
+        [
+          827,
+          848
+        ],
+        [
+          545,
+          848
+        ]
+      ],
+      "text": "سیر مود مت ea nt‏ سے",
+      "candidate_text_tesseract": "سیر مود مت ea nt‏ سے",
+      "source_ocr_text": "Ch bet ‏جس‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_017.png"
+    },
+    {
+      "line_id": 18,
+      "reading_order": 18,
+      "bbox": [
+        [
+          270,
+          775
+        ],
+        [
+          742,
+          775
+        ],
+        [
+          742,
+          842
+        ],
+        [
+          270,
+          842
+        ]
+      ],
+      "text": "مہم ٤‏ L182‏",
+      "candidate_text_tesseract": "مہم ٤‏ L182‏",
+      "source_ocr_text": "‎= ‏ات‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_018.png"
+    },
+    {
+      "line_id": 19,
+      "reading_order": 19,
+      "bbox": [
+        [
+          270,
+          814
+        ],
+        [
+          722,
+          814
+        ],
+        [
+          722,
+          867
+        ],
+        [
+          270,
+          867
+        ]
+      ],
+      "text": "Cora ow Serra sans:‏",
+      "candidate_text_tesseract": "Cora ow Serra sans:‏",
+      "source_ocr_text": "‎‘Scanned with ‏ری‎ ۱",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_019.png"
+    },
+    {
+      "line_id": 20,
+      "reading_order": 20,
+      "bbox": [
+        [
+          272,
+          846
+        ],
+        [
+          827,
+          846
+        ],
+        [
+          827,
+          922
+        ],
+        [
+          272,
+          922
+        ]
+      ],
+      "text": "پیچھ ئ تج JO‏ یر مي>سىثيسےمم ٭روجریرں۔رریززز 38",
+      "candidate_text_tesseract": "پیچھ ئ تج JO‏ یر مي>سىثيسےمم ٭روجریرں۔رریززز 38",
+      "source_ocr_text": "Scanned with ) 6:۲",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_020.png"
+    },
+    {
+      "line_id": 21,
+      "reading_order": 21,
+      "bbox": [
+        [
+          270,
+          866
+        ],
+        [
+          827,
+          866
+        ],
+        [
+          827,
+          948
+        ],
+        [
+          270,
+          948
+        ]
+      ],
+      "text": "سرم جرح عوع 2 مہبم ہینید ا یر 1 ne‏",
+      "candidate_text_tesseract": "سرم جرح عوع 2 مہبم ہینید ا یر 1 ne‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_021.png"
+    },
+    {
+      "line_id": 22,
+      "reading_order": 22,
+      "bbox": [
+        [
+          270,
+          902
+        ],
+        [
+          827,
+          902
+        ],
+        [
+          827,
+          961
+        ],
+        [
+          270,
+          961
+        ]
+      ],
+      "text": "مت بح Meme,‏ مار کر ~",
+      "candidate_text_tesseract": "مت بح Meme,‏ مار کر ~",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_022.png"
+    },
+    {
+      "line_id": 23,
+      "reading_order": 23,
+      "bbox": [
+        [
+          270,
+          927
+        ],
+        [
+          797,
+          927
+        ],
+        [
+          797,
+          989
+        ],
+        [
+          270,
+          989
+        ]
+      ],
+      "text": "tee aroun‏ وحم مرجم ہد تہ",
+      "candidate_text_tesseract": "tee aroun‏ وحم مرجم ہد تہ",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_023.png"
+    },
+    {
+      "line_id": 24,
+      "reading_order": 24,
+      "bbox": [
+        [
+          265,
+          958
+        ],
+        [
+          827,
+          958
+        ],
+        [
+          827,
+          1034
+        ],
+        [
+          265,
+          1034
+        ]
+      ],
+      "text": "یمی ےو جح NOC پر رہ FMA pe‏ و ہی Dee pene",
+      "candidate_text_tesseract": "یمی ےو جح NOC پر رہ FMA pe‏ و ہی Dee pene",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_024.png"
+    },
+    {
+      "line_id": 25,
+      "reading_order": 25,
+      "bbox": [
+        [
+          376,
+          989
+        ],
+        [
+          660,
+          989
+        ],
+        [
+          660,
+          1042
+        ],
+        [
+          376,
+          1042
+        ]
+      ],
+      "text": "hire‏ رر",
+      "candidate_text_tesseract": "hire‏ رر",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_025.png"
+    },
+    {
+      "line_id": 26,
+      "reading_order": 26,
+      "bbox": [
+        [
+          270,
+          1017
+        ],
+        [
+          827,
+          1017
+        ],
+        [
+          827,
+          1090
+        ],
+        [
+          270,
+          1090
+        ]
+      ],
+      "text": "٦ nr se‏ cr Li‏",
+      "candidate_text_tesseract": "٦ nr se‏ cr Li‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_026.png"
+    },
+    {
+      "line_id": 27,
+      "reading_order": 27,
+      "bbox": [
+        [
+          826,
+          1097
+        ],
+        [
+          827,
+          1097
+        ],
+        [
+          827,
+          1140
+        ],
+        [
+          826,
+          1140
+        ]
+      ],
+      "text": "۷",
+      "candidate_text_tesseract": "۷",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_027.png"
+    },
+    {
+      "line_id": 28,
+      "reading_order": 28,
+      "bbox": [
+        [
+          826,
+          1076
+        ],
+        [
+          827,
+          1076
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "ایس کے",
+      "candidate_text_tesseract": "ایس کے",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_028.png"
+    },
+    {
+      "line_id": 29,
+      "reading_order": 29,
+      "bbox": [
+        [
+          406,
+          1140
+        ],
+        [
+          827,
+          1140
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          406,
+          1170
+        ]
+      ],
+      "text": "tirel‏ کتطم ای رات مہ گنا دیتادی",
+      "candidate_text_tesseract": "tirel‏ کتطم ای رات مہ گنا دیتادی",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_029.png"
+    },
+    {
+      "line_id": 30,
+      "reading_order": 30,
+      "bbox": [
+        [
+          826,
+          1153
+        ],
+        [
+          827,
+          1153
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "3 +7 eee‏",
+      "candidate_text_tesseract": "3 +7 eee‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_030.png"
+    },
+    {
+      "line_id": 31,
+      "reading_order": 31,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "سس",
+      "candidate_text_tesseract": "سس",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_031.png"
+    },
+    {
+      "line_id": 32,
+      "reading_order": 32,
+      "bbox": [
+        [
+          340,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          340,
+          1170
+        ]
+      ],
+      "text": "3 ® 1. ps24,00 conn a اکر‎ ای ا SE نیت ۹",
+      "candidate_text_tesseract": "3 ® 1. ps24,00 conn a اکر‎ ای ا SE نیت ۹",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_032.png"
+    },
+    {
+      "line_id": 33,
+      "reading_order": 33,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "E ka",
+      "candidate_text_tesseract": "E ka",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_033.png"
+    },
+    {
+      "line_id": 34,
+      "reading_order": 34,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "IE 2 اور‎ ۲",
+      "candidate_text_tesseract": "IE 2 اور‎ ۲",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_034.png"
+    },
+    {
+      "line_id": 35,
+      "reading_order": 35,
+      "bbox": [
+        [
+          352,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          352,
+          1170
+        ]
+      ],
+      "text": "( تک‎ رم انقاراجرولد تا ۰",
+      "candidate_text_tesseract": "( تک‎ رم انقاراجرولد تا ۰",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_035.png"
+    },
+    {
+      "line_id": 36,
+      "reading_order": 36,
+      "bbox": [
+        [
+          399,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          399,
+          1170
+        ]
+      ],
+      "text": "م(رغ) ۷رہ ت سا ارک ورگ .3طت ہر۸ wets v‏ ote",
+      "candidate_text_tesseract": "م(رغ) ۷رہ ت سا ارک ورگ .3طت ہر۸ wets v‏ ote",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_036.png"
+    },
+    {
+      "line_id": 37,
+      "reading_order": 37,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "۰",
+      "candidate_text_tesseract": "۰",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_037.png"
+    },
+    {
+      "line_id": 38,
+      "reading_order": 38,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "ve",
+      "candidate_text_tesseract": "ve",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_038.png"
+    },
+    {
+      "line_id": 39,
+      "reading_order": 39,
+      "bbox": [
+        [
+          494,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          494,
+          1170
+        ]
+      ],
+      "text": "رشان ر پرولرٹ رو",
+      "candidate_text_tesseract": "رشان ر پرولرٹ رو",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_039.png"
+    },
+    {
+      "line_id": 40,
+      "reading_order": 40,
+      "bbox": [
+        [
+          239,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          239,
+          1170
+        ]
+      ],
+      "text": "oo ans the اد",
+      "candidate_text_tesseract": "oo ans the اد",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_040.png"
+    },
+    {
+      "line_id": 41,
+      "reading_order": 41,
+      "bbox": [
+        [
+          355,
+          1169
+        ],
+        [
+          823,
+          1169
+        ],
+        [
+          823,
+          1170
+        ],
+        [
+          355,
+          1170
+        ]
+      ],
+      "text": "$7 لص‎ سس ۳ء tnd",
+      "candidate_text_tesseract": "$7 لص‎ سس ۳ء tnd",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_041.png"
+    },
+    {
+      "line_id": 42,
+      "reading_order": 42,
+      "bbox": [
+        [
+          715,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          715,
+          1170
+        ]
+      ],
+      "text": "راھغ) 7",
+      "candidate_text_tesseract": "راھغ) 7",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_042.png"
+    },
+    {
+      "line_id": 43,
+      "reading_order": 43,
+      "bbox": [
+        [
+          694,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          694,
+          1170
+        ]
+      ],
+      "text": "۴۱ 7 94۹",
+      "candidate_text_tesseract": "۴۱ 7 94۹",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_043.png"
+    },
+    {
+      "line_id": 44,
+      "reading_order": 44,
+      "bbox": [
+        [
+          639,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          639,
+          1170
+        ]
+      ],
+      "text": "ats‏ لا il Bee‏",
+      "candidate_text_tesseract": "ats‏ لا il Bee‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_044.png"
+    },
+    {
+      "line_id": 45,
+      "reading_order": 45,
+      "bbox": [
+        [
+          741,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          741,
+          1170
+        ]
+      ],
+      "text": "~ i",
+      "candidate_text_tesseract": "~ i",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_045.png"
+    },
+    {
+      "line_id": 46,
+      "reading_order": 46,
+      "bbox": [
+        [
+          783,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          783,
+          1170
+        ]
+      ],
+      "text": "OS",
+      "candidate_text_tesseract": "OS",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_046.png"
+    },
+    {
+      "line_id": 47,
+      "reading_order": 47,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "Scanned with CanScanner",
+      "candidate_text_tesseract": "Scanned with CanScanner",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_047.png"
+    },
+    {
+      "line_id": 48,
+      "reading_order": 48,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "Scanned with CamScanner",
+      "candidate_text_tesseract": "Scanned with CamScanner",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-1_line_048.png"
+    }
+  ]
+}

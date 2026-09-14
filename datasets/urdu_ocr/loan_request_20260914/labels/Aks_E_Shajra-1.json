@@ -1,0 +1,124 @@
+{
+  "dataset_id": "loan_request_20260914",
+  "source_document": "Aks_E_Shajra.pdf",
+  "source_page_image": "images/Aks_E_Shajra-1.png",
+  "page": 1,
+  "language": "urd+eng",
+  "human_verified": false,
+  "verification_status": "DRAFT_UNVERIFIED",
+  "box_method": "Tesseract control word boxes grouped by reading line",
+  "lines": [
+    {
+      "line_id": 1,
+      "reading_order": 1,
+      "bbox": [
+        [
+          712,
+          0
+        ],
+        [
+          713,
+          0
+        ],
+        [
+          713,
+          86
+        ],
+        [
+          712,
+          86
+        ]
+      ],
+      "text": "Hee کے‎",
+      "candidate_text_tesseract": "Hee کے‎",
+      "source_ocr_text": "ny tel",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Aks_E_Shajra-1_line_001.png"
+    },
+    {
+      "line_id": 2,
+      "reading_order": 2,
+      "bbox": [
+        [
+          347,
+          82
+        ],
+        [
+          713,
+          82
+        ],
+        [
+          713,
+          215
+        ],
+        [
+          347,
+          215
+        ]
+      ],
+      "text": "ow yr gs",
+      "candidate_text_tesseract": "ow yr gs",
+      "source_ocr_text": "‏لاد‎",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Aks_E_Shajra-1_line_002.png"
+    },
+    {
+      "line_id": 3,
+      "reading_order": 3,
+      "bbox": [
+        [
+          712,
+          701
+        ],
+        [
+          713,
+          701
+        ],
+        [
+          713,
+          760
+        ],
+        [
+          712,
+          760
+        ]
+      ],
+      "text": "ہت",
+      "candidate_text_tesseract": "ہت",
+      "source_ocr_text": "‏و‎ es Wes",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Aks_E_Shajra-1_line_003.png"
+    },
+    {
+      "line_id": 4,
+      "reading_order": 4,
+      "bbox": [
+        [
+          712,
+          712
+        ],
+        [
+          713,
+          712
+        ],
+        [
+          713,
+          832
+        ],
+        [
+          712,
+          832
+        ]
+      ],
+      "text": "۲ زی Oy‏",
+      "candidate_text_tesseract": "۲ زی Oy‏",
+      "source_ocr_text": "7۳ NS",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Aks_E_Shajra-1_line_004.png"
+    }
+  ]
+}

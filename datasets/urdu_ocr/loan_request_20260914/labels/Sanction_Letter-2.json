@@ -1,0 +1,1188 @@
+{
+  "dataset_id": "loan_request_20260914",
+  "source_document": "Sanction_Letter.pdf",
+  "source_page_image": "images/Sanction_Letter-2.png",
+  "page": 1,
+  "language": "urd+eng",
+  "human_verified": false,
+  "verification_status": "DRAFT_UNVERIFIED",
+  "box_method": "Tesseract control word boxes grouped by reading line",
+  "lines": [
+    {
+      "line_id": 1,
+      "reading_order": 1,
+      "bbox": [
+        [
+          826,
+          164
+        ],
+        [
+          827,
+          164
+        ],
+        [
+          827,
+          189
+        ],
+        [
+          826,
+          189
+        ]
+      ],
+      "text": "۰",
+      "candidate_text_tesseract": "۰",
+      "source_ocr_text": "11 This Plan is ion for the construction only which is to be carried out STRICTLY IN",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_001.png"
+    },
+    {
+      "line_id": 2,
+      "reading_order": 2,
+      "bbox": [
+        [
+          185,
+          194
+        ],
+        [
+          827,
+          194
+        ],
+        [
+          827,
+          258
+        ],
+        [
+          185,
+          258
+        ]
+      ],
+      "text": "11 This . Plan Is permission تید‎ for the construction ۱ only which i is to be carried i out STRICTLY TLY IN IN",
+      "candidate_text_tesseract": "11 This . Plan Is permission تید‎ for the construction ۱ only which i is to be carried i out STRICTLY TLY IN IN",
+      "source_ocr_text": "ACCORDANGE with the approval. However, INNO CASE this approval should be",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_002.png"
+    },
+    {
+      "line_id": 3,
+      "reading_order": 3,
+      "bbox": [
+        [
+          280,
+          211
+        ],
+        [
+          827,
+          211
+        ],
+        [
+          827,
+          291
+        ],
+        [
+          280,
+          291
+        ]
+      ],
+      "text": "ACCORDANCE with the approval. However, CASE IN. NO this approval should be",
+      "candidate_text_tesseract": "ACCORDANCE with the approval. However, CASE IN. NO this approval should be",
+      "source_ocr_text": "treated as a proof of title. NO RESPONSIBILITY whatscever shall tie with this TMA in",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_003.png"
+    },
+    {
+      "line_id": 4,
+      "reading_order": 4,
+      "bbox": [
+        [
+          279,
+          266
+        ],
+        [
+          827,
+          266
+        ],
+        [
+          827,
+          325
+        ],
+        [
+          279,
+          325
+        ]
+      ],
+      "text": "treated as a proof of title. NO RESPONSIBILITY whatscever shall fie with this TMA in",
+      "candidate_text_tesseract": "treated as a proof of title. NO RESPONSIBILITY whatscever shall fie with this TMA in",
+      "source_ocr_text": "the event of any dispute regarding the title of the property under reference.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_004.png"
+    },
+    {
+      "line_id": 5,
+      "reading_order": 5,
+      "bbox": [
+        [
+          279,
+          305
+        ],
+        [
+          827,
+          305
+        ],
+        [
+          827,
+          366
+        ],
+        [
+          279,
+          366
+        ]
+      ],
+      "text": "ihe event of any dispute regarding the title of the properly under reference.",
+      "candidate_text_tesseract": "ihe event of any dispute regarding the title of the properly under reference.",
+      "source_ocr_text": "12. The applicant, in pursuance of provisions of PLGA 2001 By -Laws, within 30 days",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_005.png"
+    },
+    {
+      "line_id": 6,
+      "reading_order": 6,
+      "bbox": [
+        [
+          179,
+          386
+        ],
+        [
+          827,
+          386
+        ],
+        [
+          827,
+          440
+        ],
+        [
+          179,
+          440
+        ]
+      ],
+      "text": "12 The applicant, in pursuance of provisions of PLGA 2001 By -Laws, within 30 days",
+      "candidate_text_tesseract": "12 The applicant, in pursuance of provisions of PLGA 2001 By -Laws, within 30 days",
+      "source_ocr_text": "of the completion of the building shall report to the Zonal Officer (Planning). The",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_006.png"
+    },
+    {
+      "line_id": 7,
+      "reading_order": 7,
+      "bbox": [
+        [
+          277,
+          426
+        ],
+        [
+          827,
+          426
+        ],
+        [
+          827,
+          478
+        ],
+        [
+          277,
+          478
+        ]
+      ],
+      "text": "of the completion of the building shall report to the Zonal Officer (Planning). The",
+      "candidate_text_tesseract": "of the completion of the building shall report to the Zonal Officer (Planning). The",
+      "source_ocr_text": "building shall not be put to use before completion certificate has been obtained",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_007.png"
+    },
+    {
+      "line_id": 8,
+      "reading_order": 8,
+      "bbox": [
+        [
+          276,
+          463
+        ],
+        [
+          827,
+          463
+        ],
+        [
+          827,
+          518
+        ],
+        [
+          276,
+          518
+        ]
+      ],
+      "text": "building shail not be put to use before completion certificate has been obtained",
+      "candidate_text_tesseract": "building shail not be put to use before completion certificate has been obtained",
+      "source_ocr_text": "from this Zone,",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_008.png"
+    },
+    {
+      "line_id": 9,
+      "reading_order": 9,
+      "bbox": [
+        [
+          274,
+          500
+        ],
+        [
+          511,
+          500
+        ],
+        [
+          511,
+          540
+        ],
+        [
+          274,
+          540
+        ]
+      ],
+      "text": "from this Zone.",
+      "candidate_text_tesseract": "from this Zone.",
+      "source_ocr_text": "13. The applicant SHALL PAY all charges, balance amount etc. (if any) noticed by the",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_009.png"
+    },
+    {
+      "line_id": 10,
+      "reading_order": 10,
+      "bbox": [
+        [
+          268,
+          567
+        ],
+        [
+          827,
+          567
+        ],
+        [
+          827,
+          636
+        ],
+        [
+          268,
+          636
+        ]
+      ],
+      "text": "The applicant SHALL PAY all charges, balance amount etc. (if any) noticed by the",
+      "candidate_text_tesseract": "The applicant SHALL PAY all charges, balance amount etc. (if any) noticed by the",
+      "source_ocr_text": "department itself in the course of routine scrutiny or on the observation/objection of Audit",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_010.png"
+    },
+    {
+      "line_id": 11,
+      "reading_order": 11,
+      "bbox": [
+        [
+          265,
+          607
+        ],
+        [
+          827,
+          607
+        ],
+        [
+          827,
+          669
+        ],
+        [
+          265,
+          669
+        ]
+      ],
+      "text": "department itself in the course of routine scrutiny or on the observation/objection of Audit",
+      "candidate_text_tesseract": "department itself in the course of routine scrutiny or on the observation/objection of Audit",
+      "source_ocr_text": "or made applicable at any subsequent stage.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_011.png"
+    },
+    {
+      "line_id": 12,
+      "reading_order": 12,
+      "bbox": [
+        [
+          262,
+          644
+        ],
+        [
+          827,
+          644
+        ],
+        [
+          827,
+          704
+        ],
+        [
+          262,
+          704
+        ]
+      ],
+      "text": "or made applicable at any subsequent slage.",
+      "candidate_text_tesseract": "or made applicable at any subsequent slage.",
+      "source_ocr_text": "14. This plan will be automatically cancelled if at any time any breach of law / ules / policy is",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_012.png"
+    },
+    {
+      "line_id": 13,
+      "reading_order": 13,
+      "bbox": [
+        [
+          155,
+          709
+        ],
+        [
+          827,
+          709
+        ],
+        [
+          827,
+          786
+        ],
+        [
+          155,
+          786
+        ]
+      ],
+      "text": "14, This plan will be automatically cancelled if at any time any breach of law/ cules / policy is",
+      "candidate_text_tesseract": "14, This plan will be automatically cancelled if at any time any breach of law/ cules / policy is",
+      "source_ocr_text": "found, complaint received, direction by the Government in this case Zonal Planning",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_013.png"
+    },
+    {
+      "line_id": 14,
+      "reading_order": 14,
+      "bbox": [
+        [
+          255,
+          743
+        ],
+        [
+          827,
+          743
+        ],
+        [
+          827,
+          818
+        ],
+        [
+          255,
+          818
+        ]
+      ],
+      "text": "found, complaint received, direction by the Government in this case Zonal Planning",
+      "candidate_text_tesseract": "found, complaint received, direction by the Government in this case Zonal Planning",
+      "source_ocr_text": "branch will not be responsible.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_014.png"
+    },
+    {
+      "line_id": 15,
+      "reading_order": 15,
+      "bbox": [
+        [
+          251,
+          785
+        ],
+        [
+          700,
+          785
+        ],
+        [
+          700,
+          849
+        ],
+        [
+          251,
+          849
+        ]
+      ],
+      "text": "branch will not be responsible.",
+      "candidate_text_tesseract": "branch will not be responsible.",
+      "source_ocr_text": "15. During the course of construction and in case of any DAMAGE CAUSED to the",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_015.png"
+    },
+    {
+      "line_id": 16,
+      "reading_order": 16,
+      "bbox": [
+        [
+          143,
+          857
+        ],
+        [
+          827,
+          857
+        ],
+        [
+          827,
+          925
+        ],
+        [
+          143,
+          925
+        ]
+      ],
+      "text": "15. During the course of construction and in case of any DAMAGE CAUSED to the",
+      "candidate_text_tesseract": "15. During the course of construction and in case of any DAMAGE CAUSED to the",
+      "source_ocr_text": "adjoining public utility services/roads and private property the damage COST SHALL BE",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_016.png"
+    },
+    {
+      "line_id": 17,
+      "reading_order": 17,
+      "bbox": [
+        [
+          244,
+          899
+        ],
+        [
+          827,
+          899
+        ],
+        [
+          827,
+          967
+        ],
+        [
+          244,
+          967
+        ]
+      ],
+      "text": "adjoining public utility services/roads and private property the damage COST SHALL BE",
+      "candidate_text_tesseract": "adjoining public utility services/roads and private property the damage COST SHALL BE",
+      "source_ocr_text": "RECOVERED from you.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_017.png"
+    },
+    {
+      "line_id": 18,
+      "reading_order": 18,
+      "bbox": [
+        [
+          245,
+          941
+        ],
+        [
+          610,
+          941
+        ],
+        [
+          610,
+          997
+        ],
+        [
+          245,
+          997
+        ]
+      ],
+      "text": "RECOVERED from you.",
+      "candidate_text_tesseract": "RECOVERED from you.",
+      "source_ocr_text": "16. Proper drainage facilities shall be provided for the disposal of rainwater. Sewerage",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_018.png"
+    },
+    {
+      "line_id": 19,
+      "reading_order": 19,
+      "bbox": [
+        [
+          144,
+          1008
+        ],
+        [
+          827,
+          1008
+        ],
+        [
+          827,
+          1071
+        ],
+        [
+          144,
+          1071
+        ]
+      ],
+      "text": "16. Proper drainage facilities shall be provided for the disposal of rainwater. Sewerage",
+      "candidate_text_tesseract": "16. Proper drainage facilities shall be provided for the disposal of rainwater. Sewerage",
+      "source_ocr_text": "connection with WASA will be made at specified WASA main hole as shall be approved",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_019.png"
+    },
+    {
+      "line_id": 20,
+      "reading_order": 20,
+      "bbox": [
+        [
+          248,
+          1056
+        ],
+        [
+          827,
+          1056
+        ],
+        [
+          827,
+          1111
+        ],
+        [
+          248,
+          1111
+        ]
+      ],
+      "text": "connection with WASA will be made at specified WASA main hole as shall be approved",
+      "candidate_text_tesseract": "connection with WASA will be made at specified WASA main hole as shall be approved",
+      "source_ocr_text": "by the WASA.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_020.png"
+    },
+    {
+      "line_id": 21,
+      "reading_order": 21,
+      "bbox": [
+        [
+          249,
+          1093
+        ],
+        [
+          464,
+          1093
+        ],
+        [
+          464,
+          1143
+        ],
+        [
+          249,
+          1143
+        ]
+      ],
+      "text": "by the WASA.",
+      "candidate_text_tesseract": "by the WASA.",
+      "source_ocr_text": "17. The construction / Building Works shall be supervised by the REGISTERED",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_021.png"
+    },
+    {
+      "line_id": 22,
+      "reading_order": 22,
+      "bbox": [
+        [
+          148,
+          1130
+        ],
+        [
+          827,
+          1130
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          148,
+          1170
+        ]
+      ],
+      "text": "17, .The construction / Building Works shall be supervised by the REGISTERED",
+      "candidate_text_tesseract": "17, .The construction / Building Works shall be supervised by the REGISTERED",
+      "source_ocr_text": "ARCHITECT who has been employed by you and has affixed his seal on the attached",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_022.png"
+    },
+    {
+      "line_id": 23,
+      "reading_order": 23,
+      "bbox": [
+        [
+          252,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          252,
+          1170
+        ]
+      ],
+      "text": "ARCHITECT who has been employed by you and has affixed his seal on the 4",
+      "candidate_text_tesseract": "ARCHITECT who has been employed by you and has affixed his seal on the 4",
+      "source_ocr_text": "drawings. Where the Registered Architect so employed ceases to be Incharge of",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_023.png"
+    },
+    {
+      "line_id": 24,
+      "reading_order": 24,
+      "bbox": [
+        [
+          253,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          253,
+          1170
+        ]
+      ],
+      "text": "drawings. Where the Registered Architect so employed ceases to be Incharge of",
+      "candidate_text_tesseract": "drawings. Where the Registered Architect so employed ceases to be Incharge of",
+      "source_ocr_text": "Building Works before the same is completed, further execution of works shall forthwith",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_024.png"
+    },
+    {
+      "line_id": 25,
+      "reading_order": 25,
+      "bbox": [
+        [
+          255,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          255,
+          1170
+        ]
+      ],
+      "text": "Building Works before the same is completed, further execution of works shall forthwith",
+      "candidate_text_tesseract": "Building Works before the same is completed, further execution of works shall forthwith",
+      "source_ocr_text": "be suspended until a fresh appointment is made as required under By-law 4)( A",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_025.png"
+    },
+    {
+      "line_id": 26,
+      "reading_order": 26,
+      "bbox": [
+        [
+          254,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          254,
+          1170
+        ]
+      ],
+      "text": "be suspended until a fresh appointment is made as required under By-law 4)۸",
+      "candidate_text_tesseract": "be suspended until a fresh appointment is made as required under By-law 4)۸",
+      "source_ocr_text": "CERTIFICATE duly signed by the Registered Architect employed shall be obtained in",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_026.png"
+    },
+    {
+      "line_id": 27,
+      "reading_order": 27,
+      "bbox": [
+        [
+          254,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          254,
+          1170
+        ]
+      ],
+      "text": "CERTIFICATE duly signed by the Registered Architect employed shall be oblained in",
+      "candidate_text_tesseract": "CERTIFICATE duly signed by the Registered Architect employed shall be oblained in",
+      "source_ocr_text": "token of the work or part of work having satisfactorily done under his supervision.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_027.png"
+    },
+    {
+      "line_id": 28,
+      "reading_order": 28,
+      "bbox": [
+        [
+          254,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          254,
+          1170
+        ]
+      ],
+      "text": "token of the work or part of work having satisfactorily done under his supervision.",
+      "candidate_text_tesseract": "token of the work or part of work having satisfactorily done under his supervision.",
+      "source_ocr_text": "18. _ In addition to the Special Conditions mentioned above, the owner/builder shall be bound",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_028.png"
+    },
+    {
+      "line_id": 29,
+      "reading_order": 29,
+      "bbox": [
+        [
+          154,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          154,
+          1170
+        ]
+      ],
+      "text": "18. In addition to the Special Conditions mentioned above, the owner/builder shall be bound",
+      "candidate_text_tesseract": "18. In addition to the Special Conditions mentioned above, the owner/builder shall be bound",
+      "source_ocr_text": "to observe the GENERAL CONDITIONS of Building By-Laws.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_029.png"
+    },
+    {
+      "line_id": 30,
+      "reading_order": 30,
+      "bbox": [
+        [
+          254,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          254,
+          1170
+        ]
+      ],
+      "text": "to observe the GENERAL CONDITIONS of Building By-Laws.",
+      "candidate_text_tesseract": "to observe the GENERAL CONDITIONS of Building By-Laws.",
+      "source_ocr_text": "19. The applicant SHALL_PAY all charges- balance amount act (if any) noticed by the",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_030.png"
+    },
+    {
+      "line_id": 31,
+      "reading_order": 31,
+      "bbox": [
+        [
+          254,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          254,
+          1170
+        ]
+      ],
+      "text": "The applicant SHALL_PAY_all charges- balance amount act (if any) noticed by the",
+      "candidate_text_tesseract": "The applicant SHALL_PAY_all charges- balance amount act (if any) noticed by the",
+      "source_ocr_text": "department itself in the courts of routine scrutiny or on the observation / objection of",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_031.png"
+    },
+    {
+      "line_id": 32,
+      "reading_order": 32,
+      "bbox": [
+        [
+          252,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          252,
+          1170
+        ]
+      ],
+      "text": "department itself in the courts of routine scrutiny or on the observation / objection of",
+      "candidate_text_tesseract": "department itself in the courts of routine scrutiny or on the observation / objection of",
+      "source_ocr_text": "audit or made applicable at any subsequent stage.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_032.png"
+    },
+    {
+      "line_id": 33,
+      "reading_order": 33,
+      "bbox": [
+        [
+          251,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          251,
+          1170
+        ]
+      ],
+      "text": "audit or made applicable at any subsequent stage.",
+      "candidate_text_tesseract": "audit or made applicable at any subsequent stage.",
+      "source_ocr_text": "20. In Case of any contradiction or violation, the plan approval shall stand to be cancelled",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_033.png"
+    },
+    {
+      "line_id": 34,
+      "reading_order": 34,
+      "bbox": [
+        [
+          148,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          148,
+          1170
+        ]
+      ],
+      "text": "20. In Case of any contradiction or violation, the plan approval shall stand to be cancelled",
+      "candidate_text_tesseract": "20. In Case of any contradiction or violation, the plan approval shall stand to be cancelled",
+      "source_ocr_text": "without any notice",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_034.png"
+    },
+    {
+      "line_id": 35,
+      "reading_order": 35,
+      "bbox": [
+        [
+          248,
+          1169
+        ],
+        [
+          600,
+          1169
+        ],
+        [
+          600,
+          1170
+        ],
+        [
+          248,
+          1170
+        ]
+      ],
+      "text": "vathout any notice. -",
+      "candidate_text_tesseract": "vathout any notice. -",
+      "source_ocr_text": "—eowulws",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_035.png"
+    },
+    {
+      "line_id": 36,
+      "reading_order": 36,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "frouulls",
+      "candidate_text_tesseract": "frouulls",
+      "source_ocr_text": "ZONAL OFFICER (PLANNING)",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_036.png"
+    },
+    {
+      "line_id": 37,
+      "reading_order": 37,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "ZONAL OFFICER (PLANNING)",
+      "candidate_text_tesseract": "ZONAL OFFICER (PLANNING)",
+      "source_ocr_text": "WAHGA TOWN LAHORE",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_037.png"
+    },
+    {
+      "line_id": 38,
+      "reading_order": 38,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "WAHGA TOWN LAHORE",
+      "candidate_text_tesseract": "WAHGA TOWN LAHORE",
+      "source_ocr_text": "Copy to",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_038.png"
+    },
+    {
+      "line_id": 39,
+      "reading_order": 39,
+      "bbox": [
+        [
+          165,
+          1169
+        ],
+        [
+          301,
+          1169
+        ],
+        [
+          301,
+          1170
+        ],
+        [
+          165,
+          1170
+        ]
+      ],
+      "text": "Copy tn",
+      "candidate_text_tesseract": "Copy tn",
+      "source_ocr_text": "1 The Matropotitan Officer (Planning), MC, Lahore",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_039.png"
+    },
+    {
+      "line_id": 40,
+      "reading_order": 40,
+      "bbox": [
+        [
+          273,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          273,
+          1170
+        ]
+      ],
+      "text": "1 The Metropoilian Officer (Planning), MC, Lahore",
+      "candidate_text_tesseract": "1 The Metropoilian Officer (Planning), MC, Lahore",
+      "source_ocr_text": "2 Allconcermed.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_040.png"
+    },
+    {
+      "line_id": 41,
+      "reading_order": 41,
+      "bbox": [
+        [
+          267,
+          1169
+        ],
+        [
+          597,
+          1169
+        ],
+        [
+          597,
+          1170
+        ],
+        [
+          267,
+          1170
+        ]
+      ],
+      "text": "2 All concerned,",
+      "candidate_text_tesseract": "2 All concerned,",
+      "source_ocr_text": "Scanned with CamScanner",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_041.png"
+    },
+    {
+      "line_id": 42,
+      "reading_order": 42,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "Scanned with CamScanner",
+      "candidate_text_tesseract": "Scanned with CamScanner",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-2_line_042.png"
+    }
+  ]
+}

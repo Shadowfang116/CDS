@@ -1,0 +1,1048 @@
+{
+  "dataset_id": "loan_request_20260914",
+  "source_document": "Registry.pdf",
+  "source_page_image": "images/Registry-3.png",
+  "page": 1,
+  "language": "urd+eng",
+  "human_verified": false,
+  "verification_status": "DRAFT_UNVERIFIED",
+  "box_method": "Tesseract control word boxes grouped by reading line",
+  "lines": [
+    {
+      "line_id": 1,
+      "reading_order": 1,
+      "bbox": [
+        [
+          826,
+          0
+        ],
+        [
+          827,
+          0
+        ],
+        [
+          827,
+          28
+        ],
+        [
+          826,
+          28
+        ]
+      ],
+      "text": "۱ شےم سے ید“ شضس ہے چا",
+      "candidate_text_tesseract": "۱ شےم سے ید“ شضس ہے چا",
+      "source_ocr_text": ": 8 !",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_001.png"
+    },
+    {
+      "line_id": 2,
+      "reading_order": 2,
+      "bbox": [
+        [
+          826,
+          174
+        ],
+        [
+          827,
+          174
+        ],
+        [
+          827,
+          276
+        ],
+        [
+          826,
+          276
+        ]
+      ],
+      "text": "CONTRAIATION E-STAMP 7 SHUtT ۰",
+      "candidate_text_tesseract": "CONTRAIATION E-STAMP 7 SHUtT ۰",
+      "source_ocr_text": "۱ اہئکہ ‎LPI‏ حدولد رم ت گا ‎lancl tari‏ یم",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_002.png"
+    },
+    {
+      "line_id": 3,
+      "reading_order": 3,
+      "bbox": [
+        [
+          826,
+          292
+        ],
+        [
+          827,
+          292
+        ],
+        [
+          827,
+          353
+        ],
+        [
+          826,
+          353
+        ]
+      ],
+      "text": "an‏ ئا د٠‏ زد ۶ہ ۵ئ :2ھ ظ. لئ ۱۶ 7 ط٠.‏ ئ5 ئ٠‏ ئد طہ تہ لہ مہ :تاد قد ۱",
+      "candidate_text_tesseract": "an‏ ئا د٠‏ زد ۶ہ ۵ئ :2ھ ظ. لئ ۱۶ 7 ط٠.‏ ئ5 ئ٠‏ ئد طہ تہ لہ مہ :تاد قد ۱",
+      "source_ocr_text": "‎i‏ جو ای ‎ot‏ بل یکس ارات سادا دہ ایارک مار تاد تا",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_003.png"
+    },
+    {
+      "line_id": 4,
+      "reading_order": 4,
+      "bbox": [
+        [
+          290,
+          304
+        ],
+        [
+          827,
+          304
+        ],
+        [
+          827,
+          432
+        ],
+        [
+          290,
+          432
+        ]
+      ],
+      "text": "؛لاورکا ٹر ملامت ارگ tuts? se, vr 14- provost‏ رام لق مسئگکےه ا",
+      "candidate_text_tesseract": "؛لاورکا ٹر ملامت ارگ tuts? se, vr 14- provost‏ رام لق مسئگکےه ا",
+      "source_ocr_text": "4 شدو مز من زی ‎al‏ تقدادتن مرنے311-0831:0)کیرٹۂ )6 ککتوٹی ران 15:14 س الما لمات 10 ‎H‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_004.png"
+    },
+    {
+      "line_id": 5,
+      "reading_order": 5,
+      "bbox": [
+        [
+          290,
+          405
+        ],
+        [
+          827,
+          405
+        ],
+        [
+          827,
+          517
+        ],
+        [
+          290,
+          517
+        ]
+      ],
+      "text": "بات ادا peu‏ ریارل اورپ لرگ پار: مع پالوالت یس .سر کی پائی نشین uti‏ ایک جک ہوں ا",
+      "candidate_text_tesseract": "بات ادا peu‏ ریارل اورپ لرگ پار: مع پالوالت یس .سر کی پائی نشین uti‏ ایک جک ہوں ا",
+      "source_ocr_text": "‎H‏ رق دای 4714-15100 )کا 2-2 14975 628/2 رید 311-0860) وت آ دی ‎Peete‏ :",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_005.png"
+    },
+    {
+      "line_id": 6,
+      "reading_order": 6,
+      "bbox": [
+        [
+          826,
+          505
+        ],
+        [
+          827,
+          505
+        ],
+        [
+          827,
+          586
+        ],
+        [
+          826,
+          586
+        ]
+      ],
+      "text": "og 4‏",
+      "candidate_text_tesseract": "og 4‏",
+      "source_ocr_text": "‎ae‏ بہشرق شا کی دکرے اب مخرب کان کیت بکرے ,پا خلا",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_006.png"
+    },
+    {
+      "line_id": 7,
+      "reading_order": 7,
+      "bbox": [
+        [
+          266,
+          485
+        ],
+        [
+          827,
+          485
+        ],
+        [
+          827,
+          697
+        ],
+        [
+          266,
+          697
+        ]
+      ],
+      "text": "ا ۱١‏ تلعات مکھا ‏ سا 15 ١.4‏ گہران کتوٹی 6 eS AM OSE OL pL‏ برق Lik‏ دم aadsavesaoes",
+      "candidate_text_tesseract": "ا ۱١‏ تلعات مکھا ‏ سا 15 ١.4‏ گہران کتوٹی 6 eS AM OSE OL pL‏ برق Lik‏ دم aadsavesaoes",
+      "source_ocr_text": "کت دکرے جاب خط تار ‎Sn‏ کت دض ‎seu‏ ےتاج رھدک شوہ <و یر3 اذا ‎H‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_007.png"
+    },
+    {
+      "line_id": 8,
+      "reading_order": 8,
+      "bbox": [
+        [
+          289,
+          579
+        ],
+        [
+          827,
+          579
+        ],
+        [
+          827,
+          672
+        ],
+        [
+          289,
+          672
+        ]
+      ],
+      "text": "Cre ta‏ دی ئآ دا رتہیقرر(111-081) 625/2 14875 2 رتقدارگ(71-15۸1د)۴ کل",
+      "candidate_text_tesseract": "Cre ta‏ دی ئآ دا رتہیقرر(111-081) 625/2 14875 2 رتقدارگ(71-15۸1د)۴ کل",
+      "source_ocr_text": "‎dk LA i‏ 3069 مررے 1-2018 09-1 ‎S10\"‏ سب رجٹرارصاحب دا ‎H 82024 ASB  دو+ال Stef‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_008.png"
+    },
+    {
+      "line_id": 9,
+      "reading_order": 9,
+      "bbox": [
+        [
+          263,
+          654
+        ],
+        [
+          827,
+          654
+        ],
+        [
+          827,
+          769
+        ],
+        [
+          263,
+          769
+        ]
+      ],
+      "text": ":اڈ( دکرے کیت مان عطرب جا دیرے نکلیت ما نشرق یا در ہد لد Med uf‏ add",
+      "candidate_text_tesseract": ":اڈ( دکرے کیت مان عطرب جا دیرے نکلیت ما نشرق یا در ہد لد Med uf‏ add",
+      "source_ocr_text": "‎seat :‏ ے فردمال مر ٹوا ‎Ser‏ سال 2013:2014 بذرلی پل 240737 30-09-2019 ‎H eu:‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_009.png"
+    },
+    {
+      "line_id": 10,
+      "reading_order": 10,
+      "bbox": [
+        [
+          250,
+          743
+        ],
+        [
+          827,
+          743
+        ],
+        [
+          827,
+          862
+        ],
+        [
+          250,
+          862
+        ]
+      ],
+      "text": "دہ ہ ٣١ل‏ طر9 شدووتاو جٹری ار بن ہرد مقر یک وف وط ۔کیت 2فٹ 0 می بای جو انب fet‏ esueas",
+      "candidate_text_tesseract": "دہ ہ ٣١ل‏ طر9 شدووتاو جٹری ار بن ہرد مقر یک وف وط ۔کیت 2فٹ 0 می بای جو انب fet‏ esueas",
+      "source_ocr_text": "‎sft :‏ اٹ با رات نیرے ہوں۔ا و از کان ڈذکدہ میا بارللءبارنالتوں ذس دارلوں :اتقالات خلا ا",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_010.png"
+    },
+    {
+      "line_id": 11,
+      "reading_order": 11,
+      "bbox": [
+        [
+          250,
+          818
+        ],
+        [
+          294,
+          818
+        ],
+        [
+          294,
+          880
+        ],
+        [
+          250,
+          880
+        ]
+      ],
+      "text": "دہ aD‏ 0",
+      "candidate_text_tesseract": "دہ aD‏ 0",
+      "source_ocr_text": "یہت ‎H Une BL Pratt bros} eee PPS ILA Sng‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_011.png"
+    },
+    {
+      "line_id": 12,
+      "reading_order": 12,
+      "bbox": [
+        [
+          250,
+          829
+        ],
+        [
+          827,
+          829
+        ],
+        [
+          827,
+          927
+        ],
+        [
+          250,
+          927
+        ]
+      ],
+      "text": "an ہہ 2024 FIRMA rt IRL‏ دا رجشٹرارصاحب سب صدت 97 11-2018 مررکے م3069 2a ig‏",
+      "candidate_text_tesseract": "an ہہ 2024 FIRMA rt IRL‏ دا رجشٹرارصاحب سب صدت 97 11-2018 مررکے م3069 2a ig‏",
+      "source_ocr_text": "‎Ses JBM wedge tinted‏ نے کےا نقیارات حال دعس ‎H Sr‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_012.png"
+    },
+    {
+      "line_id": 13,
+      "reading_order": 13,
+      "bbox": [
+        [
+          250,
+          897
+        ],
+        [
+          827,
+          897
+        ],
+        [
+          827,
+          1004
+        ],
+        [
+          250,
+          1004
+        ]
+      ],
+      "text": "ص۲ H‏ گیروے 30.09.2019 sur‏ ہر37 یی ڈر 2013:2014 مال ھی پاری مر حورشدوہہدئےفردال :",
+      "candidate_text_tesseract": "ص۲ H‏ گیروے 30.09.2019 sur‏ ہر37 یی ڈر 2013:2014 مال ھی پاری مر حورشدوہہدئےفردال :",
+      "source_ocr_text": "‎i‏ ا مان د ام نہب سوا بن مت الع نے چ1 اٹ وا ضس دا تم دا اکراوو جیا خیہرے مکان کور نے ‎H‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_013.png"
+    },
+    {
+      "line_id": 14,
+      "reading_order": 14,
+      "bbox": [
+        [
+          250,
+          968
+        ],
+        [
+          827,
+          968
+        ],
+        [
+          827,
+          1056
+        ],
+        [
+          250,
+          1056
+        ]
+      ],
+      "text": ">0 .0 صّ ٠‏ ا",
+      "candidate_text_tesseract": ">0 .0 صّ ٠‏ ا",
+      "source_ocr_text": "‎SATE ٦‏ اد زم ادف یل اض خ اق چد برق راہ ا",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_014.png"
+    },
+    {
+      "line_id": 15,
+      "reading_order": 15,
+      "bbox": [
+        [
+          279,
+          1004
+        ],
+        [
+          827,
+          1004
+        ],
+        [
+          827,
+          1101
+        ],
+        [
+          279,
+          1101
+        ]
+      ],
+      "text": "بخزا داریوںءانقالات پاکنالقول مانمی یح فذکودہ مکان ازیی ول ہوں۔ا یرے کت iol‏",
+      "candidate_text_tesseract": "بخزا داریوںءانقالات پاکنالقول مانمی یح فذکودہ مکان ازیی ول ہوں۔ا یرے کت iol‏",
+      "source_ocr_text": ": تم بش سن یش لاکدوپے-(24,00,000. ‎Lal R5.12,00,000/-e SIAL ots‏ :",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_015.png"
+    },
+    {
+      "line_id": 16,
+      "reading_order": 16,
+      "bbox": [
+        [
+          259,
+          972
+        ],
+        [
+          827,
+          972
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          259,
+          1170
+        ]
+      ],
+      "text": ".۸۰+ ٠ذس‏ ارہ ٥‏ ص",
+      "candidate_text_tesseract": ".۸۰+ ٠ذس‏ ارہ ٥‏ ص",
+      "source_ocr_text": "ا جں۔بدست ویک شجرفو ید ول رج ‎br‏ سان ماف رھ ‎BAF‏ کت پود ہو شال را لن لا ہو ‎i A‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_016.png"
+    },
+    {
+      "line_id": 17,
+      "reading_order": 17,
+      "bbox": [
+        [
+          281,
+          1073
+        ],
+        [
+          827,
+          1073
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          281,
+          1170
+        ]
+      ],
+      "text": "Usb PL‏ ہم دفیردےہہراادد جات بقرضہ تیم 0 - Po Beg Bh‏ ا 9",
+      "candidate_text_tesseract": "Usb PL‏ ہم دفیردےہہراادد جات بقرضہ تیم 0 - Po Beg Bh‏ ا 9",
+      "source_ocr_text": "‎SP un i‏ موصوف ) اش ‎buch‏ ارم رش شی ات کان ہل ! ہے یلا",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_017.png"
+    },
+    {
+      "line_id": 18,
+      "reading_order": 18,
+      "bbox": [
+        [
+          250,
+          1163
+        ],
+        [
+          827,
+          1163
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          250,
+          1170
+        ]
+      ],
+      "text": "(لررر St‏ رس عاصل ارات کےا نے تک دخ AEM‏ ڈکودہ مکان لگ ا بیقیت مرکو لن ہے دصاف اگ سے ب ‏ ت أ پ",
+      "candidate_text_tesseract": "(لررر St‏ رس عاصل ارات کےا نے تک دخ AEM‏ ڈکودہ مکان لگ ا بیقیت مرکو لن ہے دصاف اگ سے ب ‏ ت أ پ",
+      "source_ocr_text": "‎i‏ الا دا دا سے با ہوا ‎sed ihe Serb Pie‏ اودد اح گا تا",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_018.png"
+    },
+    {
+      "line_id": 19,
+      "reading_order": 19,
+      "bbox": [
+        [
+          259,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          259,
+          1170
+        ]
+      ],
+      "text": "رر نے گر مکان جپاریرے کرو ‘nat Pot‏ دحا بش انی نے ال متر می ب .وا ہے dl! د۴ ہ :‏",
+      "candidate_text_tesseract": "رر نے گر مکان جپاریرے کرو ‘nat Pot‏ دحا بش انی نے ال متر می ب .وا ہے dl! د۴ ہ :‏",
+      "source_ocr_text": "دا دم گا نہمکاان مہ حوالشتز ام امو فگردیاہے ۔ اب مشتر کا موصوف ‎Sek apy‏ و ان کنل ‎H‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_019.png"
+    },
+    {
+      "line_id": 20,
+      "reading_order": 20,
+      "bbox": [
+        [
+          250,
+          1169
+        ],
+        [
+          294,
+          1169
+        ],
+        [
+          294,
+          1170
+        ],
+        [
+          250,
+          1170
+        ]
+      ],
+      "text": "رہل",
+      "candidate_text_tesseract": "رہل",
+      "source_ocr_text": "‎l6 roe BOP EL rei‏ دخلہ5گ- مل لت ہم ‎Hs PW‏",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_020.png"
+    },
+    {
+      "line_id": 21,
+      "reading_order": 21,
+      "bbox": [
+        [
+          248,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          248,
+          1170
+        ]
+      ],
+      "text": "دہ لا ٠‏ SLT PoP‏ کید ظا دق لی لی رد مددل کےا 200077( :",
+      "candidate_text_tesseract": "دہ لا ٠‏ SLT PoP‏ کید ظا دق لی لی رد مددل کےا 200077( :",
+      "source_ocr_text": "1 en",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_021.png"
+    },
+    {
+      "line_id": 22,
+      "reading_order": 22,
+      "bbox": [
+        [
+          248,
+          1169
+        ],
+        [
+          292,
+          1169
+        ],
+        [
+          292,
+          1170
+        ],
+        [
+          248,
+          1170
+        ]
+      ],
+      "text": "ص.",
+      "candidate_text_tesseract": "ص.",
+      "source_ocr_text": ": Ep zue",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_022.png"
+    },
+    {
+      "line_id": 23,
+      "reading_order": 23,
+      "bbox": [
+        [
+          248,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          248,
+          1170
+        ]
+      ],
+      "text": "ي وہ ص 1 ہے > .12,09,090 پے :لد با سکم جن ASRS.24,00,000/-e-sSi‏ شی لفن تم ئا",
+      "candidate_text_tesseract": "ي وہ ص 1 ہے > .12,09,090 پے :لد با سکم جن ASRS.24,00,000/-e-sSi‏ شی لفن تم ئا",
+      "source_ocr_text": "‏ا‎ 7\"",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_023.png"
+    },
+    {
+      "line_id": 24,
+      "reading_order": 24,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "یا",
+      "candidate_text_tesseract": "یا",
+      "source_ocr_text": "Scanned with CamScanner",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_024.png"
+    },
+    {
+      "line_id": 25,
+      "reading_order": 25,
+      "bbox": [
+        [
+          255,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          255,
+          1170
+        ]
+      ],
+      "text": "إٍٔ رکی و لا ئن شال پہرہ کت لہ ہر2 رہ ما ماک رشھرمضمائنع ول شجرلدی دک وت ہیں۔ جیا ئ۵ ئ5 ئ5",
+      "candidate_text_tesseract": "إٍٔ رکی و لا ئن شال پہرہ کت لہ ہر2 رہ ما ماک رشھرمضمائنع ول شجرلدی دک وت ہیں۔ جیا ئ۵ ئ5 ئ5",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_025.png"
+    },
+    {
+      "line_id": 26,
+      "reading_order": 26,
+      "bbox": [
+        [
+          258,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          258,
+          1170
+        ]
+      ],
+      "text": "as eee ں۔ پل گول شا بت شگ گن ےا یا کرد دا دخت وف )لی Serb? uni‏ ئ5 5ا ئ5",
+      "candidate_text_tesseract": "as eee ں۔ پل گول شا بت شگ گن ےا یا کرد دا دخت وف )لی Serb? uni‏ ئ5 5ا ئ5",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_026.png"
+    },
+    {
+      "line_id": 27,
+      "reading_order": 27,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "سا‎ ۲۵",
+      "candidate_text_tesseract": "سا‎ ۲۵",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_027.png"
+    },
+    {
+      "line_id": 28,
+      "reading_order": 28,
+      "bbox": [
+        [
+          259,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          259,
+          1170
+        ]
+      ],
+      "text": "i Apa‏ 7 بھی1 اوردری ضرا لباق ے موصوف ble‏ ہوگیا جاتی بے دام ردام طمر ا",
+      "candidate_text_tesseract": "i Apa‏ 7 بھی1 اوردری ضرا لباق ے موصوف ble‏ ہوگیا جاتی بے دام ردام طمر ا",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_028.png"
+    },
+    {
+      "line_id": 29,
+      "reading_order": 29,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "PW‏ دا ای دہ دہ sean:‏",
+      "candidate_text_tesseract": "PW‏ دا ای دہ دہ sean:‏",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_029.png"
+    },
+    {
+      "line_id": 30,
+      "reading_order": 30,
+      "bbox": [
+        [
+          261,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          261,
+          1170
+        ]
+      ],
+      "text": "8 7 geri ید انان",
+      "candidate_text_tesseract": "8 7 geri ید انان",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_030.png"
+    },
+    {
+      "line_id": 31,
+      "reading_order": 31,
+      "bbox": [
+        [
+          284,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          284,
+          1170
+        ]
+      ],
+      "text": "SPM‏ کوک شا PE Se OPI PL‏ ہد أد د۰",
+      "candidate_text_tesseract": "SPM‏ کوک شا PE Se OPI PL‏ ہد أد د۰",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_031.png"
+    },
+    {
+      "line_id": 32,
+      "reading_order": 32,
+      "bbox": [
+        [
+          262,
+          1169
+        ],
+        [
+          728,
+          1169
+        ],
+        [
+          728,
+          1170
+        ],
+        [
+          262,
+          1170
+        ]
+      ],
+      "text": "ْ دا بصرت مامل وت",
+      "candidate_text_tesseract": "ْ دا بصرت مامل وت",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_032.png"
+    },
+    {
+      "line_id": 33,
+      "reading_order": 33,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "pal",
+      "candidate_text_tesseract": "pal",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_033.png"
+    },
+    {
+      "line_id": 34,
+      "reading_order": 34,
+      "bbox": [
+        [
+          713,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          713,
+          1170
+        ]
+      ],
+      "text": "ارع(ق).ِ",
+      "candidate_text_tesseract": "ارع(ق).ِ",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_034.png"
+    },
+    {
+      "line_id": 35,
+      "reading_order": 35,
+      "bbox": [
+        [
+          713,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          713,
+          1170
+        ]
+      ],
+      "text": "۷۱٢ 7+5",
+      "candidate_text_tesseract": "۷۱٢ 7+5",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_035.png"
+    },
+    {
+      "line_id": 36,
+      "reading_order": 36,
+      "bbox": [
+        [
+          561,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          561,
+          1170
+        ]
+      ],
+      "text": "مکاتھ",
+      "candidate_text_tesseract": "مکاتھ",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_036.png"
+    },
+    {
+      "line_id": 37,
+      "reading_order": 37,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "Scanned with CamScanner",
+      "candidate_text_tesseract": "Scanned with CamScanner",
+      "source_ocr_text": "",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Registry-3_line_037.png"
+    }
+  ]
+}

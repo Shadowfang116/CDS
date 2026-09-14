@@ -1,0 +1,1244 @@
+{
+  "dataset_id": "loan_request_20260914",
+  "source_document": "Sanction_Letter.pdf",
+  "source_page_image": "images/Sanction_Letter-1.png",
+  "page": 1,
+  "language": "urd+eng",
+  "human_verified": false,
+  "verification_status": "DRAFT_UNVERIFIED",
+  "box_method": "Tesseract control word boxes grouped by reading line",
+  "lines": [
+    {
+      "line_id": 1,
+      "reading_order": 1,
+      "bbox": [
+        [
+          682,
+          76
+        ],
+        [
+          827,
+          76
+        ],
+        [
+          827,
+          140
+        ],
+        [
+          682,
+          140
+        ]
+      ],
+      "text": "Office of the Zonal officer (Planning)",
+      "candidate_text_tesseract": "Office of the Zonal officer (Planning)",
+      "source_ocr_text": ": دای",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_001.png"
+    },
+    {
+      "line_id": 2,
+      "reading_order": 2,
+      "bbox": [
+        [
+          561,
+          146
+        ],
+        [
+          827,
+          146
+        ],
+        [
+          827,
+          203
+        ],
+        [
+          561,
+          203
+        ]
+      ],
+      "text": "METROPOLITAN CORPORATION LAHORE",
+      "candidate_text_tesseract": "METROPOLITAN CORPORATION LAHORE",
+      "source_ocr_text": "‎Office of the Zonal officer (Planning)‏ چھ:",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_002.png"
+    },
+    {
+      "line_id": 3,
+      "reading_order": 3,
+      "bbox": [
+        [
+          826,
+          205
+        ],
+        [
+          827,
+          205
+        ],
+        [
+          827,
+          256
+        ],
+        [
+          826,
+          256
+        ]
+      ],
+      "text": "WAHGA TOWN LAHORE",
+      "candidate_text_tesseract": "WAHGA TOWN LAHORE",
+      "source_ocr_text": "6",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_003.png"
+    },
+    {
+      "line_id": 4,
+      "reading_order": 4,
+      "bbox": [
+        [
+          703,
+          274
+        ],
+        [
+          827,
+          274
+        ],
+        [
+          827,
+          337
+        ],
+        [
+          703,
+          337
+        ]
+      ],
+      "text": "No. 158 ا(‎ Dated: 29-03-/2018",
+      "candidate_text_tesseract": "No. 158 ا(‎ Dated: 29-03-/2018",
+      "source_ocr_text": "‎METROPOLITAN CORPORATION LAHORE‏ رت یتاج",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_004.png"
+    },
+    {
+      "line_id": 5,
+      "reading_order": 5,
+      "bbox": [
+        [
+          826,
+          344
+        ],
+        [
+          827,
+          344
+        ],
+        [
+          827,
+          386
+        ],
+        [
+          826,
+          386
+        ]
+      ],
+      "text": "604",
+      "candidate_text_tesseract": "604",
+      "source_ocr_text": "کے کو",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_005.png"
+    },
+    {
+      "line_id": 6,
+      "reading_order": 6,
+      "bbox": [
+        [
+          743,
+          379
+        ],
+        [
+          827,
+          379
+        ],
+        [
+          827,
+          421
+        ],
+        [
+          743,
+          421
+        ]
+      ],
+      "text": "{Undor Sosslon 10.4.1)",
+      "candidate_text_tesseract": "{Undor Sosslon 10.4.1)",
+      "source_ocr_text": "‎SSF WAHGA TOWN LAHORE",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_006.png"
+    },
+    {
+      "line_id": 7,
+      "reading_order": 7,
+      "bbox": [
+        [
+          183,
+          412
+        ],
+        [
+          827,
+          412
+        ],
+        [
+          827,
+          500
+        ],
+        [
+          183,
+          500
+        ]
+      ],
+      "text": "SANCTION. .LETTERJFOR RESIDENTIAL. CONSTRUCTION",
+      "candidate_text_tesseract": "SANCTION. .LETTERJFOR RESIDENTIAL. CONSTRUCTION",
+      "source_ocr_text": "‏پت سئ‎ no. 158 z0(P)/ Dated: 29-03-8",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_007.png"
+    },
+    {
+      "line_id": 8,
+      "reading_order": 8,
+      "bbox": [
+        [
+          208,
+          492
+        ],
+        [
+          827,
+          492
+        ],
+        [
+          827,
+          552
+        ],
+        [
+          208,
+          552
+        ]
+      ],
+      "text": "(under the Provision of Punjab Local Goverment Act.2001 and the requirements of Buildings",
+      "candidate_text_tesseract": "(under the Provision of Punjab Local Goverment Act.2001 and the requirements of Buildings",
+      "source_ocr_text": "‎BB-16",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_008.png"
+    },
+    {
+      "line_id": 9,
+      "reading_order": 9,
+      "bbox": [
+        [
+          203,
+          536
+        ],
+        [
+          671,
+          536
+        ],
+        [
+          671,
+          582
+        ],
+        [
+          203,
+          582
+        ]
+      ],
+      "text": "Zonal Planning By-Laws In force",
+      "candidate_text_tesseract": "Zonal Planning By-Laws In force",
+      "source_ocr_text": "‎{Under Sossion 10.4.1)",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_009.png"
+    },
+    {
+      "line_id": 10,
+      "reading_order": 10,
+      "bbox": [
+        [
+          203,
+          558
+        ],
+        [
+          827,
+          558
+        ],
+        [
+          827,
+          619
+        ],
+        [
+          203,
+          619
+        ]
+      ],
+      "text": "Building application submitted by Mr.Muhammad Navood S/o Muhammad",
+      "candidate_text_tesseract": "Building application submitted by Mr.Muhammad Navood S/o Muhammad",
+      "source_ocr_text": "‎SANCTION LETTER FOR RESIDENTIAL CONSTRUCTION",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_010.png"
+    },
+    {
+      "line_id": 11,
+      "reading_order": 11,
+      "bbox": [
+        [
+          199,
+          598
+        ],
+        [
+          827,
+          598
+        ],
+        [
+          827,
+          656
+        ],
+        [
+          199,
+          656
+        ]
+      ],
+      "text": "Ramzan for as Build plan of Residential House Building Consisting of Double",
+      "candidate_text_tesseract": "Ramzan for as Build plan of Residential House Building Consisting of Double",
+      "source_ocr_text": "(under the Provision of Punjab Local Goverment ۸۰۱.2001 and the requirements of Building)",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_011.png"
+    },
+    {
+      "line_id": 12,
+      "reading_order": 12,
+      "bbox": [
+        [
+          197,
+          640
+        ],
+        [
+          827,
+          640
+        ],
+        [
+          827,
+          699
+        ],
+        [
+          197,
+          699
+        ]
+      ],
+      "text": "Storey Building (Ground Floor,First Floor,Mumty) Having Total Area of Plot",
+      "candidate_text_tesseract": "Storey Building (Ground Floor,First Floor,Mumty) Having Total Area of Plot",
+      "source_ocr_text": "Zonal Planning By-Laws In force",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_012.png"
+    },
+    {
+      "line_id": 13,
+      "reading_order": 13,
+      "bbox": [
+        [
+          195,
+          681
+        ],
+        [
+          827,
+          681
+        ],
+        [
+          827,
+          734
+        ],
+        [
+          195,
+          734
+        ]
+      ],
+      "text": "675-Sft Total Covered Area of Plot 1582-Sft At Knewat No.06 Khatoni No.14,15",
+      "candidate_text_tesseract": "675-Sft Total Covered Area of Plot 1582-Sft At Knewat No.06 Khatoni No.14,15",
+      "source_ocr_text": "Building application submitted by Mr.Muhammad Naveed S/o Muhammad",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_013.png"
+    },
+    {
+      "line_id": 14,
+      "reading_order": 14,
+      "bbox": [
+        [
+          195,
+          725
+        ],
+        [
+          827,
+          725
+        ],
+        [
+          827,
+          776
+        ],
+        [
+          195,
+          776
+        ]
+      ],
+      "text": "Salam Khata Qitat-10 Situated At Abadi Hadbast Mouza Tulus Pura Tehsil",
+      "candidate_text_tesseract": "Salam Khata Qitat-10 Situated At Abadi Hadbast Mouza Tulus Pura Tehsil",
+      "source_ocr_text": "Ramzan for as Build plan of Residential House Building Consisting of Double",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_014.png"
+    },
+    {
+      "line_id": 15,
+      "reading_order": 15,
+      "bbox": [
+        [
+          196,
+          767
+        ],
+        [
+          827,
+          767
+        ],
+        [
+          827,
+          823
+        ],
+        [
+          196,
+          823
+        ]
+      ],
+      "text": "Shalimar District Lahore.registred with this Zone vide B.A.No.825-WT-2018",
+      "candidate_text_tesseract": "Shalimar District Lahore.registred with this Zone vide B.A.No.825-WT-2018",
+      "source_ocr_text": "Storey Building (Ground Floor,First Floor,Mumty) Having Total Area of Plot",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_015.png"
+    },
+    {
+      "line_id": 16,
+      "reading_order": 16,
+      "bbox": [
+        [
+          198,
+          810
+        ],
+        [
+          827,
+          810
+        ],
+        [
+          827,
+          869
+        ],
+        [
+          198,
+          869
+        ]
+      ],
+      "text": "Dated 06-03-2018 has been Sanctioned by competent Authority subject to",
+      "candidate_text_tesseract": "Dated 06-03-2018 has been Sanctioned by competent Authority subject to",
+      "source_ocr_text": "‎675-Sft Total Covered Area of Plot 1582-Sft At Knewat No.06 Khatoni No.14,15",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_016.png"
+    },
+    {
+      "line_id": 17,
+      "reading_order": 17,
+      "bbox": [
+        [
+          197,
+          853
+        ],
+        [
+          827,
+          853
+        ],
+        [
+          827,
+          925
+        ],
+        [
+          197,
+          925
+        ]
+      ],
+      "text": "following direction:- 7",
+      "candidate_text_tesseract": "following direction:- 7",
+      "source_ocr_text": "‎Salam Khata Qitat-10 Situated At Abadi Hadbast Mouza Tulus Pura Tehsil",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_017.png"
+    },
+    {
+      "line_id": 18,
+      "reading_order": 18,
+      "bbox": [
+        [
+          215,
+          896
+        ],
+        [
+          827,
+          896
+        ],
+        [
+          827,
+          948
+        ],
+        [
+          215,
+          948
+        ]
+      ],
+      "text": "۰ The sanctioned plans are adhered to absolutely in every particular.",
+      "candidate_text_tesseract": "۰ The sanctioned plans are adhered to absolutely in every particular.",
+      "source_ocr_text": "‎Shalimar District Lahore.registred with this Zone vide B.A.No.825-WT-2018",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_018.png"
+    },
+    {
+      "line_id": 19,
+      "reading_order": 19,
+      "bbox": [
+        [
+          201,
+          957
+        ],
+        [
+          827,
+          957
+        ],
+        [
+          827,
+          1020
+        ],
+        [
+          201,
+          1020
+        ]
+      ],
+      "text": "2. Privacy of adjoining buildings will not be disturbed.",
+      "candidate_text_tesseract": "2. Privacy of adjoining buildings will not be disturbed.",
+      "source_ocr_text": "‎Dated 06-03-2018 has been Sanctioned by competent Authority subject to",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_019.png"
+    },
+    {
+      "line_id": 20,
+      "reading_order": 20,
+      "bbox": [
+        [
+          204,
+          1034
+        ],
+        [
+          827,
+          1034
+        ],
+        [
+          827,
+          1103
+        ],
+        [
+          204,
+          1103
+        ]
+      ],
+      "text": "3. The sanction plan shall be kept at site and presented to the authorized building",
+      "candidate_text_tesseract": "3. The sanction plan shall be kept at site and presented to the authorized building",
+      "source_ocr_text": "following direction:- 5",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_020.png"
+    },
+    {
+      "line_id": 21,
+      "reading_order": 21,
+      "bbox": [
+        [
+          308,
+          1083
+        ],
+        [
+          827,
+          1083
+        ],
+        [
+          827,
+          1124
+        ],
+        [
+          308,
+          1124
+        ]
+      ],
+      "text": "officials of this Lahore on demand.",
+      "candidate_text_tesseract": "officials of this Lahore on demand.",
+      "source_ocr_text": "The sanctioned plans are adhered to absolutely in every particular.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_021.png"
+    },
+    {
+      "line_id": 22,
+      "reading_order": 22,
+      "bbox": [
+        [
+          199,
+          1149
+        ],
+        [
+          827,
+          1149
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          199,
+          1170
+        ]
+      ],
+      "text": "4 . Th ie da te of commencemen 6 ۲) and in compl eti jon mu: st be noticed to the Enforcement",
+      "candidate_text_tesseract": "4 . Th ie da te of commencemen 6 ۲) and in compl eti jon mu: st be noticed to the Enforcement",
+      "source_ocr_text": "‎2 Privacy of adjoining buildings will not be disturbed.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_022.png"
+    },
+    {
+      "line_id": 23,
+      "reading_order": 23,
+      "bbox": [
+        [
+          194,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          194,
+          1170
+        ]
+      ],
+      "text": "5. The applicant shall be bound to construct an underground water / reservoir tank",
+      "candidate_text_tesseract": "5. The applicant shall be bound to construct an underground water / reservoir tank",
+      "source_ocr_text": "‎3 The sanction plan shall be kept at site and presented to the authorized building",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_023.png"
+    },
+    {
+      "line_id": 24,
+      "reading_order": 24,
+      "bbox": [
+        [
+          299,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          299,
+          1170
+        ]
+      ],
+      "text": "of storage of water for emergency use.",
+      "candidate_text_tesseract": "of storage of water for emergency use.",
+      "source_ocr_text": "Officials of this Lahore on demand.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_024.png"
+    },
+    {
+      "line_id": 25,
+      "reading_order": 25,
+      "bbox": [
+        [
+          188,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          188,
+          1170
+        ]
+      ],
+      "text": "6. In pursuance of provisions of PLGA 2013, the VALIDITY of this sanctioned Building Plan",
+      "candidate_text_tesseract": "6. In pursuance of provisions of PLGA 2013, the VALIDITY of this sanctioned Building Plan",
+      "source_ocr_text": "‎4 The date of commencement and completion must bé ticed",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_025.png"
+    },
+    {
+      "line_id": 26,
+      "reading_order": 26,
+      "bbox": [
+        [
+          296,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          296,
+          1170
+        ]
+      ],
+      "text": "shall be for a period of ONE YEAR ONLY starting from the date of sanction. After the",
+      "candidate_text_tesseract": "shall be for a period of ONE YEAR ONLY starting from the date of sanction. After the",
+      "source_ocr_text": "inspector Zone, Lahore ipl lust be noticed to the Enforcement",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_026.png"
+    },
+    {
+      "line_id": 27,
+      "reading_order": 27,
+      "bbox": [
+        [
+          295,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          295,
+          1170
+        ]
+      ],
+      "text": "expiry of this period this sanction shall have no effect whatsoever,",
+      "candidate_text_tesseract": "expiry of this period this sanction shall have no effect whatsoever,",
+      "source_ocr_text": "‎5. The applicant shall be bound to construct an underground water / reservoir tank",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_027.png"
+    },
+    {
+      "line_id": 28,
+      "reading_order": 28,
+      "bbox": [
+        [
+          186,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          186,
+          1170
+        ]
+      ],
+      "text": "7. The level of the ramp will be made lower than the mettled road. A drain will be provided",
+      "candidate_text_tesseract": "7. The level of the ramp will be made lower than the mettled road. A drain will be provided",
+      "source_ocr_text": "of storage of water for emergency use.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_028.png"
+    },
+    {
+      "line_id": 29,
+      "reading_order": 29,
+      "bbox": [
+        [
+          293,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          293,
+          1170
+        ]
+      ],
+      "text": "in the ramp so that the waste water of the building may not come on the road to cause",
+      "candidate_text_tesseract": "in the ramp so that the waste water of the building may not come on the road to cause",
+      "source_ocr_text": "‎6. In pursuance of provisions of PLGA 2013, the VALIDITY of this sanctioned Building Plan",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_029.png"
+    },
+    {
+      "line_id": 30,
+      "reading_order": 30,
+      "bbox": [
+        [
+          293,
+          1169
+        ],
+        [
+          497,
+          1169
+        ],
+        [
+          497,
+          1170
+        ],
+        [
+          293,
+          1170
+        ]
+      ],
+      "text": "damage lo it.",
+      "candidate_text_tesseract": "damage lo it.",
+      "source_ocr_text": "shall be for a period of ONE YEAR ONLY starting from the date of sanction. After the",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_030.png"
+    },
+    {
+      "line_id": 31,
+      "reading_order": 31,
+      "bbox": [
+        [
+          187,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          187,
+          1170
+        ]
+      ],
+      "text": "8. This Building Plan is sanctioned on the basis of documents submitted by the applicant.",
+      "candidate_text_tesseract": "8. This Building Plan is sanctioned on the basis of documents submitted by the applicant.",
+      "source_ocr_text": "expiry of this period this sanction shall have no effect whatsoever,",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_031.png"
+    },
+    {
+      "line_id": 32,
+      "reading_order": 32,
+      "bbox": [
+        [
+          292,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          292,
+          1170
+        ]
+      ],
+      "text": "However, this sanction shall be considered as cancelled, if anything found contrary to",
+      "candidate_text_tesseract": "However, this sanction shall be considered as cancelled, if anything found contrary to",
+      "source_ocr_text": "‎7. The level of the ramp will be made lower than the mettled road. A drain will be provided",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_032.png"
+    },
+    {
+      "line_id": 33,
+      "reading_order": 33,
+      "bbox": [
+        [
+          289,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          289,
+          1170
+        ]
+      ],
+      "text": "these documents and as a result of concealments of facts or Fraud at any stage and it",
+      "candidate_text_tesseract": "these documents and as a result of concealments of facts or Fraud at any stage and it",
+      "source_ocr_text": "in the ramp so that the waste water of the building may not come on the road to cause",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_033.png"
+    },
+    {
+      "line_id": 34,
+      "reading_order": 34,
+      "bbox": [
+        [
+          286,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          286,
+          1170
+        ]
+      ],
+      "text": "codal formalities are not followed. ۱ ٠.",
+      "candidate_text_tesseract": "codal formalities are not followed. ۱ ٠.",
+      "source_ocr_text": "damage to it",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_034.png"
+    },
+    {
+      "line_id": 35,
+      "reading_order": 35,
+      "bbox": [
+        [
+          318,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          318,
+          1170
+        ]
+      ],
+      "text": "The work will be completed within twelve months from the date of approval.",
+      "candidate_text_tesseract": "The work will be completed within twelve months from the date of approval.",
+      "source_ocr_text": "‎8. This Building Plan is sanctioned on the basis of documents submitted by the applicant.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_035.png"
+    },
+    {
+      "line_id": 36,
+      "reading_order": 36,
+      "bbox": [
+        [
+          176,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          176,
+          1170
+        ]
+      ],
+      "text": "9. Responsipitity regarding STRUCTURE STABILITY of the building will tie with the",
+      "candidate_text_tesseract": "9. Responsipitity regarding STRUCTURE STABILITY of the building will tie with the",
+      "source_ocr_text": "However, this sanction shall be considered as cancelled, if anything found contrary to",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_036.png"
+    },
+    {
+      "line_id": 37,
+      "reading_order": 37,
+      "bbox": [
+        [
+          281,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          281,
+          1170
+        ]
+      ],
+      "text": "applicant. Entire LIABILITY FOR LOSS OF PROPERTY OR LIFE shall lie with you in",
+      "candidate_text_tesseract": "applicant. Entire LIABILITY FOR LOSS OF PROPERTY OR LIFE shall lie with you in",
+      "source_ocr_text": "these documents and as a result of concealments of facts or Fraud at any stage and if",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_037.png"
+    },
+    {
+      "line_id": 38,
+      "reading_order": 38,
+      "bbox": [
+        [
+          280,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          280,
+          1170
+        ]
+      ],
+      "text": "this regard. It shall be your responsibility to use sound building materials, be of good",
+      "candidate_text_tesseract": "this regard. It shall be your responsibility to use sound building materials, be of good",
+      "source_ocr_text": "codal formalities are not followed .",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_038.png"
+    },
+    {
+      "line_id": 39,
+      "reading_order": 39,
+      "bbox": [
+        [
+          279,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          279,
+          1170
+        ]
+      ],
+      "text": "quality and properly put together so as to ensure safety of the building materials.",
+      "candidate_text_tesseract": "quality and properly put together so as to ensure safety of the building materials.",
+      "source_ocr_text": "‎The work will be completed within twelve months from the date of approval.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_039.png"
+    },
+    {
+      "line_id": 40,
+      "reading_order": 40,
+      "bbox": [
+        [
+          169,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          169,
+          1170
+        ]
+      ],
+      "text": "10. The roadside berm will not be made higher than the road running in front of the plot and",
+      "candidate_text_tesseract": "10. The roadside berm will not be made higher than the road running in front of the plot and",
+      "source_ocr_text": "‎9. Responsibility regarding STRUCTURE STABILITY of the building will lie with the",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_040.png"
+    },
+    {
+      "line_id": 41,
+      "reading_order": 41,
+      "bbox": [
+        [
+          278,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          278,
+          1170
+        ]
+      ],
+      "text": "a kacha drain will be provided in the berm all along the width of plot for free passage of",
+      "candidate_text_tesseract": "a kacha drain will be provided in the berm all along the width of plot for free passage of",
+      "source_ocr_text": "applicant. Entire LIABILITY FOR LOSS OF PROPERTY OR LIFE shall lie with you in",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_041.png"
+    },
+    {
+      "line_id": 42,
+      "reading_order": 42,
+      "bbox": [
+        [
+          277,
+          1169
+        ],
+        [
+          448,
+          1169
+        ],
+        [
+          448,
+          1170
+        ],
+        [
+          277,
+          1170
+        ]
+      ],
+      "text": "rain water.",
+      "candidate_text_tesseract": "rain water.",
+      "source_ocr_text": "this regard. It shall be your responsibility to use sound building materials, be of good",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_042.png"
+    },
+    {
+      "line_id": 43,
+      "reading_order": 43,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "™",
+      "candidate_text_tesseract": "™",
+      "source_ocr_text": "quality and properly put together so as to ensure safely of the building materials.",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_043.png"
+    },
+    {
+      "line_id": 44,
+      "reading_order": 44,
+      "bbox": [
+        [
+          826,
+          1169
+        ],
+        [
+          827,
+          1169
+        ],
+        [
+          827,
+          1170
+        ],
+        [
+          826,
+          1170
+        ]
+      ],
+      "text": "Scanned with CamScanner",
+      "candidate_text_tesseract": "Scanned with CamScanner",
+      "source_ocr_text": "‎40. The roadside berm will not be made higher than the road running in front of the plot and",
+      "human_verified": false,
+      "box_source": "tesseract_control_word_boxes",
+      "crop": "line_crops/Sanction_Letter-1_line_044.png"
+    }
+  ]
+}
